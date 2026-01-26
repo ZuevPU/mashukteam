@@ -1,0 +1,70 @@
+.bento-menu-screen {
+  min-height: 100vh;
+  padding: 20px;
+  background: #f5f5f5;
+}
+
+.bento-container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.bento-title {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: #333;
+  text-align: center;
+}
+
+.bento-subtitle {
+  font-size: 16px;
+  color: #666;
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.bento-placeholder {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.bento-card-placeholder {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.bento-card-placeholder h3 {
+  font-size: 20px;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.bento-card-placeholder p {
+  font-size: 14px;
+  color: #666;
+}
+
+.bento-note {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 14px;
+  color: #856404;
+  line-height: 1.6;
+}
+
+.bento-note strong {
+  display: block;
+  margin-bottom: 8px;
+}
