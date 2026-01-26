@@ -50,15 +50,54 @@ export function parseInitData(initData: string): ParsedInitData | null {
 }
 
 /**
- * Базовая валидация initData
+ * Валидация hash через HMAC-SHA-256
+ * Согласно документации Telegram: https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
+ */
+export function validateInitDataHash(initData: string, botToken: string): boolean {
+  try {
+    const params = new URLSearchParams(initData);
+    const hash = params.get('hash');
+    
+    if (!hash) {
+      return false;
+    }
+
+    // Удаляем hash из параметров для проверки
+    params.delete('hash');
+
+    // Сортируем параметры по ключу
+    const dataCheckString = Array.from(params.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${key}=${value}`)
+      .join('\n');
+
+    // Создаем секретный ключ из bot token
+    const secretKey = crypto
+      .createHmac('sha256', 'WebAppData')
+      .update(botToken)
+      .digest();
+
+    // Вычисляем hash
+    const calculatedHash = crypto
+      .createHmac('sha256', secretKey)
+      .update(dataCheckString)
+      .digest('hex');
+
+    // Сравниваем hash
+    return calculatedHash === hash;
+  } catch (error) {
+    console.error('Error validating initData hash:', error);
+    return false;
+  }
+}
+
+/**
+ * Полная валидация initData
  * 
- * В MVP версии проверяем только наличие обязательных полей.
- * 
- * TODO для production:
- * 1. Добавить проверку auth_date (не старше 24 часов)
- * 2. Реализовать проверку hash через HMAC-SHA-256 с использованием
- *    секретного ключа от Telegram Bot API
- * 3. Добавить rate limiting для предотвращения злоупотреблений
+ * Проверяет:
+ * 1. Наличие обязательных полей
+ * 2. Валидность auth_date (не старше 24 часов)
+ * 3. Валидность hash через HMAC-SHA-256
  */
 export function validateInitData(initData: string): boolean {
   const parsed = parseInitData(initData);
@@ -81,12 +120,14 @@ export function validateInitData(initData: string): boolean {
     return false;
   }
 
-  // TODO: Добавить проверку hash через HMAC-SHA-256
-  // const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  // const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
-  // ... валидация hash
+  // Проверка hash через HMAC-SHA-256
+  const botToken = process.env.TELEGRAM_BOT_TOKEN;
+  if (!botToken) {
+    console.warn('TELEGRAM_BOT_TOKEN не установлен, пропускаем проверку hash');
+    return true; // В режиме разработки разрешаем без проверки hash
+  }
 
-  return true;
+  return validateInitDataHash(initData, botToken);
 }
 
 /**

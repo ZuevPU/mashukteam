@@ -1,0 +1,25 @@
+{
+  "name": "telegram-miniapp",
+  "version": "1.0.0",
+  "description": "Telegram Mini App с системой регистрации пользователей",
+  "private": true,
+  "scripts": {
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "type-check:backend": "cd backend && npm run type-check",
+    "type-check:frontend": "cd frontend && npm run type-check"
+  },
+  "keywords": [
+    "telegram",
+    "miniapp",
+    "react",
+    "nodejs",
+    "typescript",
+    "supabase"
+  ],
+  "author": "",
+  "license": "ISC"
+}

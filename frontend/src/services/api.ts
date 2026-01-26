@@ -2,6 +2,13 @@
  * API клиент для взаимодействия с backend
  */
 
+import {
+  PointsTransaction,
+  Achievement,
+  UserAchievement,
+  UserStats,
+} from '../types';
+
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export interface ApiError {
@@ -46,6 +53,7 @@ async function fetchApi<T>(
 
   return response.json();
 }
+
 
 /**
  * Проверка аутентификации через initData
@@ -111,26 +119,100 @@ export async function registerUser(
 }
 
 /**
- * ============================================
- * БУДУЩИЕ API МЕТОДЫ ДЛЯ ГЕЙМИФИКАЦИИ
- * ============================================
- * 
- * export async function getUserPoints(userId: string) {
- *   return fetchApi<Points>(`/gamification/points/${userId}`);
- * }
- * 
- * export async function addPoints(userId: string, points: number, reason: string) {
- *   return fetchApi('/gamification/points/add', {
- *     method: 'POST',
- *     body: JSON.stringify({ userId, points, reason }),
- *   });
- * }
- * 
- * export async function getUserAchievements(userId: string) {
- *   return fetchApi<Achievement[]>(`/gamification/achievements/${userId}`);
- * }
- * 
- * export async function getUserStats(userId: string) {
- *   return fetchApi<UserStats>(`/gamification/stats/${userId}`);
- * }
+ * Базовый fetch для GET запросов с initData (используем POST т.к. backend требует initData в body)
  */
+async function fetchApiWithAuth<T>(
+  endpoint: string,
+  initData: string
+): Promise<T> {
+  return fetchApi<T>(endpoint, {
+    method: 'POST',
+    body: JSON.stringify({ initData }),
+  });
+}
+
+/**
+ * API методы для геймификации
+ */
+
+/**
+ * Начисление баллов пользователю
+ */
+export async function addPoints(initData: string, points: number, reason?: string) {
+  return fetchApi<{
+    success: boolean;
+    transaction: PointsTransaction;
+    total_points: number;
+  }>('/gamification/points/add', {
+    method: 'POST',
+    body: JSON.stringify({ initData, points, reason }),
+  });
+}
+
+/**
+ * Получение истории баллов пользователя
+ */
+export async function getUserPoints(userId: string, initData: string) {
+  return fetchApiWithAuth<{
+    success: boolean;
+    points: PointsTransaction[];
+    total_points: number;
+  }>(`/gamification/points/${userId}`, initData);
+}
+
+/**
+ * Получение достижений пользователя
+ */
+export async function getUserAchievements(userId: string, initData: string) {
+  return fetchApiWithAuth<{
+    success: boolean;
+    user_achievements: UserAchievement[];
+    all_achievements: Achievement[];
+    unlocked_count: number;
+    total_count: number;
+  }>(`/gamification/achievements/${userId}`, initData);
+}
+
+/**
+ * Разблокировка достижения
+ */
+export async function unlockAchievement(initData: string, achievementId: string) {
+  return fetchApi<{
+    success: boolean;
+    achievement: UserAchievement;
+    message: string;
+  }>('/gamification/achievements/unlock', {
+    method: 'POST',
+    body: JSON.stringify({ initData, achievement_id: achievementId }),
+  });
+}
+
+/**
+ * Получение статистики пользователя
+ */
+export async function getUserStats(userId: string, initData: string) {
+  return fetchApiWithAuth<{
+    success: boolean;
+    stats: UserStats;
+  }>(`/gamification/stats/${userId}`, initData);
+}
+
+/**
+ * Повышение уровня
+ */
+export async function levelUp(initData: string) {
+  return fetchApi<{
+    success: boolean;
+    level: {
+      id: string;
+      user_id: string;
+      level: number;
+      experience_points: number;
+      updated_at: string;
+    };
+    message: string;
+  }>('/gamification/level/up', {
+    method: 'POST',
+    body: JSON.stringify({ initData }),
+  });
+}

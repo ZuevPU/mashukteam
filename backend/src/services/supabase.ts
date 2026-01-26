@@ -1,3 +1,6 @@
+// Импорт конфигурации окружения ПЕРВЫМ
+import '../config/env';
+
 import { createClient } from '@supabase/supabase-js';
 import { User, CreateUserDto, UpdateUserStatusDto } from '../types';
 

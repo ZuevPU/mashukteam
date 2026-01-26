@@ -22,6 +22,8 @@ export interface User {
   middle_name: string | null;
   motivation: string;
   status: 'new' | 'registered';
+  total_points?: number;
+  current_level?: number;
   created_at: string;
   updated_at: string;
 }
@@ -52,22 +54,31 @@ export interface RegistrationStep3Dto {
   motivation: string;
 }
 
-// Будущие типы для геймификации
-export interface UserPoints {
+// Типы для геймификации
+
+export interface PointsTransaction {
   id: string;
   user_id: string;
   points: number;
-  reason: string;
+  reason: string | null;
   created_at: string;
 }
 
 export interface Achievement {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   icon_url: string | null;
   points_reward: number;
   created_at: string;
+}
+
+export interface UserAchievement {
+  id: string;
+  user_id: string;
+  achievement_id: string;
+  unlocked_at: string;
+  achievement?: Achievement;
 }
 
 export interface UserLevel {
@@ -76,4 +87,35 @@ export interface UserLevel {
   level: number;
   experience_points: number;
   updated_at: string;
+}
+
+export interface UserAction {
+  id: string;
+  user_id: string;
+  action_type: string;
+  action_data: Record<string, any> | null;
+  created_at: string;
+}
+
+// DTO для создания транзакций баллов
+export interface AddPointsDto {
+  points: number;
+  reason?: string;
+}
+
+// DTO для разблокировки достижения
+export interface UnlockAchievementDto {
+  achievement_id: string;
+}
+
+// Статистика пользователя
+export interface UserStats {
+  user_id: string;
+  total_points: number;
+  current_level: number;
+  experience_points: number;
+  experience_to_next_level: number;
+  achievements_count: number;
+  recent_achievements: Achievement[];
+  recent_points_transactions: PointsTransaction[];
 }

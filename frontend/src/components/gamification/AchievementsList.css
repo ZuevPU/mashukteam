@@ -1,0 +1,36 @@
+.achievements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.achievements-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.achievements-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #000000);
+  margin: 0;
+}
+
+.achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .achievements-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.achievements-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--tg-theme-hint-color, #999999);
+}

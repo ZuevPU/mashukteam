@@ -1,0 +1,79 @@
+.points-history {
+  padding: 16px;
+  background: var(--tg-theme-bg-color, #ffffff);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.points-history-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #000000);
+  margin: 0 0 16px 0;
+}
+
+.points-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.points-history-item {
+  padding: 12px;
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-radius: 8px;
+  border-left: 4px solid transparent;
+}
+
+.points-history-item.points-positive {
+  border-left-color: #4CAF50;
+}
+
+.points-history-item.points-negative {
+  border-left-color: #f44336;
+}
+
+.points-history-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.points-history-amount {
+  font-size: 20px;
+  font-weight: 700;
+  min-width: 60px;
+  text-align: right;
+}
+
+.points-history-item.points-positive .points-history-amount {
+  color: #4CAF50;
+}
+
+.points-history-item.points-negative .points-history-amount {
+  color: #f44336;
+}
+
+.points-history-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.points-history-reason {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--tg-theme-text-color, #000000);
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+
+.points-history-date {
+  font-size: 12px;
+  color: var(--tg-theme-hint-color, #999999);
+}
+
+.points-history-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--tg-theme-hint-color, #999999);
+}

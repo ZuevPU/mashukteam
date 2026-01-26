@@ -9,6 +9,8 @@ export interface User {
   middle_name: string | null;
   motivation: string;
   status: 'new' | 'registered';
+  total_points?: number;
+  current_level?: number;
   created_at: string;
   updated_at: string;
 }
@@ -27,28 +29,58 @@ export interface ApiResponse<T> {
   user?: Partial<User>;
 }
 
-// Будущие типы для геймификации
-export interface Points {
-  total: number;
-  history: Array<{
-    id: string;
-    points: number;
-    reason: string;
-    created_at: string;
-  }>;
+// Типы для геймификации
+
+export interface PointsTransaction {
+  id: string;
+  user_id: string;
+  points: number;
+  reason: string | null;
+  created_at: string;
 }
 
 export interface Achievement {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   icon_url: string | null;
+  points_reward: number;
+  created_at: string;
   unlocked_at?: string;
 }
 
-export interface UserStats {
+export interface UserAchievement {
+  id: string;
+  user_id: string;
+  achievement_id: string;
+  unlocked_at: string;
+  achievement?: Achievement;
+}
+
+export interface UserLevel {
+  id: string;
+  user_id: string;
   level: number;
   experience_points: number;
+  updated_at: string;
+}
+
+export interface UserStats {
+  user_id: string;
   total_points: number;
+  current_level: number;
+  experience_points: number;
+  experience_to_next_level: number;
   achievements_count: number;
+  recent_achievements: Achievement[];
+  recent_points_transactions: PointsTransaction[];
+}
+
+export interface AddPointsRequest {
+  points: number;
+  reason?: string;
+}
+
+export interface UnlockAchievementRequest {
+  achievement_id: string;
 }

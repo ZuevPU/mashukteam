@@ -1,70 +1,66 @@
 .bento-menu-screen {
   min-height: 100vh;
-  padding: 20px;
-  background: #f5f5f5;
+  padding: 0;
+  background: var(--tg-theme-bg-color, #f5f5f5);
 }
 
 .bento-container {
-  max-width: 600px;
+  max-width: 1400px;
   margin: 0 auto;
+  padding: 20px 0;
 }
 
 .bento-title {
   font-size: 28px;
-  font-weight: bold;
-  margin-bottom: 8px;
-  color: #333;
-  text-align: center;
-}
-
-.bento-subtitle {
-  font-size: 16px;
-  color: #666;
-  text-align: center;
-  margin-bottom: 32px;
-}
-
-.bento-placeholder {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  font-weight: 700;
+  color: var(--tg-theme-text-color, #000000);
   margin-bottom: 24px;
+  text-align: center;
+  padding: 0 16px;
 }
 
-.bento-card-placeholder {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  min-height: 120px;
+.bento-loading,
+.bento-error {
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
 }
 
-.bento-card-placeholder h3 {
-  font-size: 20px;
-  margin-bottom: 8px;
-  color: #333;
+.loading-spinner {
+  font-size: 48px;
+  margin-bottom: 16px;
+  animation: spin 1s linear infinite;
 }
 
-.bento-card-placeholder p {
-  font-size: 14px;
-  color: #666;
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.bento-note {
-  background: #fff3cd;
-  border: 1px solid #ffc107;
+.bento-error {
+  color: var(--tg-theme-text-color, #000000);
+}
+
+.bento-error button {
+  margin-top: 16px;
+  padding: 12px 24px;
+  background: var(--tg-theme-button-color, #3390ec);
+  color: var(--tg-theme-button-text-color, #ffffff);
+  border: none;
   border-radius: 8px;
-  padding: 16px;
   font-size: 14px;
-  color: #856404;
-  line-height: 1.6;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
 }
 
-.bento-note strong {
-  display: block;
-  margin-bottom: 8px;
+.bento-error button:hover {
+  opacity: 0.9;
 }

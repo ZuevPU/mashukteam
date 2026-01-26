@@ -1,10 +1,11 @@
+// Загрузка переменных окружения ДО всех импортов
+import './config/env';
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import routes from './routes';
-
-// Загрузка переменных окружения
-dotenv.config();
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { apiRateLimiter } from './middleware/rateLimiter';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,13 +18,19 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Логирование запросов (для разработки)
-if (process.env.NODE_ENV === 'development') {
-  app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-    next();
+// Rate limiting для всех API запросов
+app.use('/api', apiRateLimiter);
+
+// Логирование запросов
+import { logger } from './utils/logger';
+
+app.use((req, res, next) => {
+  logger.info(`${req.method} ${req.path}`, {
+    ip: req.ip,
+    userAgent: req.get('user-agent'),
   });
-}
+  next();
+});
 
 // API маршруты
 app.use('/api', routes);
@@ -33,11 +40,11 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Обработка ошибок
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Внутренняя ошибка сервера' });
-});
+// Обработка 404
+app.use(notFoundHandler);
+
+// Централизованная обработка ошибок
+app.use(errorHandler);
 
 // Запуск сервера
 app.listen(PORT, () => {
