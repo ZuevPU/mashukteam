@@ -9,7 +9,9 @@ export class AdminController {
    */
   static async createEvent(req: Request, res: Response) {
     try {
-      const eventData = req.body;
+      // Извлекаем initData и оставляем только данные события
+      const { initData, ...eventData } = req.body;
+      
       const event = await EventService.createEvent(eventData);
 
       // Отправка уведомления
@@ -32,7 +34,9 @@ export class AdminController {
   static async updateEvent(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const updates = req.body;
+      // Извлекаем initData и оставляем только данные для обновления
+      const { initData, ...updates } = req.body;
+      
       const event = await EventService.updateEvent(id, updates);
       return res.json({ success: true, event });
     } catch (error) {
@@ -61,7 +65,9 @@ export class AdminController {
   static async addQuestion(req: Request, res: Response) {
     try {
       const { id } = req.params; // eventId
-      const questionData = req.body;
+      // Извлекаем initData
+      const { initData, ...questionData } = req.body;
+      
       const question = await EventService.addQuestion(id, questionData);
       return res.status(201).json({ success: true, question });
     } catch (error) {
@@ -113,7 +119,9 @@ export class AdminController {
   static async updateUser(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const updates = req.body;
+      // Извлекаем initData
+      const { initData, ...updates } = req.body;
+      
       const user = await UserService.updateUserByAdmin(id, updates);
       return res.json({ success: true, user });
     } catch (error) {
