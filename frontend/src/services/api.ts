@@ -36,6 +36,13 @@ async function fetchApi<T>(
 ): Promise<T> {
   const url = `${API_URL}/api${endpoint}`;
   
+  // Логируем запрос для отладки
+  console.log('API Request:', {
+    method: options.method || 'GET',
+    url,
+    hasBody: !!options.body,
+  });
+  
   const response = await fetch(url, {
     ...options,
     headers: {
@@ -44,11 +51,25 @@ async function fetchApi<T>(
     },
   });
 
+  // Логируем ответ для отладки
+  console.log('API Response:', {
+    status: response.status,
+    statusText: response.statusText,
+    url,
+  });
+
   if (!response.ok) {
-    const error: ApiError = await response.json().catch(() => ({
-      error: `HTTP ${response.status}: ${response.statusText}`,
-    }));
-    throw new Error(error.error || 'Ошибка запроса');
+    let errorData: ApiError;
+    try {
+      errorData = await response.json();
+    } catch {
+      errorData = {
+        error: `HTTP ${response.status}: ${response.statusText}`,
+      };
+    }
+    
+    console.error('API Error:', errorData);
+    throw new Error(errorData.error || 'Ошибка запроса');
   }
 
   return response.json();

@@ -10,6 +10,34 @@ export function useTelegram() {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    // Функция для получения initData
+    const getInitData = (): string | null => {
+      if (typeof window === 'undefined' || !window.Telegram?.WebApp) {
+        return null;
+      }
+      
+      const tg = window.Telegram.WebApp;
+      
+      // Пробуем получить initData разными способами
+      if (tg.initData && tg.initData.length > 0) {
+        return tg.initData;
+      }
+      
+      // Если initData пустой, пробуем получить из initDataUnsafe
+      if (tg.initDataUnsafe && tg.initDataUnsafe.hash) {
+        // Собираем initData из initDataUnsafe
+        const params = new URLSearchParams();
+        if (tg.initDataUnsafe.user) {
+          params.append('user', JSON.stringify(tg.initDataUnsafe.user));
+        }
+        params.append('auth_date', tg.initDataUnsafe.auth_date.toString());
+        params.append('hash', tg.initDataUnsafe.hash);
+        return params.toString();
+      }
+      
+      return null;
+    };
+
     // Проверка наличия Telegram WebApp
     if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
       const tg = window.Telegram.WebApp as WebApp;
@@ -19,7 +47,18 @@ export function useTelegram() {
       tg.expand(); // Разворачиваем на весь экран
       
       setWebApp(tg);
-      setInitData(tg.initData || null);
+      
+      // Получаем initData
+      const data = getInitData();
+      setInitData(data);
+      
+      // Логируем для отладки
+      console.log('Telegram WebApp инициализирован:', {
+        hasInitData: !!data,
+        initDataLength: data?.length || 0,
+        hasUser: !!tg.initDataUnsafe?.user,
+      });
+      
       setIsReady(true);
 
       // Включаем вибрацию при необходимости

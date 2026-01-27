@@ -99,35 +99,60 @@ export async function registerUser(req: UserRequest, res: Response) {
   try {
     const { initData, registrationData } = req.body;
 
+    console.log('registerUser called:', {
+      hasInitData: !!initData,
+      hasRegistrationData: !!registrationData,
+      registrationData,
+    });
+
     if (!initData) {
-      return res.status(400).json({ error: 'initData обязателен' });
+      return res.status(400).json({ 
+        success: false,
+        error: 'initData обязателен' 
+      });
     }
 
     if (!registrationData) {
-      return res.status(400).json({ error: 'Данные регистрации обязательны' });
+      return res.status(400).json({ 
+        success: false,
+        error: 'Данные регистрации обязательны' 
+      });
     }
 
     // Валидация данных регистрации
     if (!registrationData.first_name || !registrationData.last_name) {
-      return res.status(400).json({ error: 'Имя и фамилия обязательны' });
+      return res.status(400).json({ 
+        success: false,
+        error: 'Имя и фамилия обязательны' 
+      });
     }
 
     if (!registrationData.motivation || registrationData.motivation.length < 10) {
       return res.status(400).json({ 
+        success: false,
         error: 'Мотивация обязательна и должна содержать минимум 10 символов' 
       });
     }
 
     const telegramId = getTelegramIdFromInitData(initData);
     if (!telegramId) {
-      return res.status(400).json({ error: 'Не удалось извлечь telegram_id' });
+      return res.status(400).json({ 
+        success: false,
+        error: 'Не удалось извлечь telegram_id' 
+      });
     }
 
     // Проверка существования пользователя
     const existingUser = await UserService.getUserByTelegramId(telegramId);
     if (!existingUser) {
-      return res.status(404).json({ error: 'Пользователь не найден. Сначала выполните аутентификацию.' });
+      console.warn('registerUser: Пользователь не найден, telegramId:', telegramId);
+      return res.status(404).json({ 
+        success: false,
+        error: 'Пользователь не найден. Сначала выполните аутентификацию.' 
+      });
     }
+
+    console.log('Completing registration for user:', existingUser.id);
 
     // Завершение регистрации
     const updatedUser = await UserService.completeRegistration(telegramId, {
@@ -138,6 +163,8 @@ export async function registerUser(req: UserRequest, res: Response) {
       motivation: registrationData.motivation,
     });
 
+    console.log('Registration completed successfully:', updatedUser.id);
+
     return res.json({
       success: true,
       user: updatedUser,
@@ -145,6 +172,10 @@ export async function registerUser(req: UserRequest, res: Response) {
     });
   } catch (error) {
     console.error('Error in registerUser:', error);
-    return res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    return res.status(500).json({ 
+      success: false,
+      error: 'Внутренняя ошибка сервера',
+      details: error instanceof Error ? error.message : String(error),
+    });
   }
 }
