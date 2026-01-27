@@ -1,8 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { User, UserType } from '../../types';
+import { User, UserType, AssignmentSubmission } from '../../types';
 import { adminApi } from '../../services/adminApi';
 import { useTelegram } from '../../hooks/useTelegram';
 import './AdminScreens.css';
+
+interface TargetedAnswerWithQuestion {
+  id: string;
+  answer_data: any;
+  created_at: string;
+  question?: {
+    id: string;
+    text: string;
+    type: string;
+  };
+}
+
+interface UserWithDetails extends User {
+  answers: any[];
+  targetedAnswers?: TargetedAnswerWithQuestion[];
+  submissions?: AssignmentSubmission[];
+}
 
 interface AdminUserDetailsScreenProps {
   userId: string;
@@ -11,7 +28,7 @@ interface AdminUserDetailsScreenProps {
 
 export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ userId, onBack }) => {
   const { initData, showAlert } = useTelegram();
-  const [user, setUser] = useState<User & { answers: any[] } | null>(null);
+  const [user, setUser] = useState<UserWithDetails | null>(null);
   const [userTypes, setUserTypes] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState('');
@@ -23,7 +40,7 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
         adminApi.getUserDetails(userId, initData),
         adminApi.getUserTypes()
       ]);
-      setUser(userData);
+      setUser(userData as UserWithDetails);
       setUserTypes(typesData);
       setSelectedType(userData.user_type || '');
     } catch (error) {
@@ -49,11 +66,27 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
     }
   };
 
+  const formatAnswer = (data: any) => {
+    if (Array.isArray(data)) return data.join(', ');
+    return String(data);
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'approved': return <span className="status-badge published">✓ Принято</span>;
+      case 'rejected': return <span className="status-badge completed">✗ Отклонено</span>;
+      case 'pending': return <span className="status-badge draft">⏳ На проверке</span>;
+      default: return <span className="status-badge">{status}</span>;
+    }
+  };
+
   if (loading) return <div className="loading">Загрузка...</div>;
   if (!user) return <div className="error">Пользователь не найден</div>;
 
   const diagnosticAnswers = user.answers?.filter((a: any) => a.events?.type === 'diagnostic') || [];
   const eventAnswers = user.answers?.filter((a: any) => a.events?.type !== 'diagnostic') || [];
+  const targetedAnswers = user.targetedAnswers || [];
+  const submissions = user.submissions || [];
 
   return (
     <div className="admin-screen">
@@ -62,11 +95,13 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
         <h3>Профиль</h3>
       </div>
 
+      {/* Основная информация */}
       <div className="admin-card" style={{marginBottom: 20}}>
         <h3>{user.first_name} {user.last_name}</h3>
         <p>ID: {user.telegram_id}</p>
         <p>@{user.telegram_username || 'нет username'}</p>
         <p>Статус: <strong>{user.status}</strong></p>
+        <p>Баллы: <strong>{user.total_points || 0}</strong></p>
         
         <div className="form-group" style={{marginTop: 16}}>
           <label>Тип пользователя</label>
@@ -93,20 +128,63 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
         </div>
       </div>
 
-      <h3 style={{marginBottom: 12}}>Ответы на диагностику ({diagnosticAnswers.length})</h3>
+      {/* Выполненные задания */}
+      <h3 style={{marginBottom: 12}}>📋 Задания ({submissions.length})</h3>
+      <div className="admin-list" style={{marginBottom: 24}}>
+        {submissions.length > 0 ? (
+          submissions.map((sub: any) => (
+            <div key={sub.id} className="admin-item-card block">
+              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: 8}}>
+                <span style={{fontWeight: 600}}>{sub.assignment?.title || 'Задание'}</span>
+                {getStatusBadge(sub.status)}
+              </div>
+              <p className="answer-box">{sub.content}</p>
+              {sub.admin_comment && (
+                <p style={{fontSize: 12, marginTop: 8, opacity: 0.7}}>
+                  💬 {sub.admin_comment}
+                </p>
+              )}
+              {sub.status === 'approved' && sub.assignment?.reward && (
+                <p style={{fontSize: 12, marginTop: 4, color: '#34c759'}}>
+                  +{sub.assignment.reward} баллов
+                </p>
+              )}
+            </div>
+          ))
+        ) : (
+          <p className="no-data">Нет выполненных заданий</p>
+        )}
+      </div>
+
+      {/* Ответы на персональные вопросы */}
+      <h3 style={{marginBottom: 12}}>❓ Персональные вопросы ({targetedAnswers.length})</h3>
+      <div className="admin-list" style={{marginBottom: 24}}>
+        {targetedAnswers.length > 0 ? (
+          targetedAnswers.map((answer: TargetedAnswerWithQuestion) => (
+            <div key={answer.id} className="admin-item-card block" style={{background: 'rgba(255, 149, 0, 0.1)'}}>
+              <h4 style={{marginBottom: 8}}>{answer.question?.text || 'Вопрос'}</h4>
+              <p className="answer-box">{formatAnswer(answer.answer_data)}</p>
+              <p style={{fontSize: 11, opacity: 0.6, marginTop: 8}}>
+                {new Date(answer.created_at).toLocaleDateString()}
+              </p>
+            </div>
+          ))
+        ) : (
+          <p className="no-data">Нет ответов</p>
+        )}
+      </div>
+
+      {/* Ответы на диагностику */}
+      <h3 style={{marginBottom: 12}}>🩺 Диагностика ({diagnosticAnswers.length})</h3>
       <div className="admin-list" style={{marginBottom: 24}}>
         {diagnosticAnswers.length > 0 ? (
           diagnosticAnswers.map((answer: any) => (
-            <div key={answer.id} className="admin-item-card block" style={{background: 'rgba(51, 144, 236, 0.1)'}}>
+            <div key={answer.id} className="admin-item-card block" style={{background: 'rgba(52, 199, 89, 0.1)'}}>
               <p style={{fontSize: 12, opacity: 0.7, marginBottom: 4}}>
                 {answer.events?.title}
               </p>
-              <h4 style={{marginBottom: 4}}>{answer.questions?.text}</h4>
-              <p className="answer-box">
-                {Array.isArray(answer.answer_data) 
-                  ? answer.answer_data.join(', ') 
-                  : String(answer.answer_data)}
-              </p>
+              <h4 style={{marginBottom: 8}}>{answer.questions?.text}</h4>
+              <p className="answer-box">{formatAnswer(answer.answer_data)}</p>
             </div>
           ))
         ) : (
@@ -114,7 +192,8 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
         )}
       </div>
 
-      <h3 style={{marginBottom: 12}}>Ответы на мероприятия ({eventAnswers.length})</h3>
+      {/* Ответы на мероприятия */}
+      <h3 style={{marginBottom: 12}}>📅 Мероприятия ({eventAnswers.length})</h3>
       <div className="admin-list">
         {eventAnswers.length > 0 ? (
           eventAnswers.map((answer: any) => (
@@ -122,12 +201,8 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
               <p style={{fontSize: 12, opacity: 0.7, marginBottom: 4}}>
                 {new Date(answer.created_at).toLocaleDateString()} • {answer.events?.title}
               </p>
-              <h4 style={{marginBottom: 4}}>{answer.questions?.text}</h4>
-              <p className="answer-box">
-                {Array.isArray(answer.answer_data) 
-                  ? answer.answer_data.join(', ') 
-                  : String(answer.answer_data)}
-              </p>
+              <h4 style={{marginBottom: 8}}>{answer.questions?.text}</h4>
+              <p className="answer-box">{formatAnswer(answer.answer_data)}</p>
             </div>
           ))
         ) : (

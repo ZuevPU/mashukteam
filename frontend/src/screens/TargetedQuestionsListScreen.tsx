@@ -28,8 +28,8 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
           answers: TargetedAnswer[] 
         }>('/questions/my', initData);
         
-        setQuestions(response.questions);
-        setAnswers(response.answers);
+        setQuestions(response.questions || []);
+        setAnswers(response.answers || []);
       } catch (error) {
         console.error('Error loading questions:', error);
       } finally {
@@ -43,7 +43,7 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
     if (!initData) return;
     const value = inputValues[questionId];
     
-    if (!value) {
+    if (value === undefined || value === null || value === '') {
       showAlert('Введите ответ');
       return;
     }
@@ -58,7 +58,7 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
         }
       );
       setAnswers(prev => [...prev, response.answer]);
-      showAlert('Ответ отправлен');
+      showAlert('Ответ отправлен!');
     } catch (error) {
       console.error('Error submitting answer:', error);
       showAlert('Ошибка отправки');
@@ -71,7 +71,28 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
     setInputValues(prev => ({ ...prev, [qId]: value }));
   };
 
+  const handleMultipleChange = (qId: string, option: string, checked: boolean) => {
+    const current = inputValues[qId] || [];
+    let newValue: string[];
+    if (checked) {
+      newValue = [...current, option];
+    } else {
+      newValue = current.filter((v: string) => v !== option);
+    }
+    setInputValues(prev => ({ ...prev, [qId]: newValue }));
+  };
+
+  const formatAnswer = (answer: any) => {
+    if (Array.isArray(answer)) {
+      return answer.join(', ');
+    }
+    return String(answer);
+  };
+
   if (loading) return <div className="loading">Загрузка...</div>;
+
+  const unansweredQuestions = questions.filter(q => !answers.find(a => a.question_id === q.id));
+  const answeredQuestions = questions.filter(q => answers.find(a => a.question_id === q.id));
 
   return (
     <div className="targeted-screen">
@@ -80,47 +101,120 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
         <h3>Мои вопросы</h3>
       </div>
 
-      <div className="questions-list">
-        {questions.length === 0 ? (
-          <p className="no-data">У вас пока нет персональных вопросов</p>
-        ) : (
-          questions.map((q) => {
-            const existingAnswer = answers.find(a => a.question_id === q.id);
-            
-            return (
-              <div key={q.id} className={`question-card ${existingAnswer ? 'answered' : ''}`}>
+      {/* Неотвеченные вопросы */}
+      {unansweredQuestions.length > 0 && (
+        <>
+          <h4 className="section-title">Новые вопросы ({unansweredQuestions.length})</h4>
+          <div className="questions-list">
+            {unansweredQuestions.map((q) => (
+              <div key={q.id} className="question-card">
                 <p className="question-text">{q.text}</p>
                 
-                {existingAnswer ? (
-                  <div className="answer-display">
-                    ✅ {String(existingAnswer.answer_data)}
-                  </div>
-                ) : (
-                  <div className="answer-form">
-                    {q.type === 'text' && (
-                      <textarea
-                        className="input-text"
-                        value={inputValues[q.id] || ''}
-                        onChange={(e) => handleInputChange(q.id, e.target.value)}
-                        placeholder="Ваш ответ..."
-                      />
-                    )}
-                    {/* Добавить поддержку других типов инпутов по аналогии с EventSurveyScreen */}
-                    
-                    <button 
-                      className="submit-btn-small" 
-                      onClick={() => handleSubmit(q.id)}
-                      disabled={submitting === q.id}
-                    >
-                      {submitting === q.id ? '...' : 'Отправить'}
-                    </button>
-                  </div>
-                )}
+                <div className="answer-form">
+                  {/* Текстовый ответ */}
+                  {q.type === 'text' && (
+                    <textarea
+                      className="input-text"
+                      value={inputValues[q.id] || ''}
+                      onChange={(e) => handleInputChange(q.id, e.target.value)}
+                      placeholder="Введите ваш ответ..."
+                      maxLength={q.char_limit || 1000}
+                    />
+                  )}
+
+                  {/* Один вариант (radio) */}
+                  {q.type === 'single' && q.options && (
+                    <div className="options-list">
+                      {q.options.map((opt, idx) => (
+                        <label key={idx} className={`option-item ${inputValues[q.id] === opt ? 'selected' : ''}`}>
+                          <input
+                            type="radio"
+                            name={`q_${q.id}`}
+                            value={opt}
+                            checked={inputValues[q.id] === opt}
+                            onChange={() => handleInputChange(q.id, opt)}
+                          />
+                          <span>{opt}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Несколько вариантов (checkbox) */}
+                  {q.type === 'multiple' && q.options && (
+                    <div className="options-list">
+                      {q.options.map((opt, idx) => (
+                        <label key={idx} className={`option-item ${(inputValues[q.id] || []).includes(opt) ? 'selected' : ''}`}>
+                          <input
+                            type="checkbox"
+                            checked={(inputValues[q.id] || []).includes(opt)}
+                            onChange={(e) => handleMultipleChange(q.id, opt, e.target.checked)}
+                          />
+                          <span>{opt}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Шкала / число */}
+                  {q.type === 'scale' && (
+                    <div className="scale-input">
+                      <div className="scale-buttons">
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                          <button
+                            key={num}
+                            type="button"
+                            className={`scale-btn ${inputValues[q.id] === num ? 'active' : ''}`}
+                            onClick={() => handleInputChange(q.id, num)}
+                          >
+                            {num}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <button 
+                    className="submit-btn" 
+                    onClick={() => handleSubmit(q.id)}
+                    disabled={submitting === q.id}
+                  >
+                    {submitting === q.id ? 'Отправка...' : 'Отправить ответ'}
+                  </button>
+                </div>
               </div>
-            );
-          })
-        )}
-      </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Отвеченные вопросы */}
+      {answeredQuestions.length > 0 && (
+        <>
+          <h4 className="section-title" style={{marginTop: 24}}>Мои ответы ({answeredQuestions.length})</h4>
+          <div className="questions-list">
+            {answeredQuestions.map((q) => {
+              const answer = answers.find(a => a.question_id === q.id);
+              return (
+                <div key={q.id} className="question-card answered">
+                  <p className="question-text">{q.text}</p>
+                  <div className="answer-display">
+                    <span className="check-icon">✓</span>
+                    <span>{formatAnswer(answer?.answer_data)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {questions.length === 0 && (
+        <div className="empty-state">
+          <span className="empty-icon">📭</span>
+          <p>У вас пока нет персональных вопросов</p>
+        </div>
+      )}
     </div>
   );
 };

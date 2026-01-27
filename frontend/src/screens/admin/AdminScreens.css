@@ -215,3 +215,40 @@
   padding: 16px;
   color: var(--tg-theme-text-color, #000);
 }
+
+/* Checkbox group for multi-select */
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--tg-theme-text-color, #000);
+}
+
+.checkbox-item input {
+  accent-color: var(--tg-theme-button-color, #3390ec);
+}
+
+.no-data {
+  text-align: center;
+  padding: 20px;
+  color: var(--tg-theme-hint-color, #999);
+  font-size: 14px;
+}
+
+.loading, .error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  color: var(--tg-theme-text-color, #000);
+}

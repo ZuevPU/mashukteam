@@ -87,4 +87,56 @@ export class TargetedQuestionService {
 
     return data as TargetedAnswer[];
   }
+
+  /**
+   * Получение всех вопросов (для админа)
+   */
+  static async getAllQuestions(): Promise<TargetedQuestion[]> {
+    const { data, error } = await supabase
+      .from('targeted_questions')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error getting all targeted questions:', error);
+      throw error;
+    }
+
+    return data as TargetedQuestion[];
+  }
+
+  /**
+   * Получение ответов на вопрос (для админа)
+   */
+  static async getAnswersForQuestion(questionId: string): Promise<TargetedAnswer[]> {
+    const { data, error } = await supabase
+      .from('targeted_answers')
+      .select('*, user:users(id, first_name, last_name, telegram_username)')
+      .eq('question_id', questionId);
+
+    if (error) {
+      console.error('Error getting answers for question:', error);
+      throw error;
+    }
+
+    return data as TargetedAnswer[];
+  }
+
+  /**
+   * Получение всех ответов пользователя на targeted вопросы (для карточки админа)
+   */
+  static async getAllUserAnswers(userId: string): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('targeted_answers')
+      .select('*, question:targeted_questions(id, text, type)')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error getting all user targeted answers:', error);
+      throw error;
+    }
+
+    return data || [];
+  }
 }

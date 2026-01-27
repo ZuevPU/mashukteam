@@ -49,4 +49,17 @@ export class TargetedQuestionController {
       return res.status(500).json({ error: 'Ошибка при создании вопроса' });
     }
   }
+
+  /**
+   * Получение всех вопросов (Админ)
+   */
+  static async getAllQuestions(req: Request, res: Response) {
+    try {
+      const questions = await TargetedQuestionService.getAllQuestions();
+      return res.json({ success: true, questions });
+    } catch (error) {
+      console.error('Get all questions error:', error);
+      return res.status(500).json({ error: 'Ошибка при получении вопросов' });
+    }
+  }
 }

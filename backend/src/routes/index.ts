@@ -50,6 +50,7 @@ router.post('/questions/my', requireAuth, TargetedQuestionController.getMyQuesti
 router.post('/questions/answer', requireAuth, TargetedQuestionController.submitAnswer);
 
 // === Admin System ===
+router.post('/admin/targeted-questions', requireAuth, requireAdmin, TargetedQuestionController.getAllQuestions);
 router.post('/admin/questions', requireAuth, requireAdmin, TargetedQuestionController.createQuestion);
 router.patch('/admin/users/:id/type', requireAuth, requireAdmin, AdminController.setUserType);
 

@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { EventService } from '../services/eventService';
 import { UserService } from '../services/supabase';
+import { TargetedQuestionService } from '../services/targetedQuestionService';
+import { AssignmentService } from '../services/assignmentService';
 import { broadcastMessage } from '../utils/telegramBot';
 
 export class AdminController {
@@ -90,7 +92,7 @@ export class AdminController {
   }
 
   /**
-   * Получение деталей пользователя (включая ответы)
+   * Получение деталей пользователя (включая ответы, targeted вопросы и задания)
    */
   static async getUserDetails(req: Request, res: Response) {
     try {
@@ -101,11 +103,18 @@ export class AdminController {
         return res.status(404).json({ error: 'Пользователь не найден' });
       }
 
+      // Ответы на мероприятия/диагностику
       const answers = await EventService.getUserAnswers(id);
+      
+      // Ответы на персональные вопросы
+      const targetedAnswers = await TargetedQuestionService.getAllUserAnswers(id);
+      
+      // Выполненные задания
+      const submissions = await AssignmentService.getUserSubmissions(id);
 
       return res.json({ 
         success: true, 
-        user: { ...user, answers } 
+        user: { ...user, answers, targetedAnswers, submissions } 
       });
     } catch (error) {
       console.error('Get user details error:', error);
