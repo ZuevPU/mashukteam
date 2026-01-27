@@ -1,0 +1,53 @@
+.targeted-screen {
+  padding: 16px;
+  background: var(--tg-theme-bg-color, #fff);
+  color: var(--tg-theme-text-color, #000);
+  min-height: 100vh;
+}
+
+.question-card {
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.question-card.answered {
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+}
+
+.question-text {
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.answer-display {
+  font-size: 14px;
+  color: #166534;
+}
+
+.answer-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.input-text {
+  width: 100%;
+  min-height: 60px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+.submit-btn-small {
+  align-self: flex-end;
+  padding: 8px 16px;
+  background: var(--tg-theme-button-color, #3390ec);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}

@@ -1,5 +1,8 @@
 import { fetchApi } from './api';
-import { Event, Question, User, CreateEventRequest, CreateQuestionRequest, Answer } from '../types';
+import { 
+  Event, Question, User, CreateEventRequest, CreateQuestionRequest, Answer,
+  TargetedQuestion, CreateTargetedQuestionRequest 
+} from '../types';
 
 export const adminApi = {
   /**
@@ -120,4 +123,62 @@ export const adminApi = {
     );
     return response.user;
   },
+
+  /**
+   * Назначение типа пользователя
+   */
+  setUserType: async (userId: string, userType: string, initData: string): Promise<User> => {
+    const response = await fetchApi<{ success: boolean; user: User }>(
+      `/admin/users/${userId}/type`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ initData, userType }),
+      }
+    );
+    return response.user;
+  },
+
+  /**
+   * Создание таргетированного вопроса
+   */
+  createTargetedQuestion: async (
+    data: CreateTargetedQuestionRequest, 
+    initData: string
+  ): Promise<TargetedQuestion> => {
+    const response = await fetchApi<{ success: boolean; question: TargetedQuestion }>(
+      '/admin/questions',
+      {
+        method: 'POST',
+        body: JSON.stringify({ initData, ...data }),
+      }
+    );
+    return response.question;
+  },
+
+  /**
+   * Получение ВСЕХ событий (для админки)
+   */
+  getAllEvents: async (initData: string): Promise<Event[]> => {
+    // Используем тот же эндпоинт, что и пользователи, но у админа может быть свой,
+    // или мы можем добавить параметр ?all=true
+    // Но лучше сделать отдельный эндпоинт /admin/events/list
+    // В AdminController.createEvent - POST /admin/events
+    // Но нет GET /admin/events
+    // Давайте добавим его на бэкенде.
+    // Пока что используем временное решение - добавим GET метод в роуты
+    
+    // ВРЕМЕННО: используем пользовательский эндпоинт, но он возвращает только опубликованные...
+    // СТОП. Я изменил EventController.getEvents на getPublishedEvents.
+    // Значит мне НУЖЕН новый эндпоинт для админа.
+    // Я добавлю GET /admin/events/list в роуты.
+    
+    const response = await fetchApi<{ success: boolean; events: Event[] }>(
+      '/admin/events/list', 
+      {
+        method: 'POST',
+        body: JSON.stringify({ initData }),
+      }
+    );
+    return response.events;
+  }
 };

@@ -7,7 +7,7 @@ import './AdminScreens.css';
 interface AdminEventFormScreenProps {
   onBack: () => void;
   onSuccess: () => void;
-  editingEvent?: Event; // Если передан, то режим редактирования
+  editingEvent?: Event;
 }
 
 export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({ 
@@ -16,18 +16,19 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
   const { initData, showAlert } = useTelegram();
   const [loading, setLoading] = useState(false);
   
-  const [formData, setFormData] = useState<CreateEventRequest>({
+  const [formData, setFormData] = useState<any>({
     title: editingEvent?.title || '',
     speaker: editingEvent?.speaker || '',
     description: editingEvent?.description || '',
     audience: editingEvent?.audience || '',
     event_date: editingEvent?.event_date || '',
     event_time: editingEvent?.event_time || '',
+    type: (editingEvent as any)?.type || 'event', // Добавляем тип
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev: any) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,10 +44,10 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
     try {
       if (editingEvent) {
         await adminApi.updateEvent(editingEvent.id, formData, initData);
-        showAlert('Мероприятие обновлено');
+        showAlert('Обновлено');
       } else {
         await adminApi.createEvent(formData, initData);
-        showAlert('Мероприятие создано');
+        showAlert('Создано');
       }
       onSuccess();
     } catch (error) {
@@ -61,10 +62,23 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
     <div className="admin-screen">
       <div className="header">
         <button onClick={onBack} className="back-button">← Отмена</button>
-        <h3>{editingEvent ? 'Редактирование' : 'Новое мероприятие'}</h3>
+        <h3>{editingEvent ? 'Редактирование' : 'Новое событие'}</h3>
       </div>
 
       <form className="admin-form" onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label>Тип события</label>
+          <select 
+            className="form-select"
+            name="type"
+            value={formData.type}
+            onChange={handleChange}
+          >
+            <option value="event">📅 Мероприятие</option>
+            <option value="diagnostic">🩺 Входная диагностика</option>
+          </select>
+        </div>
+
         <div className="form-group">
           <label>Название *</label>
           <input 

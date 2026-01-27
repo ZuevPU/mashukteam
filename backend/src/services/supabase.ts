@@ -204,6 +204,13 @@ export class UserService {
 
     return data as User;
   }
+
+  /**
+   * Назначение типа пользователя
+   */
+  static async setUserType(userId: string, userType: string): Promise<User> {
+    return this.updateUserByAdmin(userId, { user_type: userType });
+  }
 }
 
 /**

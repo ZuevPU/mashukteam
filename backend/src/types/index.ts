@@ -37,8 +37,39 @@ export interface Event {
   audience?: string;
   event_date?: string;
   event_time?: string;
+  status: 'draft' | 'published' | 'completed';
+  type: 'event' | 'diagnostic'; // Тип события
   created_at: string;
   updated_at: string;
+}
+
+export interface TargetedQuestion {
+  id: string;
+  text: string;
+  type: QuestionType;
+  options?: string[];
+  char_limit?: number;
+  target_audience: 'all' | 'by_type' | 'individual';
+  target_values?: string[];
+  status: 'draft' | 'published' | 'archived';
+  created_at: string;
+}
+
+export interface TargetedAnswer {
+  id: string;
+  user_id: string;
+  question_id: string;
+  answer_data: any;
+  created_at: string;
+}
+
+export interface CreateTargetedQuestionDto {
+  text: string;
+  type: QuestionType;
+  options?: string[];
+  char_limit?: number;
+  target_audience: 'all' | 'by_type' | 'individual';
+  target_values?: string[];
 }
 
 export type QuestionType = 'single' | 'multiple' | 'scale' | 'text';

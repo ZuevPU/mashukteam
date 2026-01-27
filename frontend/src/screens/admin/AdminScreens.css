@@ -35,7 +35,7 @@
 }
 
 .item-info h4 {
-  margin: 0 0 4px 0;
+  margin: 0;
   font-size: 16px;
 }
 
@@ -43,6 +43,41 @@
   margin: 0;
   font-size: 13px;
   color: var(--tg-theme-hint-color, #999);
+}
+
+.status-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+/* Event Types */
+.status-badge.event {
+  background: #e3f2fd;
+  color: #0d47a1;
+}
+
+.status-badge.diagnostic {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+/* Statuses */
+.status-badge.draft {
+  background: #e0e0e0;
+  color: #666;
+}
+
+.status-badge.published {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-badge.completed {
+  background: #f8d7da;
+  color: #721c24;
 }
 
 .item-actions {
@@ -138,4 +173,17 @@
   border: none;
   color: #ff3b30;
   cursor: pointer;
+}
+
+/* Analytics */
+.analytics-summary {
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+.text-answers {
+  max-height: 200px;
+  overflow-y: auto;
 }

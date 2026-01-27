@@ -1,66 +1,60 @@
 .bento-menu-screen {
+  padding: 16px;
+  background: var(--tg-theme-bg-color, #fff);
+  color: var(--tg-theme-text-color, #000);
   min-height: 100vh;
-  padding: 0;
-  background: var(--tg-theme-bg-color, #f5f5f5);
 }
 
 .bento-container {
-  max-width: 1400px;
+  max-width: 600px;
   margin: 0 auto;
-  padding: 20px 0;
 }
 
 .bento-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--tg-theme-text-color, #000000);
-  margin-bottom: 24px;
-  text-align: center;
-  padding: 0 16px;
+  font-size: 24px;
+  margin-bottom: 20px;
 }
 
-.bento-loading,
-.bento-error {
+.bento-loading, .bento-error {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  padding: 20px;
+  height: 100vh;
 }
 
-.loading-spinner {
-  font-size: 48px;
-  margin-bottom: 16px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.bento-error {
-  color: var(--tg-theme-text-color, #000000);
-}
-
-.bento-error button {
-  margin-top: 16px;
-  padding: 12px 24px;
-  background: var(--tg-theme-button-color, #3390ec);
-  color: var(--tg-theme-button-text-color, #ffffff);
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
+/* Новые карточки */
+.diagnostic-card {
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  height: 100%;
   cursor: pointer;
-  transition: opacity 0.2s ease;
 }
 
-.bento-error button:hover {
+.questions-card {
+  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  height: 100%;
+  cursor: pointer;
+}
+
+.bento-card h3 {
+  margin: 8px 0 4px;
+  font-size: 16px;
+}
+
+.bento-card p {
+  margin: 0;
+  font-size: 12px;
   opacity: 0.9;
 }

@@ -18,12 +18,14 @@ import { AdminEventFormScreen } from './admin/AdminEventFormScreen';
 import { AdminQuestionsScreen } from './admin/AdminQuestionsScreen';
 import { AdminUsersScreen } from './admin/AdminUsersScreen';
 import { AdminUserDetailsScreen } from './admin/AdminUserDetailsScreen';
-import { AdminEventAnalyticsScreen } from './admin/AdminEventAnalyticsScreen';
+import { TargetedQuestionsListScreen } from './TargetedQuestionsListScreen';
 import './BentoMenuScreen.css';
 
 type ScreenView = 
   | 'menu' 
   | 'events_list' 
+  | 'diagnostic_list'
+  | 'targeted_questions'
   | 'event_survey' 
   | 'admin'
   | 'admin_events'
@@ -106,9 +108,20 @@ export function BentoMenuScreen() {
   // Пользовательская часть
   if (view === 'events_list') {
     return <EventsListScreen 
+      typeFilter="event"
       onEventClick={(id) => { setSelectedEventId(id); setView('event_survey'); }} 
       onBack={() => setView('menu')} 
     />;
+  }
+  if (view === 'diagnostic_list') {
+    return <EventsListScreen 
+      typeFilter="diagnostic"
+      onEventClick={(id) => { setSelectedEventId(id); setView('event_survey'); }} 
+      onBack={() => setView('menu')} 
+    />;
+  }
+  if (view === 'targeted_questions') {
+    return <TargetedQuestionsListScreen onBack={() => setView('menu')} />;
   }
   if (view === 'event_survey' && selectedEventId) {
     return <EventSurveyScreen eventId={selectedEventId} onBack={() => setView('events_list')} />;
@@ -194,7 +207,34 @@ export function BentoMenuScreen() {
     });
   }
 
-  // Кнопка админки
+  // Кнопка админки (перемещена вниз, чтобы не мешать основному контенту)
+  
+  // Диагностика
+  bentoItems.push({
+    id: 'diagnostic',
+    content: (
+      <div className="bento-card diagnostic-card" onClick={() => setView('diagnostic_list')}>
+        <span style={{fontSize: '24px'}}>🩺</span>
+        <h3>Диагностика</h3>
+        <p>Пройти входной тест</p>
+      </div>
+    ),
+    size: '1x1',
+  });
+
+  // Мои вопросы
+  bentoItems.push({
+    id: 'my_questions',
+    content: (
+      <div className="bento-card questions-card" onClick={() => setView('targeted_questions')}>
+        <span style={{fontSize: '24px'}}>💬</span>
+        <h3>Вопросы</h3>
+        <p>Личные и общие</p>
+      </div>
+    ),
+    size: '1x1',
+  });
+
   if (user?.is_admin === 1) {
     bentoItems.push({
       id: 'admin',

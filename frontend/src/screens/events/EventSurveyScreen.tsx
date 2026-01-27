@@ -15,10 +15,13 @@ export const EventSurveyScreen: React.FC<EventSurveyScreenProps> = ({ eventId, o
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Состояние ответов: questionId -> value
+  // Состояние ответов
   const [answers, setAnswers] = useState<Record<string, any>>({});
-  const [submitting, setSubmitting] = useState(false);
   const [isReadOnly, setIsReadOnly] = useState(false);
+  
+  // Wizard state
+  const [currentStep, setCurrentStep] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const loadDetails = async () => {
@@ -28,7 +31,6 @@ export const EventSurveyScreen: React.FC<EventSurveyScreenProps> = ({ eventId, o
         setEvent(event);
         setQuestions(questions);
 
-        // Если есть ответы пользователя, заполняем форму и блокируем её
         if (userAnswers && userAnswers.length > 0) {
           setIsReadOnly(true);
           const existingAnswers: Record<string, any> = {};
@@ -46,126 +48,156 @@ export const EventSurveyScreen: React.FC<EventSurveyScreenProps> = ({ eventId, o
     loadDetails();
   }, [eventId, initData]);
 
-  const handleAnswerChange = (questionId: string, value: any) => {
-    if (isReadOnly) return;
+  const handleAnswerChange = (value: any) => {
+    const questionId = questions[currentStep].id;
     setAnswers(prev => ({ ...prev, [questionId]: value }));
   };
 
-  const handleSubmit = async () => {
-    if (!initData || isReadOnly) return;
+  const handleNext = async () => {
+    const currentQ = questions[currentStep];
+    const answer = answers[currentQ.id];
+
+    if (!answer || (Array.isArray(answer) && answer.length === 0)) {
+      showAlert('Пожалуйста, ответьте на вопрос');
+      return;
+    }
+
     setSubmitting(true);
     try {
-      // Отправляем ответы последовательно
-      for (const question of questions) {
-        const answer = answers[question.id];
-        if (answer) {
-          await eventApi.submitAnswer(eventId, question.id, answer, initData);
-        }
+      if (initData) {
+        await eventApi.submitAnswer(eventId, currentQ.id, answer, initData);
       }
-      showAlert('Ответы успешно отправлены!');
-      onBack();
+      
+      if (currentStep < questions.length - 1) {
+        setCurrentStep(prev => prev + 1);
+      } else {
+        setIsReadOnly(true); // Завершили опрос
+        showAlert('Спасибо! Ваши ответы сохранены.');
+      }
     } catch (error) {
-      console.error('Error submitting answers:', error);
-      showAlert('Ошибка при отправке ответов (или вы уже ответили)');
+      console.error('Error submitting answer:', error);
+      showAlert('Ошибка сохранения ответа');
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) return <div className="loading">Загрузка опроса...</div>;
+  if (loading) return <div className="loading">Загрузка...</div>;
   if (!event) return <div className="error">Событие не найдено</div>;
 
-  return (
-    <div className="survey-screen">
-      <div className="header">
-        <button onClick={onBack} className="back-button">← Назад</button>
-        <h3>{event.title}</h3>
-      </div>
-
-      {isReadOnly && (
-        <div className="info-banner" style={{
-          background: '#d4edda', color: '#155724', padding: '10px', 
-          borderRadius: '8px', marginBottom: '16px', fontSize: '14px'
-        }}>
-          ✅ Вы уже прошли этот опрос. Вот ваши ответы:
+  // === READ ONLY MODE (Список всех вопросов) ===
+  if (isReadOnly) {
+    return (
+      <div className="survey-screen">
+        <div className="header">
+          <button onClick={onBack} className="back-button">← Назад</button>
+          <h3>{event.title}</h3>
         </div>
-      )}
-
-      <div className="questions-list">
-        {questions.map((q, index) => (
-          <div key={q.id} className="question-card" style={isReadOnly ? {opacity: 0.8} : {}}>
-            <p className="question-text">{index + 1}. {q.text}</p>
-            
-            {q.type === 'text' && (
-              <textarea
-                className="input-text"
-                maxLength={q.char_limit || 1000}
-                value={answers[q.id] || ''}
-                onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                placeholder={isReadOnly ? "Нет ответа" : "Ваш ответ..."}
-                disabled={isReadOnly}
-              />
-            )}
-
-            {(q.type === 'single' || q.type === 'multiple') && q.options && (
-              <div className="options-list">
-                {q.options.map((opt) => (
-                  <label key={opt} className="option-label">
-                    <input
-                      type={q.type === 'single' ? 'radio' : 'checkbox'}
-                      name={q.id}
-                      value={opt}
-                      checked={q.type === 'single' 
-                        ? answers[q.id] === opt 
-                        : (answers[q.id] || []).includes(opt)
-                      }
-                      onChange={(e) => {
-                        if (q.type === 'single') {
-                          handleAnswerChange(q.id, opt);
-                        } else {
-                          const current = answers[q.id] || [];
-                          if (e.target.checked) {
-                            handleAnswerChange(q.id, [...current, opt]);
-                          } else {
-                            handleAnswerChange(q.id, current.filter((v: string) => v !== opt));
-                          }
-                        }
-                      }}
-                      disabled={isReadOnly}
-                    />
-                    <span>{opt}</span>
-                  </label>
-                ))}
+        <div className="info-banner success">✅ Опрос пройден</div>
+        <div className="questions-list">
+          {questions.map((q, index) => (
+            <div key={q.id} className="question-card read-only">
+              <p className="question-text">{index + 1}. {q.text}</p>
+              <div className="answer-display">
+                {Array.isArray(answers[q.id]) 
+                  ? answers[q.id].join(', ') 
+                  : String(answers[q.id] || 'Нет ответа')}
               </div>
-            )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-            {q.type === 'scale' && (
-              <div className="scale-options">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => (
-                  <button
-                    key={val}
-                    className={`scale-btn ${answers[q.id] === val ? 'active' : ''}`}
-                    onClick={() => handleAnswerChange(q.id, val)}
-                    disabled={isReadOnly}
-                  >
-                    {val}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+  // === WIZARD MODE (Пошагово) ===
+  const q = questions[currentStep];
+  const progress = ((currentStep + 1) / questions.length) * 100;
+
+  return (
+    <div className="survey-screen wizard">
+      <div className="header">
+        <button onClick={onBack} className="back-button">✕ Закрыть</button>
+        <div className="progress-bar">
+          <div className="progress-fill" style={{width: `${progress}%`}}></div>
+        </div>
       </div>
 
-      {!isReadOnly && (
+      <div className="wizard-content">
+        <div className="question-card active">
+          <span className="step-counter">Вопрос {currentStep + 1} из {questions.length}</span>
+          <h2 className="question-title">{q.text}</h2>
+
+          {q.type === 'text' && (
+            <textarea
+              className="input-text"
+              maxLength={q.char_limit || 1000}
+              value={answers[q.id] || ''}
+              onChange={(e) => handleAnswerChange(e.target.value)}
+              placeholder="Ваш ответ..."
+            />
+          )}
+
+          {(q.type === 'single' || q.type === 'multiple') && q.options && (
+            <div className="options-list">
+              {q.options.map((opt) => (
+                <label key={opt} className={`option-card ${
+                  q.type === 'single' 
+                    ? (answers[q.id] === opt ? 'selected' : '')
+                    : ((answers[q.id] || []).includes(opt) ? 'selected' : '')
+                }`}>
+                  <input
+                    type={q.type === 'single' ? 'radio' : 'checkbox'}
+                    name={q.id}
+                    value={opt}
+                    checked={q.type === 'single' 
+                      ? answers[q.id] === opt 
+                      : (answers[q.id] || []).includes(opt)
+                    }
+                    onChange={(e) => {
+                      if (q.type === 'single') {
+                        handleAnswerChange(opt);
+                      } else {
+                        const current = answers[q.id] || [];
+                        if (e.target.checked) {
+                          handleAnswerChange([...current, opt]);
+                        } else {
+                          handleAnswerChange(current.filter((v: string) => v !== opt));
+                        }
+                      }
+                    }}
+                  />
+                  <span>{opt}</span>
+                </label>
+              ))}
+            </div>
+          )}
+
+          {q.type === 'scale' && (
+            <div className="scale-options large">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => (
+                <button
+                  key={val}
+                  className={`scale-btn ${answers[q.id] === val ? 'active' : ''}`}
+                  onClick={() => handleAnswerChange(val)}
+                >
+                  {val}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="wizard-footer">
         <button 
           className="submit-button" 
-          onClick={handleSubmit} 
-          disabled={submitting || questions.length === 0}
+          onClick={handleNext} 
+          disabled={submitting}
         >
-          {submitting ? 'Отправка...' : 'Отправить ответы'}
+          {submitting ? 'Сохранение...' : (currentStep === questions.length - 1 ? 'Завершить' : 'Далее →')}
         </button>
-      )}
+      </div>
     </div>
   );
 };

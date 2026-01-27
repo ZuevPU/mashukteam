@@ -10,27 +10,45 @@ interface AdminUserDetailsScreenProps {
 }
 
 export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ userId, onBack }) => {
-  const { initData } = useTelegram();
+  const { initData, showAlert } = useTelegram();
   const [user, setUser] = useState<User & { answers: any[] } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [userType, setUserType] = useState('');
+
+  const loadDetails = async () => {
+    if (!initData) return;
+    try {
+      const data = await adminApi.getUserDetails(userId, initData);
+      setUser(data);
+      setUserType(data.user_type || '');
+    } catch (error) {
+      console.error('Error loading user details:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadDetails = async () => {
-      if (!initData) return;
-      try {
-        const data = await adminApi.getUserDetails(userId, initData);
-        setUser(data);
-      } catch (error) {
-        console.error('Error loading user details:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
     loadDetails();
   }, [userId, initData]);
 
+  const handleSaveType = async () => {
+    if (!initData) return;
+    try {
+      await adminApi.setUserType(userId, userType, initData);
+      showAlert('Тип пользователя обновлен');
+      loadDetails();
+    } catch (error) {
+      console.error('Error saving user type:', error);
+      showAlert('Ошибка сохранения');
+    }
+  };
+
   if (loading) return <div className="loading">Загрузка...</div>;
   if (!user) return <div className="error">Пользователь не найден</div>;
+
+  const diagnosticAnswers = user.answers?.filter((a: any) => a.events?.type === 'diagnostic') || [];
+  const eventAnswers = user.answers?.filter((a: any) => a.events?.type !== 'diagnostic') || [];
 
   return (
     <div className="admin-screen">
@@ -44,20 +62,52 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
         <p>Telegram ID: {user.telegram_id}</p>
         <p>Username: @{user.telegram_username}</p>
         <p>Статус: {user.status}</p>
-        <p>Баллы: {user.total_points || 0}</p>
-        <p>Мотивация: {user.motivation}</p>
+        
+        <div className="form-group" style={{marginTop: 12}}>
+          <label>Тип пользователя (для таргетинга)</label>
+          <div style={{display: 'flex', gap: 8}}>
+            <input 
+              className="form-input" 
+              value={userType} 
+              onChange={(e) => setUserType(e.target.value)}
+              placeholder="Например: Тип 1"
+            />
+            <button className="save-btn" style={{marginTop: 0, padding: '0 16px'}} onClick={handleSaveType}>OK</button>
+          </div>
+        </div>
       </div>
 
-      <h3>История ответов</h3>
+      <h3>Ответы на диагностику</h3>
+      <div className="admin-list" style={{marginBottom: 20}}>
+        {diagnosticAnswers.length > 0 ? (
+          diagnosticAnswers.map((answer: any) => (
+            <div key={answer.id} className="admin-item-card" style={{display: 'block', background: '#e8f5e9'}}>
+              <p style={{fontSize: 12, color: '#666', marginBottom: 4}}>
+                {answer.events?.title}
+              </p>
+              <h4 style={{marginBottom: 4}}>{answer.questions?.text}</h4>
+              <p style={{background: '#fff', padding: 8, borderRadius: 6}}>
+                {Array.isArray(answer.answer_data) 
+                  ? answer.answer_data.join(', ') 
+                  : String(answer.answer_data)}
+              </p>
+            </div>
+          ))
+        ) : (
+          <p className="no-data">Нет диагностических данных</p>
+        )}
+      </div>
+
+      <h3>История ответов на мероприятия</h3>
       <div className="admin-list">
-        {user.answers && user.answers.length > 0 ? (
-          user.answers.map((answer: any) => (
+        {eventAnswers.length > 0 ? (
+          eventAnswers.map((answer: any) => (
             <div key={answer.id} className="admin-item-card" style={{display: 'block'}}>
               <p style={{fontSize: 12, color: '#999', marginBottom: 4}}>
                 {new Date(answer.created_at).toLocaleDateString()} • {answer.events?.title}
               </p>
               <h4 style={{marginBottom: 4}}>{answer.questions?.text}</h4>
-              <p style={{background: '#eef', padding: 8, borderRadius: 6}}>
+              <p style={{background: '#fff', padding: 8, borderRadius: 6}}>
                 {Array.isArray(answer.answer_data) 
                   ? answer.answer_data.join(', ') 
                   : String(answer.answer_data)}

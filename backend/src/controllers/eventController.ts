@@ -7,7 +7,8 @@ export class EventController {
    */
   static async getEvents(req: Request, res: Response) {
     try {
-      const events = await EventService.getAllEvents();
+      // Для пользователей возвращаем только опубликованные
+      const events = await EventService.getPublishedEvents();
       return res.json({ success: true, events });
     } catch (error) {
       console.error('Get events error:', error);

@@ -57,19 +57,42 @@ export class EventService {
   }
 
   /**
-   * Получение списка всех мероприятий
+   * Получение списка всех мероприятий (для админки)
    */
   static async getAllEvents(): Promise<Event[]> {
     const { data, error } = await supabase
       .from('events')
       .select('*')
-      .order('event_date', { ascending: true });
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error getting events:', error);
       throw error;
     }
 
+    return data as Event[];
+  }
+
+  /**
+   * Получение опубликованных мероприятий (для пользователей)
+   */
+  static async getPublishedEvents(): Promise<Event[]> {
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .in('status', ['published', 'completed'])
+      // Сортировка: сначала новые (по дате проведения)
+      .order('event_date', { ascending: false });
+
+    if (error) {
+      console.error('Error getting published events:', error);
+      throw error;
+    }
+
+    // Дополнительная сортировка в коде, чтобы 'published' были выше 'completed', если даты совпадают
+    // Но для простоты оставим по дате события. 
+    // Актуальные (будущие) будут сверху, если дата в будущем.
+    
     return data as Event[];
   }
 

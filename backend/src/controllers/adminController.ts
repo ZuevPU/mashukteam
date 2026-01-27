@@ -131,17 +131,33 @@ export class AdminController {
   }
 
   /**
+   * Получение всех событий (для админки)
+   */
+  static async getAllEvents(req: Request, res: Response) {
+    try {
+      const events = await EventService.getAllEvents();
+      return res.json({ success: true, events });
+    } catch (error) {
+      console.error('Get all events error:', error);
+      return res.status(500).json({ error: 'Ошибка при получении мероприятий' });
+    }
+  }
+
+  /**
    * Получение аналитики мероприятия
    */
-  static async getEventAnalytics(req: Request, res: Response) {
+  /**
+   * Назначение типа пользователя
+   */
+  static async setUserType(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { questions, answers } = await EventService.getEventAnalytics(id);
-      
-      return res.json({ success: true, questions, answers });
+      const { userType } = req.body;
+      const user = await UserService.setUserType(id, userType);
+      return res.json({ success: true, user });
     } catch (error) {
-      console.error('Get analytics error:', error);
-      return res.status(500).json({ error: 'Ошибка при получении аналитики' });
+      console.error('Set user type error:', error);
+      return res.status(500).json({ error: 'Ошибка при назначении типа' });
     }
   }
 }

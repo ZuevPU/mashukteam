@@ -39,8 +39,18 @@ router.post('/events/:id/details', requireAuth, EventController.getEventDetails)
 router.post('/events/:id/answers', requireAuth, EventController.submitAnswer);
 router.post('/user/my-answers', requireAuth, EventController.getMyAnswers);
 
+import { TargetedQuestionController } from '../controllers/targetedQuestionController';
+
+// === Targeted Questions ===
+router.post('/questions/my', requireAuth, TargetedQuestionController.getMyQuestions);
+router.post('/questions/answer', requireAuth, TargetedQuestionController.submitAnswer);
+
 // === Admin System ===
+router.post('/admin/questions', requireAuth, requireAdmin, TargetedQuestionController.createQuestion);
+router.patch('/admin/users/:id/type', requireAuth, requireAdmin, AdminController.setUserType);
+
 router.post('/admin/events', requireAuth, requireAdmin, AdminController.createEvent);
+router.post('/admin/events/list', requireAuth, requireAdmin, AdminController.getAllEvents); // Новый роут
 router.put('/admin/events/:id', requireAuth, requireAdmin, AdminController.updateEvent); // PUT usually has body
 router.delete('/admin/events/:id', requireAuth, requireAdmin, AdminController.deleteEvent); // DELETE with body for initData
 router.post('/admin/events/:id/questions', requireAuth, requireAdmin, AdminController.addQuestion);
