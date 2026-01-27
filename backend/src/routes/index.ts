@@ -44,6 +44,7 @@ router.post('/admin/events', requireAuth, requireAdmin, AdminController.createEv
 router.put('/admin/events/:id', requireAuth, requireAdmin, AdminController.updateEvent); // PUT usually has body
 router.delete('/admin/events/:id', requireAuth, requireAdmin, AdminController.deleteEvent); // DELETE with body for initData
 router.post('/admin/events/:id/questions', requireAuth, requireAdmin, AdminController.addQuestion);
+router.post('/admin/events/:id/analytics', requireAuth, requireAdmin, AdminController.getEventAnalytics); // Новый роут
 
 router.post('/admin/users', requireAuth, requireAdmin, AdminController.getAllUsers);
 router.post('/admin/users/:id', requireAuth, requireAdmin, AdminController.getUserDetails);

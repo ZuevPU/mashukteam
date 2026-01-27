@@ -63,6 +63,23 @@ export const adminApi = {
   },
 
   /**
+   * Получение аналитики по мероприятию
+   */
+  getEventAnalytics: async (
+    eventId: string,
+    initData: string
+  ): Promise<{ questions: Question[]; answers: Answer[] }> => {
+    const response = await fetchApi<{ success: boolean; questions: Question[]; answers: Answer[] }>(
+      `/admin/events/${eventId}/analytics`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ initData }),
+      }
+    );
+    return { questions: response.questions, answers: response.answers };
+  },
+
+  /**
    * Получение списка всех пользователей
    */
   getAllUsers: async (initData: string): Promise<User[]> => {

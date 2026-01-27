@@ -134,6 +134,19 @@ export class EventService {
    * Сохранение ответа пользователя
    */
   static async submitAnswer(userId: string, eventId: string, data: SubmitAnswerDto): Promise<Answer> {
+    // Проверка, отвечал ли уже пользователь на этот вопрос
+    const { data: existingAnswer } = await supabase
+      .from('answers')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('event_id', eventId)
+      .eq('question_id', data.question_id)
+      .single();
+
+    if (existingAnswer) {
+      throw new Error('Вы уже ответили на этот вопрос');
+    }
+
     const { data: answer, error } = await supabase
       .from('answers')
       .insert({
@@ -169,5 +182,50 @@ export class EventService {
     }
 
     return data as any;
+  }
+
+  /**
+   * Получение ответов пользователя на конкретное событие
+   */
+  static async getUserEventAnswers(userId: string, eventId: string): Promise<Answer[]> {
+    const { data, error } = await supabase
+      .from('answers')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('event_id', eventId);
+
+    if (error) {
+      console.error('Error getting user event answers:', error);
+      throw error;
+    }
+
+    return data as Answer[];
+  }
+
+  /**
+   * Получение аналитики по мероприятию (Все ответы)
+   */
+  static async getEventAnalytics(eventId: string): Promise<{
+    questions: Question[];
+    answers: Answer[];
+  }> {
+    // 1. Получаем вопросы
+    const questions = await this.getEventQuestions(eventId);
+
+    // 2. Получаем все ответы для этого события
+    const { data: answers, error } = await supabase
+      .from('answers')
+      .select('*')
+      .eq('event_id', eventId);
+
+    if (error) {
+      console.error('Error getting analytics answers:', error);
+      throw error;
+    }
+
+    return {
+      questions,
+      answers: answers as Answer[]
+    };
   }
 }

@@ -18,6 +18,7 @@ import { AdminEventFormScreen } from './admin/AdminEventFormScreen';
 import { AdminQuestionsScreen } from './admin/AdminQuestionsScreen';
 import { AdminUsersScreen } from './admin/AdminUsersScreen';
 import { AdminUserDetailsScreen } from './admin/AdminUserDetailsScreen';
+import { AdminEventAnalyticsScreen } from './admin/AdminEventAnalyticsScreen';
 import './BentoMenuScreen.css';
 
 type ScreenView = 
@@ -28,6 +29,7 @@ type ScreenView =
   | 'admin_events'
   | 'admin_event_form'
   | 'admin_questions'
+  | 'admin_event_analytics'
   | 'admin_users'
   | 'admin_user_details';
 
@@ -126,6 +128,7 @@ export function BentoMenuScreen() {
       onCreate={() => { setSelectedEvent(undefined); setView('admin_event_form'); }}
       onEdit={(event) => { setSelectedEvent(event); setView('admin_event_form'); }}
       onAddQuestions={(event) => { setSelectedEvent(event); setView('admin_questions'); }}
+      onAnalytics={(eventId) => { setSelectedEventId(eventId); setView('admin_event_analytics'); }}
     />;
   }
   if (view === 'admin_event_form') {
@@ -138,6 +141,12 @@ export function BentoMenuScreen() {
   if (view === 'admin_questions' && selectedEvent) {
     return <AdminQuestionsScreen 
       event={selectedEvent}
+      onBack={() => setView('admin_events')}
+    />;
+  }
+  if (view === 'admin_event_analytics' && selectedEventId) {
+    return <AdminEventAnalyticsScreen 
+      eventId={selectedEventId}
       onBack={() => setView('admin_events')}
     />;
   }

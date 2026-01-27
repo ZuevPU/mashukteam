@@ -16,11 +16,12 @@ export class EventController {
   }
 
   /**
-   * Получение деталей мероприятия (с вопросами)
+   * Получение деталей мероприятия (с вопросами и ответами пользователя)
    */
   static async getEventDetails(req: Request, res: Response) {
     try {
       const { id } = req.params;
+      const userId = req.user.id; // Из auth middleware
       const event = await EventService.getEventById(id);
       
       if (!event) {
@@ -28,11 +29,13 @@ export class EventController {
       }
 
       const questions = await EventService.getEventQuestions(id);
+      const userAnswers = await EventService.getUserEventAnswers(userId, id);
 
       return res.json({ 
         success: true, 
         event,
-        questions 
+        questions,
+        userAnswers // Возвращаем ответы пользователя
       });
     } catch (error) {
       console.error('Get event details error:', error);

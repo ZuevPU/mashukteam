@@ -19,14 +19,19 @@ export const eventApi = {
   getEventDetails: async (
     id: string,
     initData: string
-  ): Promise<{ event: Event; questions: Question[] }> => {
+  ): Promise<{ event: Event; questions: Question[]; userAnswers?: Answer[] }> => {
     const response = await fetchApiWithAuth<{
       success: boolean;
       event: Event;
       questions: Question[];
+      userAnswers?: Answer[];
     }>(`/events/${id}/details`, initData);
     
-    return { event: response.event, questions: response.questions };
+    return { 
+      event: response.event, 
+      questions: response.questions,
+      userAnswers: response.userAnswers 
+    };
   },
 
   /**

@@ -50,6 +50,11 @@ export interface Answer {
   events?: Event; // joined
 }
 
+export interface AnalyticsData {
+  questions: Question[];
+  answers: Answer[];
+}
+
 export interface CreateEventRequest {
   title: string;
   speaker?: string;

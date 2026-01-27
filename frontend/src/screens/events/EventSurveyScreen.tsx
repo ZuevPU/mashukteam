@@ -18,14 +18,25 @@ export const EventSurveyScreen: React.FC<EventSurveyScreenProps> = ({ eventId, o
   // Состояние ответов: questionId -> value
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [isReadOnly, setIsReadOnly] = useState(false);
 
   useEffect(() => {
     const loadDetails = async () => {
       if (!initData) return;
       try {
-        const { event, questions } = await eventApi.getEventDetails(eventId, initData);
+        const { event, questions, userAnswers } = await eventApi.getEventDetails(eventId, initData);
         setEvent(event);
         setQuestions(questions);
+
+        // Если есть ответы пользователя, заполняем форму и блокируем её
+        if (userAnswers && userAnswers.length > 0) {
+          setIsReadOnly(true);
+          const existingAnswers: Record<string, any> = {};
+          userAnswers.forEach(ans => {
+            existingAnswers[ans.question_id] = ans.answer_data;
+          });
+          setAnswers(existingAnswers);
+        }
       } catch (error) {
         console.error('Error loading details:', error);
       } finally {
@@ -36,14 +47,15 @@ export const EventSurveyScreen: React.FC<EventSurveyScreenProps> = ({ eventId, o
   }, [eventId, initData]);
 
   const handleAnswerChange = (questionId: string, value: any) => {
+    if (isReadOnly) return;
     setAnswers(prev => ({ ...prev, [questionId]: value }));
   };
 
   const handleSubmit = async () => {
-    if (!initData) return;
+    if (!initData || isReadOnly) return;
     setSubmitting(true);
     try {
-      // Отправляем ответы последовательно (можно параллельно)
+      // Отправляем ответы последовательно
       for (const question of questions) {
         const answer = answers[question.id];
         if (answer) {
@@ -54,7 +66,7 @@ export const EventSurveyScreen: React.FC<EventSurveyScreenProps> = ({ eventId, o
       onBack();
     } catch (error) {
       console.error('Error submitting answers:', error);
-      showAlert('Ошибка при отправке ответов');
+      showAlert('Ошибка при отправке ответов (или вы уже ответили)');
     } finally {
       setSubmitting(false);
     }
@@ -70,19 +82,28 @@ export const EventSurveyScreen: React.FC<EventSurveyScreenProps> = ({ eventId, o
         <h3>{event.title}</h3>
       </div>
 
+      {isReadOnly && (
+        <div className="info-banner" style={{
+          background: '#d4edda', color: '#155724', padding: '10px', 
+          borderRadius: '8px', marginBottom: '16px', fontSize: '14px'
+        }}>
+          ✅ Вы уже прошли этот опрос. Вот ваши ответы:
+        </div>
+      )}
+
       <div className="questions-list">
         {questions.map((q, index) => (
-          <div key={q.id} className="question-card">
+          <div key={q.id} className="question-card" style={isReadOnly ? {opacity: 0.8} : {}}>
             <p className="question-text">{index + 1}. {q.text}</p>
             
-            {/* Рендер контролов в зависимости от типа */}
             {q.type === 'text' && (
               <textarea
                 className="input-text"
                 maxLength={q.char_limit || 1000}
                 value={answers[q.id] || ''}
                 onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                placeholder="Ваш ответ..."
+                placeholder={isReadOnly ? "Нет ответа" : "Ваш ответ..."}
+                disabled={isReadOnly}
               />
             )}
 
@@ -110,6 +131,7 @@ export const EventSurveyScreen: React.FC<EventSurveyScreenProps> = ({ eventId, o
                           }
                         }
                       }}
+                      disabled={isReadOnly}
                     />
                     <span>{opt}</span>
                   </label>
@@ -124,6 +146,7 @@ export const EventSurveyScreen: React.FC<EventSurveyScreenProps> = ({ eventId, o
                     key={val}
                     className={`scale-btn ${answers[q.id] === val ? 'active' : ''}`}
                     onClick={() => handleAnswerChange(q.id, val)}
+                    disabled={isReadOnly}
                   >
                     {val}
                   </button>
@@ -134,13 +157,15 @@ export const EventSurveyScreen: React.FC<EventSurveyScreenProps> = ({ eventId, o
         ))}
       </div>
 
-      <button 
-        className="submit-button" 
-        onClick={handleSubmit} 
-        disabled={submitting || questions.length === 0}
-      >
-        {submitting ? 'Отправка...' : 'Отправить ответы'}
-      </button>
+      {!isReadOnly && (
+        <button 
+          className="submit-button" 
+          onClick={handleSubmit} 
+          disabled={submitting || questions.length === 0}
+        >
+          {submitting ? 'Отправка...' : 'Отправить ответы'}
+        </button>
+      )}
     </div>
   );
 };

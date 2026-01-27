@@ -10,10 +10,11 @@ interface AdminEventsScreenProps {
   onCreate: () => void;
   onEdit: (event: Event) => void;
   onAddQuestions: (event: Event) => void;
+  onAnalytics: (eventId: string) => void;
 }
 
 export const AdminEventsScreen: React.FC<AdminEventsScreenProps> = ({ 
-  onBack, onCreate, onEdit, onAddQuestions 
+  onBack, onCreate, onEdit, onAddQuestions, onAnalytics 
 }) => {
   const { initData, showAlert } = useTelegram();
   const [events, setEvents] = useState<Event[]>([]);
@@ -76,6 +77,7 @@ export const AdminEventsScreen: React.FC<AdminEventsScreenProps> = ({
               <div className="item-actions">
                 <button className="action-btn edit" onClick={() => onEdit(event)}>✏️</button>
                 <button className="action-btn questions" onClick={() => onAddQuestions(event)}>❓</button>
+                <button className="action-btn analytics" onClick={() => onAnalytics(event.id)}>📊</button>
                 <button className="action-btn delete" onClick={() => handleDelete(event.id, event.title)}>🗑️</button>
               </div>
             </div>
