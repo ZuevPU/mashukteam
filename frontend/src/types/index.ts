@@ -9,11 +9,63 @@ export interface User {
   middle_name: string | null;
   motivation: string;
   status: 'new' | 'registered';
+  is_admin?: number; // 0 или 1
   total_points?: number;
   current_level?: number;
   created_at: string;
   updated_at: string;
 }
+
+export type QuestionType = 'single' | 'multiple' | 'scale' | 'text';
+
+export interface Event {
+  id: string;
+  title: string;
+  speaker?: string;
+  description?: string;
+  audience?: string;
+  event_date?: string;
+  event_time?: string;
+  created_at: string;
+}
+
+export interface Question {
+  id: string;
+  event_id: string;
+  text: string;
+  type: QuestionType;
+  options?: string[];
+  char_limit?: number;
+  order_index?: number;
+}
+
+export interface Answer {
+  id: string;
+  user_id: string;
+  event_id: string;
+  question_id: string;
+  answer_data: any;
+  created_at: string;
+  questions?: Question; // joined
+  events?: Event; // joined
+}
+
+export interface CreateEventRequest {
+  title: string;
+  speaker?: string;
+  description?: string;
+  audience?: string;
+  event_date?: string;
+  event_time?: string;
+}
+
+export interface CreateQuestionRequest {
+  text: string;
+  type: QuestionType;
+  options?: string[];
+  char_limit?: number;
+}
+
 
 export interface RegistrationData {
   first_name: string;

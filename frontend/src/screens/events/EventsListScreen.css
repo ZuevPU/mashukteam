@@ -1,0 +1,56 @@
+.events-screen {
+  padding: 16px;
+  background: var(--tg-theme-bg-color, #fff);
+  color: var(--tg-theme-text-color, #000);
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.back-button {
+  background: none;
+  border: none;
+  color: var(--tg-theme-link-color, #3390ec);
+  font-size: 16px;
+  cursor: pointer;
+  margin-right: 15px;
+}
+
+.events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.event-card {
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.event-card:active {
+  transform: scale(0.98);
+}
+
+.event-card h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+}
+
+.event-date, .event-speaker {
+  margin: 4px 0;
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.event-description {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.4;
+}

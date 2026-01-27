@@ -9,10 +9,16 @@ import { AchievementsCard } from '../components/bento/AchievementsCard';
 import { TasksCard } from '../components/bento/TasksCard';
 import { StatsCard } from '../components/gamification/StatsCard';
 import { SettingsCard } from '../components/bento/SettingsCard';
+import { EventsCard } from '../components/bento/EventsCard';
+import { EventsListScreen } from './events/EventsListScreen';
+import { EventSurveyScreen } from './events/EventSurveyScreen';
+import { AdminDashboard } from './admin/AdminDashboard';
 import './BentoMenuScreen.css';
 
+type ScreenView = 'menu' | 'events_list' | 'event_survey' | 'admin';
+
 /**
- * Экран Bento-меню с полноценным функционалом
+ * Экран Bento-меню с полноценным функционалом и навигацией
  */
 export function BentoMenuScreen() {
   const { initData, isReady } = useTelegram();
@@ -22,6 +28,10 @@ export function BentoMenuScreen() {
   const [stats, setStats] = useState<UserStatsType | null>(null);
   const [allAchievements, setAllAchievements] = useState<Achievement[]>([]);
   const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
+  
+  // Навигация
+  const [view, setView] = useState<ScreenView>('menu');
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
   // Загрузка данных пользователя при монтировании
   useEffect(() => {
@@ -35,7 +45,6 @@ export function BentoMenuScreen() {
         setLoading(true);
         setError(null);
 
-        // Получаем статус пользователя для получения userId
         const statusResponse = await getUserStatus(initData);
         if (!statusResponse.success || !statusResponse.user) {
           throw new Error('Не удалось загрузить данные пользователя');
@@ -43,8 +52,10 @@ export function BentoMenuScreen() {
 
         const userId = statusResponse.user.id;
         
-        // Создаем базовые данные пользователя из ответа
-        // В будущем можно добавить отдельный эндпоинт для получения полных данных
+        // ВАЖНО: is_admin должен приходить с бэкенда.
+        // Здесь мы предполагаем, что getUserStatus его возвращает в объекте user.
+        // Если нет, нужно будет обновить getUserStatus на фронте и бэке.
+        // Пока используем то, что есть в типах.
         const userData: User = {
           id: userId,
           telegram_id: statusResponse.user.telegram_id,
@@ -54,12 +65,12 @@ export function BentoMenuScreen() {
           middle_name: null,
           motivation: '',
           status: (statusResponse.status || 'new') as 'new' | 'registered',
+          is_admin: (statusResponse.user as any).is_admin, // Приведение типов, если в API response еще нет поля в типах TS
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
         setUser(userData);
 
-        // Загружаем статистику
         try {
           const statsResponse = await getUserStats(userId, initData);
           if (statsResponse.success && statsResponse.stats) {
@@ -69,7 +80,6 @@ export function BentoMenuScreen() {
           console.warn('Не удалось загрузить статистику:', err);
         }
 
-        // Загружаем достижения
         try {
           const achievementsResponse = await getUserAchievements(userId, initData);
           if (achievementsResponse.success) {
@@ -90,6 +100,32 @@ export function BentoMenuScreen() {
     loadData();
   }, [isReady, initData]);
 
+  // Рендеринг под-экранов
+  if (view === 'events_list') {
+    return (
+      <EventsListScreen 
+        onEventClick={(id) => {
+          setSelectedEventId(id);
+          setView('event_survey');
+        }} 
+        onBack={() => setView('menu')} 
+      />
+    );
+  }
+
+  if (view === 'event_survey' && selectedEventId) {
+    return (
+      <EventSurveyScreen 
+        eventId={selectedEventId} 
+        onBack={() => setView('events_list')} 
+      />
+    );
+  }
+
+  if (view === 'admin') {
+    return <AdminDashboard onBack={() => setView('menu')} />;
+  }
+
   // Формируем элементы сетки Bento
   const bentoItems: BentoGridItem[] = [];
 
@@ -100,6 +136,13 @@ export function BentoMenuScreen() {
       size: '2x1',
     });
   }
+
+  // Карточка мероприятий
+  bentoItems.push({
+    id: 'events',
+    content: <EventsCard onClick={() => setView('events_list')} />,
+    size: '1x1',
+  });
 
   if (stats) {
     bentoItems.push({
@@ -118,11 +161,25 @@ export function BentoMenuScreen() {
       ),
       size: '1x1',
     });
+  }
 
+  // Кнопка админки (если пользователь админ)
+  if (user?.is_admin === 1) {
     bentoItems.push({
-      id: 'stats',
-      content: <StatsCard stats={stats} />,
-      size: '2x1',
+      id: 'admin',
+      content: (
+        <div 
+          onClick={() => setView('admin')}
+          style={{
+            height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: '#333', color: 'white', borderRadius: '12px', cursor: 'pointer', flexDirection: 'column'
+          }}
+        >
+          <span style={{fontSize: '24px'}}>🛠</span>
+          <span style={{fontWeight: 600}}>Админка</span>
+        </div>
+      ),
+      size: '1x1',
     });
   }
 

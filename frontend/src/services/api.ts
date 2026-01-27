@@ -44,7 +44,7 @@ export function getInitData(): string | null {
 /**
  * Базовый fetch с обработкой ошибок
  */
-async function fetchApi<T>(
+export async function fetchApi<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
@@ -117,7 +117,7 @@ async function fetchApi<T>(
 /**
  * Базовый fetch для запросов с initData в body (используем POST для всех запросов с аутентификацией)
  */
-async function fetchApiWithAuth<T>(
+export async function fetchApiWithAuth<T>(
   endpoint: string,
   initData: string
 ): Promise<T> {

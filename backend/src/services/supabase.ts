@@ -149,6 +149,61 @@ export class UserService {
 
     return data as User;
   }
+
+  /**
+   * Получение всех пользователей (для админ-панели)
+   */
+  static async getAllUsers(): Promise<User[]> {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error getting all users:', error);
+      throw error;
+    }
+
+    return data as User[];
+  }
+
+  /**
+   * Получение пользователя по ID (UUID)
+   */
+  static async getUserById(id: string): Promise<User | null> {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') return null;
+      console.error('Error getting user by ID:', error);
+      throw error;
+    }
+
+    return data as User;
+  }
+  
+  /**
+   * Редактирование пользователя администратором
+   */
+  static async updateUserByAdmin(id: string, updates: Partial<User>): Promise<User> {
+    const { data, error } = await supabase
+      .from('users')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating user by admin:', error);
+      throw error;
+    }
+
+    return data as User;
+  }
 }
 
 /**

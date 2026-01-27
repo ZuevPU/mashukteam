@@ -22,11 +22,68 @@ export interface User {
   middle_name: string | null;
   motivation: string;
   status: 'new' | 'registered';
+  is_admin?: number; // 0 или 1
   total_points?: number;
   current_level?: number;
   created_at: string;
   updated_at: string;
 }
+
+export interface Event {
+  id: string;
+  title: string;
+  speaker?: string;
+  description?: string;
+  audience?: string;
+  event_date?: string;
+  event_time?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type QuestionType = 'single' | 'multiple' | 'scale' | 'text';
+
+export interface Question {
+  id: string;
+  event_id: string;
+  text: string;
+  type: QuestionType;
+  options?: string[]; // JSON array of strings
+  char_limit?: number;
+  created_at: string;
+  order_index?: number;
+}
+
+export interface Answer {
+  id: string;
+  user_id: string;
+  event_id: string;
+  question_id: string;
+  answer_data: any;
+  created_at: string;
+}
+
+export interface CreateEventDto {
+  title: string;
+  speaker?: string;
+  description?: string;
+  audience?: string;
+  event_date?: string;
+  event_time?: string;
+}
+
+export interface CreateQuestionDto {
+  text: string;
+  type: QuestionType;
+  options?: string[];
+  char_limit?: number;
+}
+
+export interface SubmitAnswerDto {
+  question_id: string;
+  answer_data: any;
+}
+
 
 export interface CreateUserDto {
   telegram_id: number;

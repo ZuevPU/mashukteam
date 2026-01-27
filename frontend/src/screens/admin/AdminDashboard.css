@@ -1,0 +1,29 @@
+.admin-dashboard {
+  padding: 16px;
+  background: var(--tg-theme-bg-color, #fff);
+  color: var(--tg-theme-text-color, #000);
+  min-height: 100vh;
+}
+
+.admin-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-card {
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.admin-btn {
+  margin-top: 10px;
+  background: var(--tg-theme-button-color, #3390ec);
+  color: var(--tg-theme-button-text-color, #fff);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  width: 100%;
+  cursor: pointer;
+}

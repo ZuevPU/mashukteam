@@ -9,6 +9,9 @@ import {
   getUserStats,
   levelUp,
 } from '../controllers/gamificationController';
+import { EventController } from '../controllers/eventController';
+import { AdminController } from '../controllers/adminController';
+import { requireAuth, requireAdmin } from '../middleware/authMiddleware';
 import { authRateLimiter, gamificationRateLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
@@ -28,5 +31,22 @@ router.post('/gamification/achievements/:userId', gamificationRateLimiter, getUs
 router.post('/gamification/achievements/unlock', gamificationRateLimiter, unlockAchievement);
 router.post('/gamification/stats/:userId', gamificationRateLimiter, getUserStats);
 router.post('/gamification/level/up', gamificationRateLimiter, levelUp);
+
+// === Event System (User) ===
+// Все запросы требуют initData в body или headers
+router.post('/events/list', requireAuth, EventController.getEvents); // POST because we send initData
+router.post('/events/:id/details', requireAuth, EventController.getEventDetails);
+router.post('/events/:id/answers', requireAuth, EventController.submitAnswer);
+router.post('/user/my-answers', requireAuth, EventController.getMyAnswers);
+
+// === Admin System ===
+router.post('/admin/events', requireAuth, requireAdmin, AdminController.createEvent);
+router.put('/admin/events/:id', requireAuth, requireAdmin, AdminController.updateEvent); // PUT usually has body
+router.delete('/admin/events/:id', requireAuth, requireAdmin, AdminController.deleteEvent); // DELETE with body for initData
+router.post('/admin/events/:id/questions', requireAuth, requireAdmin, AdminController.addQuestion);
+
+router.post('/admin/users', requireAuth, requireAdmin, AdminController.getAllUsers);
+router.post('/admin/users/:id', requireAuth, requireAdmin, AdminController.getUserDetails);
+router.patch('/admin/users/:id', requireAuth, requireAdmin, AdminController.updateUser);
 
 export default router;
