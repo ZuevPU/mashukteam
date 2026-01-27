@@ -9,7 +9,21 @@ import {
   UserStats,
 } from '../types';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// Получаем API URL из переменных окружения
+// В production это должен быть URL вашего бэкенда на Vercel
+let API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+// Убираем завершающий слэш, если есть
+API_URL = API_URL.replace(/\/+$/, '');
+
+// Логируем используемый API URL для отладки
+if (typeof window !== 'undefined') {
+  console.log('API Configuration:', {
+    apiUrl: API_URL,
+    hasEnvVar: !!import.meta.env.VITE_API_URL,
+    envValue: import.meta.env.VITE_API_URL,
+  });
+}
 
 export interface ApiError {
   error: string;
@@ -34,45 +48,70 @@ async function fetchApi<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${API_URL}/api${endpoint}`;
+  // Нормализуем endpoint - убираем начальный слэш
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+  // Формируем URL без двойных слэшей
+  const url = `${API_URL.replace(/\/+$/, '')}/api/${cleanEndpoint}`;
   
   // Логируем запрос для отладки
   console.log('API Request:', {
     method: options.method || 'GET',
     url,
+    apiUrl: API_URL,
     hasBody: !!options.body,
+    bodyPreview: options.body ? String(options.body).substring(0, 100) : undefined,
   });
   
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
+  try {
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
 
-  // Логируем ответ для отладки
-  console.log('API Response:', {
-    status: response.status,
-    statusText: response.statusText,
-    url,
-  });
+    // Логируем ответ для отладки
+    console.log('API Response:', {
+      status: response.status,
+      statusText: response.statusText,
+      url,
+      ok: response.ok,
+    });
 
-  if (!response.ok) {
-    let errorData: ApiError;
-    try {
-      errorData = await response.json();
-    } catch {
-      errorData = {
-        error: `HTTP ${response.status}: ${response.statusText}`,
-      };
+    if (!response.ok) {
+      let errorData: ApiError;
+      try {
+        const text = await response.text();
+        console.log('Error response text:', text);
+        errorData = JSON.parse(text);
+      } catch (parseError) {
+        errorData = {
+          error: `HTTP ${response.status}: ${response.statusText}`,
+        };
+      }
+      
+      console.error('API Error:', errorData);
+      throw new Error(errorData.error || 'Ошибка запроса');
     }
-    
-    console.error('API Error:', errorData);
-    throw new Error(errorData.error || 'Ошибка запроса');
-  }
 
-  return response.json();
+    const data = await response.json();
+    console.log('API Success:', { url, data: Object.keys(data) });
+    return data;
+  } catch (error) {
+    // Обработка сетевых ошибок
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      console.error('Network error:', {
+        url,
+        apiUrl: API_URL,
+        error: error.message,
+      });
+      throw new Error(
+        `Не удалось подключиться к серверу. Проверьте, что API_URL настроен правильно (текущий: ${API_URL})`
+      );
+    }
+    throw error;
+  }
 }
 
 /**
