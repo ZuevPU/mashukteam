@@ -69,9 +69,18 @@ export function useTelegram() {
     }
   }, []);
 
+  const showAlert = (message: string) => {
+    if (webApp) {
+      webApp.showAlert(message);
+    } else {
+      alert(message);
+    }
+  };
+
   return {
     webApp,
     initData,
     isReady,
+    showAlert,
   };
 }
