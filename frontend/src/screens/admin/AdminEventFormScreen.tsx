@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Event, CreateEventRequest } from '../../types';
+import { Event } from '../../types';
 import { adminApi } from '../../services/adminApi';
 import { useTelegram } from '../../hooks/useTelegram';
 import './AdminScreens.css';
@@ -16,19 +16,18 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
   const { initData, showAlert } = useTelegram();
   const [loading, setLoading] = useState(false);
   
-  const [formData, setFormData] = useState<any>({
+  const [formData, setFormData] = useState({
     title: editingEvent?.title || '',
     speaker: editingEvent?.speaker || '',
     description: editingEvent?.description || '',
     audience: editingEvent?.audience || '',
     event_date: editingEvent?.event_date || '',
     event_time: editingEvent?.event_time || '',
-    type: (editingEvent as any)?.type || 'event', // Добавляем тип
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev: any) => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,11 +41,16 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
 
     setLoading(true);
     try {
+      const data = {
+        ...formData,
+        type: 'event' as const, // Всегда event
+      };
+
       if (editingEvent) {
-        await adminApi.updateEvent(editingEvent.id, formData, initData);
+        await adminApi.updateEvent(editingEvent.id, data, initData);
         showAlert('Обновлено');
       } else {
-        await adminApi.createEvent(formData, initData);
+        await adminApi.createEvent(data, initData);
         showAlert('Создано');
       }
       onSuccess();
@@ -62,23 +66,10 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
     <div className="admin-screen">
       <div className="header">
         <button onClick={onBack} className="back-button">← Отмена</button>
-        <h3>{editingEvent ? 'Редактирование' : 'Новое событие'}</h3>
+        <h3>{editingEvent ? 'Редактирование' : 'Новое мероприятие'}</h3>
       </div>
 
       <form className="admin-form" onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label>Тип события</label>
-          <select 
-            className="form-select"
-            name="type"
-            value={formData.type}
-            onChange={handleChange}
-          >
-            <option value="event">📅 Мероприятие</option>
-            <option value="diagnostic">🩺 Входная диагностика</option>
-          </select>
-        </div>
-
         <div className="form-group">
           <label>Название *</label>
           <input 
@@ -87,6 +78,17 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
             value={formData.title}
             onChange={handleChange}
             placeholder="Например: Мастер-класс по лидерству"
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Формат (лекция, мастер-класс и т.д.)</label>
+          <input 
+            className="form-input"
+            name="audience"
+            value={formData.audience}
+            onChange={handleChange}
+            placeholder="Мастер-класс, Лекция, Воркшоп..."
           />
         </div>
 
@@ -131,17 +133,6 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
             value={formData.description}
             onChange={handleChange}
             placeholder="О чем будет мероприятие..."
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Аудитория</label>
-          <input 
-            className="form-input"
-            name="audience"
-            value={formData.audience}
-            onChange={handleChange}
-            placeholder="Для кого (новички, профи...)"
           />
         </div>
 

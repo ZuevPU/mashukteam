@@ -39,9 +39,11 @@
   word-break: break-word;
 }
 
-.profile-status {
+.profile-badges {
   display: flex;
   align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .status-badge {
@@ -60,6 +62,11 @@
 .status-new {
   background: #fff3e0;
   color: #e65100;
+}
+
+.status-type {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
 }
 
 .profile-details {

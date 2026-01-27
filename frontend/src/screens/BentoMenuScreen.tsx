@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useTelegram } from '../hooks/useTelegram';
-import { getUserStatus, getUserStats, getUserAchievements } from '../services/api';
-import { User, UserStats as UserStatsType, Achievement, UserAchievement, Event } from '../types';
+import { getUserStatus, getUserStats } from '../services/api';
+import { User, UserStats as UserStatsType, Event } from '../types';
 import { BentoGrid, BentoGridItem } from '../components/bento/BentoGrid';
 import { ProfileCard } from '../components/bento/ProfileCard';
-import { GamificationCard } from '../components/bento/GamificationCard';
-import { AchievementsCard } from '../components/bento/AchievementsCard';
-import { StatsCard } from '../components/gamification/StatsCard';
 import { EventsCard } from '../components/bento/EventsCard';
+import { DiagnosticCard } from '../components/bento/DiagnosticCard';
+import { QuestionsCard } from '../components/bento/QuestionsCard';
+import { AssignmentsCard } from '../components/bento/AssignmentsCard';
 import { EventsListScreen } from './events/EventsListScreen';
 import { EventSurveyScreen } from './events/EventSurveyScreen';
 import { AdminDashboard } from './admin/AdminDashboard';
@@ -17,6 +17,7 @@ import { AdminQuestionsScreen } from './admin/AdminQuestionsScreen';
 import { AdminUsersScreen } from './admin/AdminUsersScreen';
 import { AdminUserDetailsScreen } from './admin/AdminUserDetailsScreen';
 import { AdminEventAnalyticsScreen } from './admin/AdminEventAnalyticsScreen';
+import { AdminDiagnosticFormScreen } from './admin/AdminDiagnosticFormScreen';
 import { AdminAssignmentsScreen } from './admin/AdminAssignmentsScreen';
 import { AdminAssignmentFormScreen } from './admin/AdminAssignmentFormScreen';
 import { AdminAssignmentSubmissionsScreen } from './admin/AdminAssignmentSubmissionsScreen';
@@ -37,6 +38,7 @@ type ScreenView =
   | 'admin_events'
   | 'admin_diagnostics'
   | 'admin_event_form'
+  | 'admin_diagnostic_form'
   | 'admin_questions'
   | 'admin_event_analytics'
   | 'admin_users'
@@ -52,8 +54,6 @@ export function BentoMenuScreen() {
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [stats, setStats] = useState<UserStatsType | null>(null);
-  const [allAchievements, setAllAchievements] = useState<Achievement[]>([]);
-  const [userAchievements, setUserAchievements] = useState<UserAchievement[]>([]);
   
   // Навигация
   const [view, setView] = useState<ScreenView>('menu');
@@ -62,6 +62,7 @@ export function BentoMenuScreen() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedAssignment, setSelectedAssignment] = useState<any>(undefined);
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
+  const [selectedDiagnostic, setSelectedDiagnostic] = useState<Event | undefined>(undefined);
 
   // Загрузка данных
   useEffect(() => {
@@ -95,16 +96,10 @@ export function BentoMenuScreen() {
         };
         setUser(userData);
 
-        // Загрузка статистики и достижений (можно пропустить если ошибка)
+        // Загрузка статистики (баллы)
         try {
           const statsResponse = await getUserStats(userId, initData);
           if (statsResponse.success && statsResponse.stats) setStats(statsResponse.stats);
-          
-          const achievementsResponse = await getUserAchievements(userId, initData);
-          if (achievementsResponse.success) {
-            setAllAchievements(achievementsResponse.all_achievements || []);
-            setUserAchievements(achievementsResponse.user_achievements || []);
-          }
         } catch (e) { console.warn(e); }
 
       } catch (err: any) {
@@ -178,10 +173,17 @@ export function BentoMenuScreen() {
     return <AdminEventsScreen 
       typeFilter="diagnostic"
       onBack={() => setView('admin')} 
-      onCreate={() => { setSelectedEvent(undefined); setView('admin_event_form'); }}
-      onEdit={(event) => { setSelectedEvent(event); setView('admin_event_form'); }}
+      onCreate={() => { setSelectedDiagnostic(undefined); setView('admin_diagnostic_form'); }}
+      onEdit={(event) => { setSelectedDiagnostic(event); setView('admin_diagnostic_form'); }}
       onAddQuestions={(event) => { setSelectedEvent(event); setView('admin_questions'); }}
       onAnalytics={(eventId) => { setSelectedEventId(eventId); setView('admin_event_analytics'); }}
+    />;
+  }
+  if (view === 'admin_diagnostic_form') {
+    return <AdminDiagnosticFormScreen 
+      onBack={() => setView('admin_diagnostics')}
+      onSuccess={() => setView('admin_diagnostics')}
+      editingDiagnostic={selectedDiagnostic}
     />;
   }
   if (view === 'admin_event_form') {
@@ -258,13 +260,7 @@ export function BentoMenuScreen() {
   // 1. Диагностика
   bentoItems.push({
     id: 'diagnostic',
-    content: (
-      <div className="bento-card diagnostic-card" onClick={() => setView('diagnostic_list')}>
-        <span style={{fontSize: '24px'}}>🩺</span>
-        <h3>Диагностика</h3>
-        <p>Пройти входной тест</p>
-      </div>
-    ),
+    content: <DiagnosticCard onClick={() => setView('diagnostic_list')} />,
     size: '1x1',
   });
 
@@ -278,45 +274,31 @@ export function BentoMenuScreen() {
   // 3. Вопросы
   bentoItems.push({
     id: 'my_questions',
-    content: (
-      <div className="bento-card questions-card" onClick={() => setView('targeted_questions')}>
-        <span style={{fontSize: '24px'}}>💬</span>
-        <h3>Вопросы</h3>
-        <p>Личные и общие</p>
-      </div>
-    ),
+    content: <QuestionsCard onClick={() => setView('targeted_questions')} />,
     size: '1x1',
   });
 
   // 4. Задания
   bentoItems.push({
     id: 'assignments',
-    content: (
-      <div className="bento-card assignments-card" onClick={() => setView('assignments_list')}>
-        <span style={{fontSize: '24px'}}>📋</span>
-        <h3>Задания</h3>
-        <p>Выполняй и получай баллы</p>
-      </div>
-    ),
+    content: <AssignmentsCard onClick={() => setView('assignments_list')} />,
     size: '1x1',
   });
 
-  // 5. Геймификация
+  // 5. Баллы (упрощенная геймификация)
   if (stats) {
     bentoItems.push({
-      id: 'gamification',
-      content: <GamificationCard stats={stats} />,
+      id: 'points',
+      content: (
+        <div className="bento-card points-card">
+          <div className="card-content">
+            <span className="card-icon">⭐</span>
+            <h3 className="card-title">{stats.total_points} баллов</h3>
+            <p className="card-subtitle">Выполняй задания</p>
+          </div>
+        </div>
+      ),
       size: '1x1',
-    });
-    bentoItems.push({
-      id: 'achievements',
-      content: <AchievementsCard allAchievements={allAchievements} userAchievements={userAchievements} />,
-      size: '1x1',
-    });
-    bentoItems.push({
-      id: 'stats',
-      content: <StatsCard stats={stats} />,
-      size: '2x1',
     });
   }
 
