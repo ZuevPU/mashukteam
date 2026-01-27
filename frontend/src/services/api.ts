@@ -54,6 +54,18 @@ async function fetchApi<T>(
   return response.json();
 }
 
+/**
+ * Базовый fetch для запросов с initData в body (используем POST для всех запросов с аутентификацией)
+ */
+async function fetchApiWithAuth<T>(
+  endpoint: string,
+  initData: string
+): Promise<T> {
+  return fetchApi<T>(endpoint, {
+    method: 'POST',
+    body: JSON.stringify({ initData }),
+  });
+}
 
 /**
  * Проверка аутентификации через initData
@@ -121,15 +133,6 @@ export async function registerUser(
 /**
  * Базовый fetch для GET запросов с initData (используем POST т.к. backend требует initData в body)
  */
-async function fetchApiWithAuth<T>(
-  endpoint: string,
-  initData: string
-): Promise<T> {
-  return fetchApi<T>(endpoint, {
-    method: 'POST',
-    body: JSON.stringify({ initData }),
-  });
-}
 
 /**
  * API методы для геймификации
