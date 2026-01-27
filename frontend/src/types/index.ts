@@ -154,3 +154,49 @@ export interface ApiResponse<T> {
   error?: string;
   user?: Partial<User>;
 }
+
+// === Assignments (Задания) ===
+
+export interface UserType {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+export type AssignmentFormat = 'text' | 'number' | 'link';
+export type AssignmentTargetType = 'all' | 'user_type' | 'individual';
+export type SubmissionStatus = 'pending' | 'approved' | 'rejected';
+
+export interface Assignment {
+  id: string;
+  title: string;
+  description?: string;
+  answer_format: AssignmentFormat;
+  reward: number;
+  target_type: AssignmentTargetType;
+  target_values?: string[];
+  status: 'draft' | 'published';
+  created_at: string;
+}
+
+export interface AssignmentSubmission {
+  id: string;
+  user_id: string;
+  assignment_id: string;
+  content: string;
+  status: SubmissionStatus;
+  admin_comment?: string;
+  created_at: string;
+  updated_at: string;
+  user?: User;
+  assignment?: Assignment;
+}
+
+export interface CreateAssignmentRequest {
+  title: string;
+  description?: string;
+  answer_format: AssignmentFormat;
+  reward: number;
+  target_type: AssignmentTargetType;
+  target_values?: string[];
+}

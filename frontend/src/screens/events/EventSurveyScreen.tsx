@@ -178,7 +178,7 @@ export const EventSurveyScreen: React.FC<EventSurveyScreenProps> = ({ eventId, o
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => (
                 <button
                   key={val}
-                  className={`scale-btn ${answers[q.id] === val ? 'active' : ''}`}
+                  className={`scale-btn ${Number(answers[q.id]) === val ? 'active' : ''}`}
                   onClick={() => handleAnswerChange(val)}
                 >
                   {val}

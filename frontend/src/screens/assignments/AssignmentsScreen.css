@@ -1,0 +1,196 @@
+.assignments-screen {
+  padding: 16px;
+  background: var(--tg-theme-bg-color, #fff);
+  color: var(--tg-theme-text-color, #000);
+  min-height: 100vh;
+}
+
+.section-title {
+  margin: 16px 0 12px;
+  font-size: 16px;
+  opacity: 0.7;
+}
+
+.assignments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.assignment-card {
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.assignment-card:active {
+  transform: scale(0.98);
+}
+
+.assignment-card.completed {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.assignment-card.completed:active {
+  transform: none;
+}
+
+.assignment-header {
+  margin-bottom: 8px;
+}
+
+.reward-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #000;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.reward-badge.large {
+  font-size: 16px;
+  padding: 8px 16px;
+  margin-bottom: 16px;
+}
+
+.assignment-card h4 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.assignment-card .description {
+  font-size: 14px;
+  opacity: 0.7;
+  margin: 0 0 12px;
+}
+
+.assignment-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.format {
+  opacity: 0.6;
+}
+
+.action {
+  color: var(--tg-theme-link-color, #3390ec);
+  font-weight: 500;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.status-badge.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-badge.approved {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-badge.rejected {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.submitted-answer {
+  font-size: 13px;
+  opacity: 0.7;
+  margin: 8px 0 0;
+}
+
+.admin-comment {
+  font-size: 12px;
+  font-style: italic;
+  opacity: 0.6;
+  margin-top: 4px;
+}
+
+/* Submit Screen */
+.assignment-detail {
+  padding: 16px 0;
+}
+
+.assignment-detail h2 {
+  margin: 0 0 12px;
+  font-size: 20px;
+}
+
+.description.full {
+  font-size: 15px;
+  line-height: 1.5;
+  opacity: 0.8;
+  margin-bottom: 24px;
+}
+
+.input-section {
+  margin-bottom: 24px;
+}
+
+.input-section label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.input-text {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--tg-theme-hint-color, #ccc);
+  border-radius: 8px;
+  background: var(--tg-theme-bg-color, #fff);
+  color: var(--tg-theme-text-color, #000);
+  font-size: 16px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.input-field {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--tg-theme-hint-color, #ccc);
+  border-radius: 8px;
+  background: var(--tg-theme-bg-color, #fff);
+  color: var(--tg-theme-text-color, #000);
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.submit-button {
+  width: 100%;
+  padding: 14px;
+  background: var(--tg-theme-button-color, #3390ec);
+  color: var(--tg-theme-button-text-color, #fff);
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.no-data {
+  text-align: center;
+  padding: 40px;
+  opacity: 0.6;
+}

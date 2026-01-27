@@ -6,9 +6,7 @@ import { BentoGrid, BentoGridItem } from '../components/bento/BentoGrid';
 import { ProfileCard } from '../components/bento/ProfileCard';
 import { GamificationCard } from '../components/bento/GamificationCard';
 import { AchievementsCard } from '../components/bento/AchievementsCard';
-import { TasksCard } from '../components/bento/TasksCard';
 import { StatsCard } from '../components/gamification/StatsCard';
-import { SettingsCard } from '../components/bento/SettingsCard';
 import { EventsCard } from '../components/bento/EventsCard';
 import { EventsListScreen } from './events/EventsListScreen';
 import { EventSurveyScreen } from './events/EventSurveyScreen';
@@ -19,7 +17,13 @@ import { AdminQuestionsScreen } from './admin/AdminQuestionsScreen';
 import { AdminUsersScreen } from './admin/AdminUsersScreen';
 import { AdminUserDetailsScreen } from './admin/AdminUserDetailsScreen';
 import { AdminEventAnalyticsScreen } from './admin/AdminEventAnalyticsScreen';
+import { AdminAssignmentsScreen } from './admin/AdminAssignmentsScreen';
+import { AdminAssignmentFormScreen } from './admin/AdminAssignmentFormScreen';
+import { AdminAssignmentSubmissionsScreen } from './admin/AdminAssignmentSubmissionsScreen';
+import { AdminLeaderboardScreen } from './admin/AdminLeaderboardScreen';
 import { TargetedQuestionsListScreen } from './TargetedQuestionsListScreen';
+import { AssignmentsListScreen } from './assignments/AssignmentsListScreen';
+import { AssignmentSubmitScreen } from './assignments/AssignmentSubmitScreen';
 import './BentoMenuScreen.css';
 
 type ScreenView = 
@@ -28,13 +32,19 @@ type ScreenView =
   | 'diagnostic_list'
   | 'targeted_questions'
   | 'event_survey' 
+  | 'assignments_list'
   | 'admin'
   | 'admin_events'
+  | 'admin_diagnostics'
   | 'admin_event_form'
   | 'admin_questions'
   | 'admin_event_analytics'
   | 'admin_users'
-  | 'admin_user_details';
+  | 'admin_user_details'
+  | 'admin_assignments'
+  | 'admin_assignment_form'
+  | 'admin_assignment_submissions'
+  | 'admin_leaderboard';
 
 export function BentoMenuScreen() {
   const { initData, isReady, showAlert } = useTelegram();
@@ -50,6 +60,8 @@ export function BentoMenuScreen() {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<Event | undefined>(undefined);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedAssignment, setSelectedAssignment] = useState<any>(undefined);
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
 
   // Загрузка данных
   useEffect(() => {
@@ -125,6 +137,19 @@ export function BentoMenuScreen() {
   if (view === 'targeted_questions') {
     return <TargetedQuestionsListScreen onBack={() => setView('menu')} />;
   }
+  if (view === 'assignments_list') {
+    return <AssignmentsListScreen 
+      onBack={() => setView('menu')} 
+      onSelect={(a) => { setSelectedAssignment(a); setView('assignment_submit' as any); }}
+    />;
+  }
+  if ((view as any) === 'assignment_submit' && selectedAssignment) {
+    return <AssignmentSubmitScreen 
+      assignment={selectedAssignment}
+      onBack={() => setView('assignments_list')}
+      onSuccess={() => setView('assignments_list')}
+    />;
+  }
   if (view === 'event_survey' && selectedEventId) {
     return <EventSurveyScreen eventId={selectedEventId} onBack={() => setView('events_list')} />;
   }
@@ -134,11 +159,24 @@ export function BentoMenuScreen() {
     return <AdminDashboard 
       onBack={() => setView('menu')} 
       onManageEvents={() => setView('admin_events')}
+      onManageDiagnostics={() => setView('admin_diagnostics')}
+      onManageAssignments={() => setView('admin_assignments')}
       onManageUsers={() => setView('admin_users')}
     />;
   }
   if (view === 'admin_events') {
     return <AdminEventsScreen 
+      typeFilter="event"
+      onBack={() => setView('admin')} 
+      onCreate={() => { setSelectedEvent(undefined); setView('admin_event_form'); }}
+      onEdit={(event) => { setSelectedEvent(event); setView('admin_event_form'); }}
+      onAddQuestions={(event) => { setSelectedEvent(event); setView('admin_questions'); }}
+      onAnalytics={(eventId) => { setSelectedEventId(eventId); setView('admin_event_analytics'); }}
+    />;
+  }
+  if (view === 'admin_diagnostics') {
+    return <AdminEventsScreen 
+      typeFilter="diagnostic"
       onBack={() => setView('admin')} 
       onCreate={() => { setSelectedEvent(undefined); setView('admin_event_form'); }}
       onEdit={(event) => { setSelectedEvent(event); setView('admin_event_form'); }}
@@ -176,6 +214,33 @@ export function BentoMenuScreen() {
       userId={selectedUserId}
       onBack={() => setView('admin_users')}
     />;
+  }
+
+  // Админка заданий
+  if (view === 'admin_assignments') {
+    return <AdminAssignmentsScreen 
+      onBack={() => setView('admin')}
+      onCreate={() => { setSelectedAssignment(undefined); setView('admin_assignment_form'); }}
+      onEdit={(a) => { setSelectedAssignment(a); setView('admin_assignment_form'); }}
+      onSubmissions={(id) => { setSelectedAssignmentId(id); setView('admin_assignment_submissions'); }}
+      onLeaderboard={() => setView('admin_leaderboard')}
+    />;
+  }
+  if (view === 'admin_assignment_form') {
+    return <AdminAssignmentFormScreen 
+      onBack={() => setView('admin_assignments')}
+      onSuccess={() => setView('admin_assignments')}
+      editingAssignment={selectedAssignment}
+    />;
+  }
+  if (view === 'admin_assignment_submissions' && selectedAssignmentId) {
+    return <AdminAssignmentSubmissionsScreen 
+      assignmentId={selectedAssignmentId}
+      onBack={() => setView('admin_assignments')}
+    />;
+  }
+  if (view === 'admin_leaderboard') {
+    return <AdminLeaderboardScreen onBack={() => setView('admin_assignments')} />;
   }
 
   // === ГЛАВНОЕ МЕНЮ (BENTO) ===
@@ -223,7 +288,20 @@ export function BentoMenuScreen() {
     size: '1x1',
   });
 
-  // 4. Геймификация
+  // 4. Задания
+  bentoItems.push({
+    id: 'assignments',
+    content: (
+      <div className="bento-card assignments-card" onClick={() => setView('assignments_list')}>
+        <span style={{fontSize: '24px'}}>📋</span>
+        <h3>Задания</h3>
+        <p>Выполняй и получай баллы</p>
+      </div>
+    ),
+    size: '1x1',
+  });
+
+  // 5. Геймификация
   if (stats) {
     bentoItems.push({
       id: 'gamification',
@@ -262,20 +340,6 @@ export function BentoMenuScreen() {
       size: '1x1',
     });
   }
-
-  bentoItems.push({ id: 'tasks', content: <TasksCard />, size: '1x1' });
-  
-  bentoItems.push({ 
-    id: 'settings', 
-    content: (
-      <SettingsCard 
-        onGeneralClick={() => showAlert('Раздел "Общие настройки" в разработке')} 
-        onNotificationsClick={() => showAlert('Управление уведомлениями скоро появится')} 
-        onThemeClick={() => showAlert('Используется тема оформления Telegram')} 
-      />
-    ), 
-    size: '1x1' 
-  });
 
   if (loading) return (
     <div className="bento-menu-screen">

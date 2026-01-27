@@ -40,6 +40,10 @@ router.post('/events/:id/answers', requireAuth, EventController.submitAnswer);
 router.post('/user/my-answers', requireAuth, EventController.getMyAnswers);
 
 import { TargetedQuestionController } from '../controllers/targetedQuestionController';
+import { AssignmentController } from '../controllers/assignmentController';
+
+// === User Types (public) ===
+router.get('/user-types', AssignmentController.getUserTypes);
 
 // === Targeted Questions ===
 router.post('/questions/my', requireAuth, TargetedQuestionController.getMyQuestions);
@@ -59,5 +63,20 @@ router.post('/admin/events/:id/analytics', requireAuth, requireAdmin, AdminContr
 router.post('/admin/users', requireAuth, requireAdmin, AdminController.getAllUsers);
 router.post('/admin/users/:id', requireAuth, requireAdmin, AdminController.getUserDetails);
 router.patch('/admin/users/:id', requireAuth, requireAdmin, AdminController.updateUser);
+
+// === Admin Assignments ===
+router.post('/admin/assignments', requireAuth, requireAdmin, AssignmentController.createAssignment);
+router.post('/admin/assignments/list', requireAuth, requireAdmin, AssignmentController.getAllAssignments);
+router.put('/admin/assignments/:id', requireAuth, requireAdmin, AssignmentController.updateAssignment);
+router.delete('/admin/assignments/:id', requireAuth, requireAdmin, AssignmentController.deleteAssignment);
+router.post('/admin/assignments/:id/submissions', requireAuth, requireAdmin, AssignmentController.getSubmissionsForAssignment);
+router.post('/admin/submissions', requireAuth, requireAdmin, AssignmentController.getAllSubmissions);
+router.patch('/admin/submissions/:id', requireAuth, requireAdmin, AssignmentController.moderateSubmission);
+router.post('/admin/leaderboard', requireAuth, requireAdmin, AssignmentController.getLeaderboard);
+
+// === User Assignments ===
+router.post('/assignments/my', requireAuth, AssignmentController.getMyAssignments);
+router.post('/assignments/:id/submit', requireAuth, AssignmentController.submitAssignment);
+router.post('/assignments/submissions', requireAuth, AssignmentController.getMySubmissions);
 
 export default router;

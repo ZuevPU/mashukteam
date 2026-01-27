@@ -208,3 +208,60 @@ export interface UserStats {
   recent_achievements: Achievement[];
   recent_points_transactions: PointsTransaction[];
 }
+
+// === Assignments (Задания) ===
+
+export interface UserType {
+  id: number;
+  name: string;
+  slug: string;
+  created_at: string;
+}
+
+export type AssignmentFormat = 'text' | 'number' | 'link';
+export type AssignmentTargetType = 'all' | 'user_type' | 'individual';
+export type SubmissionStatus = 'pending' | 'approved' | 'rejected';
+
+export interface Assignment {
+  id: string;
+  title: string;
+  description?: string;
+  answer_format: AssignmentFormat;
+  reward: number;
+  target_type: AssignmentTargetType;
+  target_values?: string[];
+  status: 'draft' | 'published';
+  created_at: string;
+}
+
+export interface AssignmentSubmission {
+  id: string;
+  user_id: string;
+  assignment_id: string;
+  content: string;
+  status: SubmissionStatus;
+  admin_comment?: string;
+  created_at: string;
+  updated_at: string;
+  // Joined data
+  user?: User;
+  assignment?: Assignment;
+}
+
+export interface CreateAssignmentDto {
+  title: string;
+  description?: string;
+  answer_format: AssignmentFormat;
+  reward: number;
+  target_type: AssignmentTargetType;
+  target_values?: string[];
+}
+
+export interface SubmitAssignmentDto {
+  content: string;
+}
+
+export interface ModerateSubmissionDto {
+  status: 'approved' | 'rejected';
+  admin_comment?: string;
+}

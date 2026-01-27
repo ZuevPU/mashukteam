@@ -195,7 +195,7 @@ export class EventService {
   static async getUserAnswers(userId: string): Promise<Answer[]> {
     const { data, error } = await supabase
       .from('answers')
-      .select('*, questions(*), events(title)')
+      .select('*, questions(*), events(title, type)')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 

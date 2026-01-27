@@ -1,7 +1,8 @@
 import { fetchApi } from './api';
 import { 
   Event, Question, User, CreateEventRequest, CreateQuestionRequest, Answer,
-  TargetedQuestion, CreateTargetedQuestionRequest 
+  TargetedQuestion, CreateTargetedQuestionRequest, 
+  Assignment, AssignmentSubmission, CreateAssignmentRequest, UserType 
 } from '../types';
 
 export const adminApi = {
@@ -159,19 +160,6 @@ export const adminApi = {
    * Получение ВСЕХ событий (для админки)
    */
   getAllEvents: async (initData: string): Promise<Event[]> => {
-    // Используем тот же эндпоинт, что и пользователи, но у админа может быть свой,
-    // или мы можем добавить параметр ?all=true
-    // Но лучше сделать отдельный эндпоинт /admin/events/list
-    // В AdminController.createEvent - POST /admin/events
-    // Но нет GET /admin/events
-    // Давайте добавим его на бэкенде.
-    // Пока что используем временное решение - добавим GET метод в роуты
-    
-    // ВРЕМЕННО: используем пользовательский эндпоинт, но он возвращает только опубликованные...
-    // СТОП. Я изменил EventController.getEvents на getPublishedEvents.
-    // Значит мне НУЖЕН новый эндпоинт для админа.
-    // Я добавлю GET /admin/events/list в роуты.
-    
     const response = await fetchApi<{ success: boolean; events: Event[] }>(
       '/admin/events/list', 
       {
@@ -180,5 +168,73 @@ export const adminApi = {
       }
     );
     return response.events;
+  },
+
+  // === Assignments ===
+
+  createAssignment: async (data: CreateAssignmentRequest, initData: string): Promise<Assignment> => {
+    const response = await fetchApi<{ success: boolean; assignment: Assignment }>(
+      '/admin/assignments',
+      { method: 'POST', body: JSON.stringify({ initData, ...data }) }
+    );
+    return response.assignment;
+  },
+
+  updateAssignment: async (id: string, data: Partial<CreateAssignmentRequest & { status: string }>, initData: string): Promise<Assignment> => {
+    const response = await fetchApi<{ success: boolean; assignment: Assignment }>(
+      `/admin/assignments/${id}`,
+      { method: 'PUT', body: JSON.stringify({ initData, ...data }) }
+    );
+    return response.assignment;
+  },
+
+  deleteAssignment: async (id: string, initData: string): Promise<boolean> => {
+    const response = await fetchApi<{ success: boolean }>(
+      `/admin/assignments/${id}`,
+      { method: 'DELETE', body: JSON.stringify({ initData }) }
+    );
+    return response.success;
+  },
+
+  getAllAssignments: async (initData: string): Promise<Assignment[]> => {
+    const response = await fetchApi<{ success: boolean; assignments: Assignment[] }>(
+      '/admin/assignments/list',
+      { method: 'POST', body: JSON.stringify({ initData }) }
+    );
+    return response.assignments;
+  },
+
+  getAssignmentSubmissions: async (assignmentId: string, initData: string): Promise<AssignmentSubmission[]> => {
+    const response = await fetchApi<{ success: boolean; submissions: AssignmentSubmission[] }>(
+      `/admin/assignments/${assignmentId}/submissions`,
+      { method: 'POST', body: JSON.stringify({ initData }) }
+    );
+    return response.submissions;
+  },
+
+  moderateSubmission: async (submissionId: string, status: 'approved' | 'rejected', comment: string | undefined, initData: string): Promise<AssignmentSubmission> => {
+    const response = await fetchApi<{ success: boolean; submission: AssignmentSubmission }>(
+      `/admin/submissions/${submissionId}`,
+      { method: 'PATCH', body: JSON.stringify({ initData, status, admin_comment: comment }) }
+    );
+    return response.submission;
+  },
+
+  getLeaderboard: async (initData: string): Promise<{ user_id: string; user: any; approved_count: number; total_reward: number }[]> => {
+    const response = await fetchApi<{ success: boolean; leaderboard: any[] }>(
+      '/admin/leaderboard',
+      { method: 'POST', body: JSON.stringify({ initData }) }
+    );
+    return response.leaderboard;
+  },
+
+  // === User Types ===
+  
+  getUserTypes: async (): Promise<UserType[]> => {
+    const response = await fetchApi<{ success: boolean; types: UserType[] }>(
+      '/user-types',
+      { method: 'GET' }
+    );
+    return response.types;
   }
 };

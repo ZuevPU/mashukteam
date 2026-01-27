@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { User } from '../../types';
+import { User, UserType } from '../../types';
 import { adminApi } from '../../services/adminApi';
 import { useTelegram } from '../../hooks/useTelegram';
 import './AdminScreens.css';
@@ -12,15 +12,20 @@ interface AdminUserDetailsScreenProps {
 export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ userId, onBack }) => {
   const { initData, showAlert } = useTelegram();
   const [user, setUser] = useState<User & { answers: any[] } | null>(null);
+  const [userTypes, setUserTypes] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userType, setUserType] = useState('');
+  const [selectedType, setSelectedType] = useState('');
 
   const loadDetails = async () => {
     if (!initData) return;
     try {
-      const data = await adminApi.getUserDetails(userId, initData);
-      setUser(data);
-      setUserType(data.user_type || '');
+      const [userData, typesData] = await Promise.all([
+        adminApi.getUserDetails(userId, initData),
+        adminApi.getUserTypes()
+      ]);
+      setUser(userData);
+      setUserTypes(typesData);
+      setSelectedType(userData.user_type || '');
     } catch (error) {
       console.error('Error loading user details:', error);
     } finally {
@@ -35,8 +40,8 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
   const handleSaveType = async () => {
     if (!initData) return;
     try {
-      await adminApi.setUserType(userId, userType, initData);
-      showAlert('Тип пользователя обновлен');
+      await adminApi.setUserType(userId, selectedType, initData);
+      showAlert('Тип сохранен');
       loadDetails();
     } catch (error) {
       console.error('Error saving user type:', error);
@@ -54,31 +59,42 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
     <div className="admin-screen">
       <div className="header">
         <button onClick={onBack} className="back-button">← Назад</button>
-        <h3>Профиль пользователя</h3>
+        <h3>Профиль</h3>
       </div>
 
       <div className="admin-card" style={{marginBottom: 20}}>
         <h3>{user.first_name} {user.last_name}</h3>
-        <p>Telegram ID: {user.telegram_id}</p>
-        <p>Username: @{user.telegram_username}</p>
-        <p>Статус: {user.status}</p>
+        <p>ID: {user.telegram_id}</p>
+        <p>@{user.telegram_username || 'нет username'}</p>
+        <p>Статус: <strong>{user.status}</strong></p>
         
-        <div className="form-group" style={{marginTop: 12}}>
-          <label>Тип пользователя (для таргетинга)</label>
+        <div className="form-group" style={{marginTop: 16}}>
+          <label>Тип пользователя</label>
           <div style={{display: 'flex', gap: 8}}>
-            <input 
-              className="form-input" 
-              value={userType} 
-              onChange={(e) => setUserType(e.target.value)}
-              placeholder="Например: Тип 1"
-            />
-            <button className="save-btn" style={{marginTop: 0, padding: '0 16px'}} onClick={handleSaveType}>OK</button>
+            <select 
+              className="form-select"
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              style={{flex: 1}}
+            >
+              <option value="">— Не задан —</option>
+              {userTypes.map(t => (
+                <option key={t.id} value={t.slug}>{t.name}</option>
+              ))}
+            </select>
+            <button 
+              className="save-btn" 
+              style={{marginTop: 0, padding: '0 20px'}} 
+              onClick={handleSaveType}
+            >
+              OK
+            </button>
           </div>
         </div>
       </div>
 
-      <h3>Ответы на диагностику</h3>
-      <div className="admin-list" style={{marginBottom: 20}}>
+      <h3 style={{marginBottom: 12}}>Ответы на диагностику ({diagnosticAnswers.length})</h3>
+      <div className="admin-list" style={{marginBottom: 24}}>
         {diagnosticAnswers.length > 0 ? (
           diagnosticAnswers.map((answer: any) => (
             <div key={answer.id} className="admin-item-card block" style={{background: 'rgba(51, 144, 236, 0.1)'}}>
@@ -94,11 +110,11 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
             </div>
           ))
         ) : (
-          <p className="no-data">Нет диагностических данных</p>
+          <p className="no-data">Диагностика не пройдена</p>
         )}
       </div>
 
-      <h3>История ответов на мероприятия</h3>
+      <h3 style={{marginBottom: 12}}>Ответы на мероприятия ({eventAnswers.length})</h3>
       <div className="admin-list">
         {eventAnswers.length > 0 ? (
           eventAnswers.map((answer: any) => (
