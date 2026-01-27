@@ -1,5 +1,5 @@
 import { fetchApi } from './api';
-import { Event, Question, User, CreateEventRequest, CreateQuestionRequest } from '../types';
+import { Event, Question, User, CreateEventRequest, CreateQuestionRequest, Answer } from '../types';
 
 export const adminApi = {
   /**
