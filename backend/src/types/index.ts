@@ -22,7 +22,8 @@ export interface User {
   middle_name: string | null;
   motivation: string;
   status: 'new' | 'registered';
-  is_admin?: number; // 0 или 1
+  is_admin?: number;
+  user_type?: string; // Тип пользователя
   total_points?: number;
   current_level?: number;
   created_at: string;

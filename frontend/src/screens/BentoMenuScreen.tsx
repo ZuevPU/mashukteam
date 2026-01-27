@@ -18,6 +18,7 @@ import { AdminEventFormScreen } from './admin/AdminEventFormScreen';
 import { AdminQuestionsScreen } from './admin/AdminQuestionsScreen';
 import { AdminUsersScreen } from './admin/AdminUsersScreen';
 import { AdminUserDetailsScreen } from './admin/AdminUserDetailsScreen';
+import { AdminEventAnalyticsScreen } from './admin/AdminEventAnalyticsScreen';
 import { TargetedQuestionsListScreen } from './TargetedQuestionsListScreen';
 import './BentoMenuScreen.css';
 
