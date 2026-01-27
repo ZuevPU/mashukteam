@@ -60,10 +60,7 @@ export const AdminEventAnalyticsScreen: React.FC<AdminEventAnalyticsScreenProps>
                     <p style={{fontSize: 13, color: '#999'}}>Нет ответов</p>
                   ) : (
                     qAnswers.map((ans, i) => (
-                      <div key={i} style={{
-                        background: '#fff', padding: '8px', borderRadius: '6px', 
-                        marginBottom: '6px', fontSize: '14px', border: '1px solid #eee'
-                      }}>
+                      <div key={i} className="answer-box">
                         {String(ans.answer_data)}
                       </div>
                     ))

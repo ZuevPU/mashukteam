@@ -1,3 +1,5 @@
+/* ... (предыдущие стили) ... */
+
 .admin-screen {
   padding: 16px;
   background: var(--tg-theme-bg-color, #fff);
@@ -5,6 +7,8 @@
   min-height: 100vh;
   padding-bottom: 40px;
 }
+
+/* ... */
 
 .create-btn {
   width: 100%;
@@ -32,6 +36,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  color: var(--tg-theme-text-color, #000); /* Явно задаем цвет текста */
+}
+
+/* Для карточек с ответами, где display: block */
+.admin-item-card.block {
+  display: block;
 }
 
 .item-info h4 {
@@ -175,15 +185,33 @@
   cursor: pointer;
 }
 
-/* Analytics */
+/* Analytics & User Details */
 .analytics-summary {
   background: var(--tg-theme-secondary-bg-color, #f4f4f5);
   padding: 12px;
   border-radius: 10px;
   margin-bottom: 16px;
+  color: var(--tg-theme-text-color, #000);
 }
 
 .text-answers {
   max-height: 200px;
   overflow-y: auto;
+}
+
+.answer-box {
+  background: var(--tg-theme-bg-color, #fff);
+  color: var(--tg-theme-text-color, #000);
+  padding: 8px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  border: 1px solid var(--tg-theme-hint-color, #eee);
+}
+
+.admin-card {
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  border-radius: 12px;
+  padding: 16px;
+  color: var(--tg-theme-text-color, #000);
 }

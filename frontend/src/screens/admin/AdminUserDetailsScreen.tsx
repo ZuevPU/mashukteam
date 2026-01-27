@@ -81,12 +81,12 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
       <div className="admin-list" style={{marginBottom: 20}}>
         {diagnosticAnswers.length > 0 ? (
           diagnosticAnswers.map((answer: any) => (
-            <div key={answer.id} className="admin-item-card" style={{display: 'block', background: '#e8f5e9'}}>
-              <p style={{fontSize: 12, color: '#666', marginBottom: 4}}>
+            <div key={answer.id} className="admin-item-card block" style={{background: 'rgba(51, 144, 236, 0.1)'}}>
+              <p style={{fontSize: 12, opacity: 0.7, marginBottom: 4}}>
                 {answer.events?.title}
               </p>
               <h4 style={{marginBottom: 4}}>{answer.questions?.text}</h4>
-              <p style={{background: '#fff', padding: 8, borderRadius: 6}}>
+              <p className="answer-box">
                 {Array.isArray(answer.answer_data) 
                   ? answer.answer_data.join(', ') 
                   : String(answer.answer_data)}
@@ -102,12 +102,12 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
       <div className="admin-list">
         {eventAnswers.length > 0 ? (
           eventAnswers.map((answer: any) => (
-            <div key={answer.id} className="admin-item-card" style={{display: 'block'}}>
-              <p style={{fontSize: 12, color: '#999', marginBottom: 4}}>
+            <div key={answer.id} className="admin-item-card block">
+              <p style={{fontSize: 12, opacity: 0.7, marginBottom: 4}}>
                 {new Date(answer.created_at).toLocaleDateString()} • {answer.events?.title}
               </p>
               <h4 style={{marginBottom: 4}}>{answer.questions?.text}</h4>
-              <p style={{background: '#fff', padding: 8, borderRadius: 6}}>
+              <p className="answer-box">
                 {Array.isArray(answer.answer_data) 
                   ? answer.answer_data.join(', ') 
                   : String(answer.answer_data)}

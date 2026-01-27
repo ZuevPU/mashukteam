@@ -37,7 +37,7 @@ type ScreenView =
   | 'admin_user_details';
 
 export function BentoMenuScreen() {
-  const { initData, isReady } = useTelegram();
+  const { initData, isReady, showAlert } = useTelegram();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -77,6 +77,7 @@ export function BentoMenuScreen() {
           motivation: '',
           status: (statusResponse.status || 'new') as 'new' | 'registered',
           is_admin: (statusResponse.user as any).is_admin,
+          user_type: (statusResponse.user as any).user_type,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
@@ -189,28 +190,7 @@ export function BentoMenuScreen() {
     });
   }
 
-  bentoItems.push({
-    id: 'events',
-    content: <EventsCard onClick={() => setView('events_list')} />,
-    size: '1x1',
-  });
-
-  if (stats) {
-    bentoItems.push({
-      id: 'gamification',
-      content: <GamificationCard stats={stats} />,
-      size: '1x1',
-    });
-    bentoItems.push({
-      id: 'achievements',
-      content: <AchievementsCard allAchievements={allAchievements} userAchievements={userAchievements} />,
-      size: '1x1',
-    });
-  }
-
-  // Кнопка админки (перемещена вниз, чтобы не мешать основному контенту)
-  
-  // Диагностика
+  // 1. Диагностика
   bentoItems.push({
     id: 'diagnostic',
     content: (
@@ -223,7 +203,14 @@ export function BentoMenuScreen() {
     size: '1x1',
   });
 
-  // Мои вопросы
+  // 2. Мероприятия
+  bentoItems.push({
+    id: 'events',
+    content: <EventsCard onClick={() => setView('events_list')} />,
+    size: '1x1',
+  });
+
+  // 3. Вопросы
   bentoItems.push({
     id: 'my_questions',
     content: (
@@ -236,6 +223,26 @@ export function BentoMenuScreen() {
     size: '1x1',
   });
 
+  // 4. Геймификация
+  if (stats) {
+    bentoItems.push({
+      id: 'gamification',
+      content: <GamificationCard stats={stats} />,
+      size: '1x1',
+    });
+    bentoItems.push({
+      id: 'achievements',
+      content: <AchievementsCard allAchievements={allAchievements} userAchievements={userAchievements} />,
+      size: '1x1',
+    });
+    bentoItems.push({
+      id: 'stats',
+      content: <StatsCard stats={stats} />,
+      size: '2x1',
+    });
+  }
+
+  // Кнопка админки (внизу)
   if (user?.is_admin === 1) {
     bentoItems.push({
       id: 'admin',
@@ -257,7 +264,18 @@ export function BentoMenuScreen() {
   }
 
   bentoItems.push({ id: 'tasks', content: <TasksCard />, size: '1x1' });
-  bentoItems.push({ id: 'settings', content: <SettingsCard />, size: '1x1' });
+  
+  bentoItems.push({ 
+    id: 'settings', 
+    content: (
+      <SettingsCard 
+        onGeneralClick={() => showAlert('Раздел "Общие настройки" в разработке')} 
+        onNotificationsClick={() => showAlert('Управление уведомлениями скоро появится')} 
+        onThemeClick={() => showAlert('Используется тема оформления Telegram')} 
+      />
+    ), 
+    size: '1x1' 
+  });
 
   if (loading) return (
     <div className="bento-menu-screen">

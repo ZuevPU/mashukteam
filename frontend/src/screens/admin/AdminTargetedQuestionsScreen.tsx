@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { CreateTargetedQuestionRequest, QuestionType } from '../../types';
 import { adminApi } from '../../services/adminApi';
 import { useTelegram } from '../../hooks/useTelegram';
+import { UserSelector } from './UserSelector';
 import './AdminScreens.css';
 
 interface AdminTargetedQuestionsScreenProps {
@@ -115,7 +116,11 @@ export const AdminTargetedQuestionsScreen: React.FC<AdminTargetedQuestionsScreen
 
         {question.target_audience === 'individual' && (
           <div className="form-group">
-            <p style={{fontSize: 12, color: '#666'}}>Выбор пользователей из списка пока не реализован в UI</p>
+            <label>Выберите пользователей</label>
+            <UserSelector 
+              selectedUserIds={question.target_values || []}
+              onChange={(ids) => setQuestion({...question, target_values: ids})}
+            />
           </div>
         )}
 
