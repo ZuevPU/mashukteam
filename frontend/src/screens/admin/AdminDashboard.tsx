@@ -6,11 +6,12 @@ interface AdminDashboardProps {
   onManageEvents: () => void;
   onManageDiagnostics: () => void;
   onManageAssignments: () => void;
+  onManageQuestions: () => void;
   onManageUsers: () => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ 
-  onBack, onManageEvents, onManageDiagnostics, onManageAssignments, onManageUsers 
+  onBack, onManageEvents, onManageDiagnostics, onManageAssignments, onManageQuestions, onManageUsers 
 }) => {
   return (
     <div className="admin-screen">
@@ -40,6 +41,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <div className="item-info">
             <h4>📋 Задания</h4>
             <p>Создание и модерация заданий</p>
+          </div>
+          <span>→</span>
+        </div>
+
+        <div className="admin-item-card" onClick={onManageQuestions} style={{cursor: 'pointer'}}>
+          <div className="item-info">
+            <h4>❓ Вопросы</h4>
+            <p>Персональные вопросы пользователям</p>
           </div>
           <span>→</span>
         </div>

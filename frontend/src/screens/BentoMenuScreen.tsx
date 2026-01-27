@@ -22,6 +22,7 @@ import { AdminAssignmentsScreen } from './admin/AdminAssignmentsScreen';
 import { AdminAssignmentFormScreen } from './admin/AdminAssignmentFormScreen';
 import { AdminAssignmentSubmissionsScreen } from './admin/AdminAssignmentSubmissionsScreen';
 import { AdminLeaderboardScreen } from './admin/AdminLeaderboardScreen';
+import { AdminTargetedQuestionsScreen } from './admin/AdminTargetedQuestionsScreen';
 import { TargetedQuestionsListScreen } from './TargetedQuestionsListScreen';
 import { AssignmentsListScreen } from './assignments/AssignmentsListScreen';
 import { AssignmentSubmitScreen } from './assignments/AssignmentSubmitScreen';
@@ -46,7 +47,8 @@ type ScreenView =
   | 'admin_assignments'
   | 'admin_assignment_form'
   | 'admin_assignment_submissions'
-  | 'admin_leaderboard';
+  | 'admin_leaderboard'
+  | 'admin_targeted_questions';
 
 export function BentoMenuScreen() {
   const { initData, isReady, showAlert } = useTelegram();
@@ -156,6 +158,7 @@ export function BentoMenuScreen() {
       onManageEvents={() => setView('admin_events')}
       onManageDiagnostics={() => setView('admin_diagnostics')}
       onManageAssignments={() => setView('admin_assignments')}
+      onManageQuestions={() => setView('admin_targeted_questions')}
       onManageUsers={() => setView('admin_users')}
     />;
   }
@@ -243,6 +246,9 @@ export function BentoMenuScreen() {
   }
   if (view === 'admin_leaderboard') {
     return <AdminLeaderboardScreen onBack={() => setView('admin_assignments')} />;
+  }
+  if (view === 'admin_targeted_questions') {
+    return <AdminTargetedQuestionsScreen onBack={() => setView('admin')} />;
   }
 
   // === ГЛАВНОЕ МЕНЮ (BENTO) ===
