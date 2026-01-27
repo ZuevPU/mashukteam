@@ -14,9 +14,7 @@ const PORT = process.env.PORT || 3000;
 // CORS настройки - разрешаем запросы с любого origin для Telegram Mini Apps
 // В production можно ограничить конкретными доменами
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN 
-    ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
-    : true, // Разрешаем все origins для Telegram Mini Apps
+  origin: true, // Разрешаем все origins
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
