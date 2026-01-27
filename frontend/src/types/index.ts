@@ -1,5 +1,7 @@
 // Типы для Frontend
 
+export type QuestionType = 'single' | 'multiple' | 'scale' | 'text';
+
 export interface User {
   id: string;
   telegram_id: number;
@@ -9,14 +11,13 @@ export interface User {
   middle_name: string | null;
   motivation: string;
   status: 'new' | 'registered';
-  is_admin?: number; // 0 или 1
+  is_admin?: number;
+  user_type?: string; // Тип пользователя
   total_points?: number;
   current_level?: number;
   created_at: string;
   updated_at: string;
 }
-
-export type QuestionType = 'single' | 'multiple' | 'scale' | 'text';
 
 export interface Event {
   id: string;
@@ -29,6 +30,27 @@ export interface Event {
   status: 'draft' | 'published' | 'completed';
   type: 'event' | 'diagnostic';
   created_at: string;
+}
+
+export interface Question {
+  id: string;
+  event_id: string;
+  text: string;
+  type: QuestionType;
+  options?: string[];
+  char_limit?: number;
+  order_index?: number;
+}
+
+export interface Answer {
+  id: string;
+  user_id: string;
+  event_id: string;
+  question_id: string;
+  answer_data: any;
+  created_at: string;
+  questions?: Question;
+  events?: Event;
 }
 
 export interface TargetedQuestion {
@@ -51,39 +73,13 @@ export interface TargetedAnswer {
   created_at: string;
 }
 
-export interface CreateTargetedQuestionRequest {
-  text: string;
-  type: QuestionType;
-  options?: string[];
-  char_limit?: number;
-  target_audience: 'all' | 'by_type' | 'individual';
-  target_values?: string[];
-}
+// DTOs
 
-export interface Question {
-  id: string;
-  event_id: string;
-  text: string;
-  type: QuestionType;
-  options?: string[];
-  char_limit?: number;
-  order_index?: number;
-}
-
-export interface Answer {
-  id: string;
-  user_id: string;
-  event_id: string;
-  question_id: string;
-  answer_data: any;
-  created_at: string;
-  questions?: Question; // joined
-  events?: Event; // joined
-}
-
-export interface AnalyticsData {
-  questions: Question[];
-  answers: Answer[];
+export interface RegistrationData {
+  first_name: string;
+  last_name: string;
+  middle_name?: string;
+  motivation: string;
 }
 
 export interface CreateEventRequest {
@@ -93,6 +89,8 @@ export interface CreateEventRequest {
   audience?: string;
   event_date?: string;
   event_time?: string;
+  type?: 'event' | 'diagnostic';
+  status?: 'draft' | 'published' | 'completed';
 }
 
 export interface CreateQuestionRequest {
@@ -102,22 +100,16 @@ export interface CreateQuestionRequest {
   char_limit?: number;
 }
 
-
-export interface RegistrationData {
-  first_name: string;
-  last_name: string;
-  middle_name?: string;
-  motivation: string;
+export interface CreateTargetedQuestionRequest {
+  text: string;
+  type: QuestionType;
+  options?: string[];
+  char_limit?: number;
+  target_audience: 'all' | 'by_type' | 'individual';
+  target_values?: string[];
 }
 
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  user?: Partial<User>;
-}
-
-// Типы для геймификации
+// Gamification Types
 
 export interface PointsTransaction {
   id: string;
@@ -145,14 +137,6 @@ export interface UserAchievement {
   achievement?: Achievement;
 }
 
-export interface UserLevel {
-  id: string;
-  user_id: string;
-  level: number;
-  experience_points: number;
-  updated_at: string;
-}
-
 export interface UserStats {
   user_id: string;
   total_points: number;
@@ -164,11 +148,9 @@ export interface UserStats {
   recent_points_transactions: PointsTransaction[];
 }
 
-export interface AddPointsRequest {
-  points: number;
-  reason?: string;
-}
-
-export interface UnlockAchievementRequest {
-  achievement_id: string;
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  user?: Partial<User>;
 }

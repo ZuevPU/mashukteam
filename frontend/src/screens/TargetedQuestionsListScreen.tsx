@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { TargetedQuestion, TargetedAnswer } from '../../types';
-import { fetchApiWithAuth, fetchApi } from '../../services/api';
-import { useTelegram } from '../../hooks/useTelegram';
+import { TargetedQuestion, TargetedAnswer } from '../types';
+import { fetchApiWithAuth, fetchApi } from '../services/api';
+import { useTelegram } from '../hooks/useTelegram';
 import './TargetedQuestionsListScreen.css';
 
 interface TargetedQuestionsListScreenProps {

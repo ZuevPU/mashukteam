@@ -146,6 +146,18 @@ export class AdminController {
   /**
    * Получение аналитики мероприятия
    */
+  static async getEventAnalytics(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { questions, answers } = await EventService.getEventAnalytics(id);
+      
+      return res.json({ success: true, questions, answers });
+    } catch (error) {
+      console.error('Get analytics error:', error);
+      return res.status(500).json({ error: 'Ошибка при получении аналитики' });
+    }
+  }
+
   /**
    * Назначение типа пользователя
    */
