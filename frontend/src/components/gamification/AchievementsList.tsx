@@ -1,4 +1,3 @@
-import React from 'react';
 import { Achievement, UserAchievement } from '../../types';
 import { AchievementCard } from './AchievementCard';
 import './AchievementsList.css';

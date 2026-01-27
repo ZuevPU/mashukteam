@@ -1,4 +1,3 @@
-import React from 'react';
 import { UserStats } from '../../types';
 import { PointsDisplay } from './PointsDisplay';
 import { LevelProgress } from './LevelProgress';

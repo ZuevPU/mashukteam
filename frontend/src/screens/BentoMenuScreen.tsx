@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useTelegram } from '../hooks/useTelegram';
-import { getInitData, getUserStatus, getUserStats, getUserAchievements } from '../services/api';
+import { getUserStatus, getUserStats, getUserAchievements } from '../services/api';
 import { User, UserStats as UserStatsType, Achievement, UserAchievement } from '../types';
 import { BentoGrid, BentoGridItem } from '../components/bento/BentoGrid';
 import { ProfileCard } from '../components/bento/ProfileCard';

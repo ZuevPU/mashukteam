@@ -1,4 +1,3 @@
-import React from 'react';
 import './LevelProgress.css';
 
 interface LevelProgressProps {

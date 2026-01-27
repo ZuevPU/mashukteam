@@ -12,7 +12,7 @@ export function useTelegram() {
   useEffect(() => {
     // Проверка наличия Telegram WebApp
     if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-      const tg = window.Telegram.WebApp;
+      const tg = window.Telegram.WebApp as WebApp;
       
       // Инициализация WebApp
       tg.ready();

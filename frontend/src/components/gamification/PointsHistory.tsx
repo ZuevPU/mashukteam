@@ -1,4 +1,3 @@
-import React from 'react';
 import { PointsTransaction } from '../../types';
 import './PointsHistory.css';
 

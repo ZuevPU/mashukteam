@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import { ReactNode } from 'react';
 import './BentoGrid.css';
 
 export type BentoGridSize = '1x1' | '2x1' | '1x2' | '2x2';

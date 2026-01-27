@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useTelegram } from './hooks/useTelegram';
-import { verifyAuth, getInitData } from './services/api';
+import { verifyAuth } from './services/api';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { RegistrationScreen } from './screens/RegistrationScreen';
 import { BentoMenuScreen } from './screens/BentoMenuScreen';
@@ -15,7 +15,7 @@ type AppScreen = 'loading' | 'welcome' | 'registration' | 'bento';
 function App() {
   const { initData, isReady } = useTelegram();
   const [screen, setScreen] = useState<AppScreen>('loading');
-  const [userStatus, setUserStatus] = useState<'new' | 'registered' | null>(null);
+  const [, setUserStatus] = useState<'new' | 'registered' | null>(null);
 
   // Проверка статуса пользователя при загрузке
   useEffect(() => {

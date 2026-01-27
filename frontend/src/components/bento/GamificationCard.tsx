@@ -1,4 +1,3 @@
-import React from 'react';
 import { PointsDisplay } from '../gamification/PointsDisplay';
 import { LevelProgress } from '../gamification/LevelProgress';
 import { UserStats } from '../../types';

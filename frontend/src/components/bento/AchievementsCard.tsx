@@ -1,4 +1,3 @@
-import React from 'react';
 import { Achievement, UserAchievement } from '../../types';
 import { AchievementCard } from '../gamification/AchievementCard';
 import './AchievementsCard.css';
@@ -19,7 +18,6 @@ export function AchievementsCard({
   onViewAll,
   className = '',
 }: AchievementsCardProps) {
-  const unlockedIds = new Set(userAchievements.map(ua => ua.achievement_id));
   const unlockedCount = userAchievements.length;
   const totalCount = allAchievements.length;
   const progressPercentage = totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0;

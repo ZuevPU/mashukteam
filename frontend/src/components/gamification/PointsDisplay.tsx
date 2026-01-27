@@ -1,4 +1,3 @@
-import React from 'react';
 import './PointsDisplay.css';
 
 interface PointsDisplayProps {

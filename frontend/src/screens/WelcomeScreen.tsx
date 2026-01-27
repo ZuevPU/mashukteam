@@ -1,4 +1,3 @@
-import React from 'react';
 import { useTelegram } from '../hooks/useTelegram';
 import './WelcomeScreen.css';
 
@@ -10,7 +9,7 @@ interface WelcomeScreenProps {
  * Экран приветствия для новых пользователей
  */
 export function WelcomeScreen({ onStartRegistration }: WelcomeScreenProps) {
-  const { webApp } = useTelegram();
+  useTelegram();
 
   return (
     <div className="welcome-screen">

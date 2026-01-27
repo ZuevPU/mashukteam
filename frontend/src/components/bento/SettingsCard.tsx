@@ -1,4 +1,3 @@
-import React from 'react';
 import './SettingsCard.css';
 
 interface SettingsCardProps {

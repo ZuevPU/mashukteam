@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useTelegram } from '../hooks/useTelegram';
-import { registerUser, getInitData } from '../services/api';
+import { registerUser } from '../services/api';
 import './RegistrationScreen.css';
 
 interface RegistrationScreenProps {
