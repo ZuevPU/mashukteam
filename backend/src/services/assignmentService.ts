@@ -165,6 +165,16 @@ export class AssignmentService {
   }
 
   static async moderateSubmission(submissionId: string, data: ModerateSubmissionDto): Promise<AssignmentSubmission> {
+    // Сначала получаем submission с данными задания
+    const { data: existingSubmission, error: fetchError } = await supabase
+      .from('assignment_submissions')
+      .select('*, assignment:assignments(reward)')
+      .eq('id', submissionId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // Обновляем статус
     const { data: submission, error } = await supabase
       .from('assignment_submissions')
       .update({
@@ -177,6 +187,35 @@ export class AssignmentService {
       .single();
 
     if (error) throw error;
+
+    // Если статус approved — начисляем баллы
+    if (data.status === 'approved' && existingSubmission) {
+      const reward = (existingSubmission as any).assignment?.reward || 0;
+      if (reward > 0) {
+        // Добавляем баллы пользователю
+        await supabase
+          .from('points_transactions')
+          .insert({
+            user_id: existingSubmission.user_id,
+            points: reward,
+            reason: `Задание выполнено`
+          });
+
+        // Обновляем total_points в users
+        const { data: userData } = await supabase
+          .from('users')
+          .select('total_points')
+          .eq('id', existingSubmission.user_id)
+          .single();
+
+        const currentPoints = userData?.total_points || 0;
+        await supabase
+          .from('users')
+          .update({ total_points: currentPoints + reward })
+          .eq('id', existingSubmission.user_id);
+      }
+    }
+
     return submission as AssignmentSubmission;
   }
 

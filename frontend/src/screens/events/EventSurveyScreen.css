@@ -24,7 +24,7 @@
 .progress-bar {
   flex: 1;
   height: 6px;
-  background: #e0e0e0;
+  background: var(--tg-theme-secondary-bg-color, #e0e0e0);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -56,12 +56,13 @@
   margin: 10px 0 30px;
   font-size: 24px;
   line-height: 1.3;
+  color: var(--tg-theme-text-color, #000);
 }
 
 .wizard-footer {
   padding: 20px;
   background: var(--tg-theme-bg-color, #fff);
-  border-top: 1px solid rgba(0,0,0,0.05);
+  border-top: 1px solid var(--tg-theme-hint-color, rgba(0,0,0,0.1));
 }
 
 /* Option Cards */
@@ -75,11 +76,12 @@
   cursor: pointer;
   border: 2px solid transparent;
   transition: all 0.2s;
+  color: var(--tg-theme-text-color, #000);
 }
 
 .option-card.selected {
   border-color: var(--tg-theme-button-color, #3390ec);
-  background: rgba(51, 144, 236, 0.1);
+  background: rgba(51, 144, 236, 0.15);
 }
 
 .option-card input {
@@ -93,24 +95,49 @@
   gap: 10px;
 }
 
-.scale-options.large .scale-btn {
+.scale-btn {
   width: 100%;
   height: 50px;
   font-size: 18px;
+  border: 2px solid var(--tg-theme-hint-color, #ccc);
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  color: var(--tg-theme-text-color, #000);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+}
+
+.scale-btn:hover {
+  border-color: var(--tg-theme-button-color, #3390ec);
+}
+
+.scale-btn.active {
+  background: var(--tg-theme-button-color, #3390ec);
+  color: var(--tg-theme-button-text-color, #fff);
+  border-color: var(--tg-theme-button-color, #3390ec);
 }
 
 /* Read Only styles */
 .question-card.read-only {
-  background: #f9f9f9;
+  background: var(--tg-theme-secondary-bg-color, #f9f9f9);
   padding: 16px;
   border-radius: 12px;
   margin-bottom: 16px;
+  color: var(--tg-theme-text-color, #000);
+}
+
+.question-text {
+  color: var(--tg-theme-text-color, #000);
 }
 
 .answer-display {
   font-weight: 500;
   color: var(--tg-theme-button-color, #3390ec);
   margin-top: 8px;
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  padding: 8px 12px;
+  border-radius: 8px;
 }
 
 .info-banner {
@@ -121,8 +148,8 @@
 }
 
 .info-banner.success {
-  background: #d4edda;
-  color: #155724;
+  background: rgba(52, 199, 89, 0.15);
+  color: var(--tg-theme-text-color, #155724);
 }
 
 .input-text {
@@ -130,15 +157,18 @@
   min-height: 120px;
   padding: 16px;
   border-radius: 12px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--tg-theme-hint-color, #ddd);
   font-size: 16px;
+  background: var(--tg-theme-bg-color, #fff);
+  color: var(--tg-theme-text-color, #000);
+  box-sizing: border-box;
 }
 
 .submit-button {
   width: 100%;
   padding: 16px;
   background: var(--tg-theme-button-color, #3390ec);
-  color: white;
+  color: var(--tg-theme-button-text-color, #fff);
   border: none;
   border-radius: 12px;
   font-size: 18px;
@@ -148,4 +178,12 @@
 
 .submit-button:disabled {
   opacity: 0.7;
+}
+
+.loading, .error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  color: var(--tg-theme-text-color, #000);
 }

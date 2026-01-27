@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { AssignmentService } from '../services/assignmentService';
 import { UserService } from '../services/supabase';
+import { notifyAssignmentResult } from '../utils/telegramBot';
 
 export class AssignmentController {
   // === User Types ===
@@ -88,7 +89,29 @@ export class AssignmentController {
     try {
       const { id } = req.params;
       const { initData, ...data } = req.body;
+      
+      // Получаем данные submission до модерации для уведомления
+      const submissionsBefore = await AssignmentService.getSubmissionsForAssignment('');
+      // Получаем конкретный submission с user и assignment
+      const { data: subData } = await require('../services/supabase').supabase
+        .from('assignment_submissions')
+        .select('*, user:users(telegram_id), assignment:assignments(title, reward)')
+        .eq('id', id)
+        .single();
+      
       const submission = await AssignmentService.moderateSubmission(id, data);
+      
+      // Отправляем уведомление пользователю
+      if (subData?.user?.telegram_id && subData?.assignment) {
+        notifyAssignmentResult(
+          subData.user.telegram_id,
+          subData.assignment.title,
+          data.status === 'approved',
+          subData.assignment.reward || 0,
+          data.admin_comment
+        ).catch(console.error);
+      }
+      
       return res.json({ success: true, submission });
     } catch (error) {
       console.error('Moderate submission error:', error);
