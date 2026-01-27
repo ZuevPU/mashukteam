@@ -131,10 +131,6 @@ export async function registerUser(
 }
 
 /**
- * Базовый fetch для GET запросов с initData (используем POST т.к. backend требует initData в body)
- */
-
-/**
  * API методы для геймификации
  */
 
