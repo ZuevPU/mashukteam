@@ -115,6 +115,7 @@ export interface CreateTargetedQuestionRequest {
   char_limit?: number;
   target_audience: 'all' | 'by_type' | 'individual';
   target_values?: string[];
+  status?: 'draft' | 'published' | 'archived';
 }
 
 // Gamification Types

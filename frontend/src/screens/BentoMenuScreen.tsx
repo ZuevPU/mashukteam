@@ -88,8 +88,9 @@ export function BentoMenuScreen() {
       if (startFromUrl) return startFromUrl;
 
       // Проверяем Telegram WebApp start_param
-      if (window.Telegram?.WebApp?.initDataUnsafe?.start_param) {
-        return window.Telegram.WebApp.initDataUnsafe.start_param;
+      const initDataUnsafe = window.Telegram?.WebApp?.initDataUnsafe as any;
+      if (initDataUnsafe?.start_param) {
+        return initDataUnsafe.start_param;
       }
 
       return null;
