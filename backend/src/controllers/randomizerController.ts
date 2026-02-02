@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { RandomizerService } from '../services/randomizerService';
-import { UserService } from '../services/supabase';
+import { UserService, supabase } from '../services/supabase';
 import { notifyRandomizerDistribution } from '../utils/telegramBot';
 import { logger } from '../utils/logger';
 
@@ -234,7 +234,7 @@ export class RandomizerController {
       }
 
       // Получаем количество участников
-      const { count: participantsCount } = await require('../services/supabase').supabase
+      const { count: participantsCount } = await supabase
         .from('randomizer_participants')
         .select('*', { count: 'exact', head: true })
         .eq('randomizer_id', randomizer.id);

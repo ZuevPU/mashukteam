@@ -134,83 +134,93 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
         <>
           <h4 className="section-title">Новые вопросы ({unansweredQuestions.length})</h4>
           <div className="questions-list">
-            {unansweredQuestions.map((q) => (
-              <div key={q.id} className="question-card">
-                <p className="question-text">{q.text}</p>
-                
-                <div className="answer-form">
-                  {/* Текстовый ответ */}
-                  {q.type === 'text' && (
-                    <textarea
-                      className="input-text"
-                      value={inputValues[q.id] || ''}
-                      onChange={(e) => handleInputChange(q.id, e.target.value)}
-                      placeholder="Введите ваш ответ..."
-                      maxLength={q.char_limit || 1000}
-                    />
-                  )}
+            {unansweredQuestions.map((q) => {
+              // Для рандомайзеров показываем специальный компонент
+              if (q.type === 'randomizer' && randomizers[q.id]) {
+                return (
+                  <div key={q.id} className="question-card">
+                    <RandomizerCard questionId={q.id} randomizerId={randomizers[q.id]} />
+                  </div>
+                );
+              }
+              
+              return (
+                <div key={q.id} className="question-card">
+                  <p className="question-text">{q.text}</p>
+                  
+                  <div className="answer-form">
+                    {/* Текстовый ответ */}
+                    {q.type === 'text' && (
+                      <textarea
+                        className="input-text"
+                        value={inputValues[q.id] || ''}
+                        onChange={(e) => handleInputChange(q.id, e.target.value)}
+                        placeholder="Введите ваш ответ..."
+                        maxLength={q.char_limit || 1000}
+                      />
+                    )}
 
-                  {/* Один вариант (radio) */}
-                  {q.type === 'single' && q.options && (
-                    <div className="options-list">
-                      {q.options.map((opt, idx) => (
-                        <label key={idx} className={`option-item ${inputValues[q.id] === opt ? 'selected' : ''}`}>
-                          <input
-                            type="radio"
-                            name={`q_${q.id}`}
-                            value={opt}
-                            checked={inputValues[q.id] === opt}
-                            onChange={() => handleInputChange(q.id, opt)}
-                          />
-                          <span>{opt}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Несколько вариантов (checkbox) */}
-                  {q.type === 'multiple' && q.options && (
-                    <div className="options-list">
-                      {q.options.map((opt, idx) => (
-                        <label key={idx} className={`option-item ${(inputValues[q.id] || []).includes(opt) ? 'selected' : ''}`}>
-                          <input
-                            type="checkbox"
-                            checked={(inputValues[q.id] || []).includes(opt)}
-                            onChange={(e) => handleMultipleChange(q.id, opt, e.target.checked)}
-                          />
-                          <span>{opt}</span>
-                        </label>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Шкала / число */}
-                  {q.type === 'scale' && (
-                    <div className="scale-input">
-                      <div className="scale-buttons">
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                          <button
-                            key={num}
-                            type="button"
-                            className={`scale-btn ${inputValues[q.id] === num ? 'active' : ''}`}
-                            onClick={() => handleInputChange(q.id, num)}
-                          >
-                            {num}
-                          </button>
+                    {/* Один вариант (radio) */}
+                    {q.type === 'single' && q.options && (
+                      <div className="options-list">
+                        {q.options.map((opt, idx) => (
+                          <label key={idx} className={`option-item ${inputValues[q.id] === opt ? 'selected' : ''}`}>
+                            <input
+                              type="radio"
+                              name={`q_${q.id}`}
+                              value={opt}
+                              checked={inputValues[q.id] === opt}
+                              onChange={() => handleInputChange(q.id, opt)}
+                            />
+                            <span>{opt}</span>
+                          </label>
                         ))}
                       </div>
-                    </div>
-                  )}
-                  
-                  <button 
-                    className="submit-btn" 
-                    onClick={() => handleSubmit(q.id)}
-                    disabled={submitting === q.id}
-                  >
-                    {submitting === q.id ? 'Отправка...' : 'Отправить ответ'}
-                  </button>
+                    )}
+
+                    {/* Несколько вариантов (checkbox) */}
+                    {q.type === 'multiple' && q.options && (
+                      <div className="options-list">
+                        {q.options.map((opt, idx) => (
+                          <label key={idx} className={`option-item ${(inputValues[q.id] || []).includes(opt) ? 'selected' : ''}`}>
+                            <input
+                              type="checkbox"
+                              checked={(inputValues[q.id] || []).includes(opt)}
+                              onChange={(e) => handleMultipleChange(q.id, opt, e.target.checked)}
+                            />
+                            <span>{opt}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Шкала / число */}
+                    {q.type === 'scale' && (
+                      <div className="scale-input">
+                        <div className="scale-buttons">
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                            <button
+                              key={num}
+                              type="button"
+                              className={`scale-btn ${inputValues[q.id] === num ? 'active' : ''}`}
+                              onClick={() => handleInputChange(q.id, num)}
+                            >
+                              {num}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <button 
+                      className="submit-btn" 
+                      onClick={() => handleSubmit(q.id)}
+                      disabled={submitting === q.id}
+                    >
+                      {submitting === q.id ? 'Отправка...' : 'Отправить ответ'}
+                    </button>
+                  </div>
                 </div>
-              </div>
               );
             })}
           </div>
