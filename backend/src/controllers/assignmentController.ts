@@ -97,21 +97,30 @@ export class AssignmentController {
       const { id } = req.params;
       const { initData, ...data } = req.body;
       
-      // Получаем данные submission до модерации для уведомления
-      const submissionsBefore = await AssignmentService.getSubmissionsForAssignment('');
-      // Получаем конкретный submission с user и assignment
-      const { data: subData } = await require('../services/supabase').supabase
+      // Получаем данные submission ДО модерации, чтобы проверить предыдущий статус
+      const { data: subDataBefore, error: fetchError } = await require('../services/supabase').supabase
         .from('assignment_submissions')
         .select('*, user:users(id, telegram_id), assignment:assignments(title, reward)')
         .eq('id', id)
         .single();
       
+      if (fetchError || !subDataBefore) {
+        return res.status(404).json({ error: 'Submission не найдена' });
+      }
+      
+      const previousStatus = subDataBefore.status;
+      const userId = subDataBefore.user?.id;
+      
+      // Выполняем модерацию
       const submission = await AssignmentService.moderateSubmission(id, data);
       
       // Начисление баллов рефлексии при одобрении задания
-      if (data.status === 'approved' && subData?.user?.id) {
+      // Важно: начисляем только если статус изменился на 'approved' (не был approved ранее)
+      if (data.status === 'approved' && previousStatus !== 'approved' && userId) {
         try {
-          await ReflectionService.addReflectionPoints(subData.user.id, 'assignment_completed');
+          console.log(`Начисление баллов рефлексии пользователю ${userId} за выполнение задания`);
+          await ReflectionService.addReflectionPoints(userId, 'assignment_completed');
+          console.log(`Баллы рефлексии успешно начислены пользователю ${userId}`);
         } catch (reflectionError) {
           console.error('Error adding reflection points:', reflectionError);
           // Не прерываем выполнение, если ошибка начисления рефлексии
@@ -119,12 +128,12 @@ export class AssignmentController {
       }
       
       // Отправляем уведомление пользователю
-      if (subData?.user?.telegram_id && subData?.assignment) {
+      if (subDataBefore.user?.telegram_id && subDataBefore.assignment) {
         notifyAssignmentResult(
-          subData.user.telegram_id,
-          subData.assignment.title,
+          subDataBefore.user.telegram_id,
+          subDataBefore.assignment.title,
           data.status === 'approved',
-          subData.assignment.reward || 0,
+          subDataBefore.assignment.reward || 0,
           data.admin_comment
         ).catch(console.error);
       }

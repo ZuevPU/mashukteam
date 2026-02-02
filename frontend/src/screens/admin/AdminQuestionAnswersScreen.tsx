@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTelegram } from '../../hooks/useTelegram';
+import { buildApiEndpoint } from '../../utils/apiUrl';
 import './AdminScreens.css';
 
 interface AnswerWithDetails {
@@ -32,7 +33,7 @@ export const AdminQuestionAnswersScreen: React.FC<AdminQuestionAnswersScreenProp
     const load = async () => {
       if (!initData) return;
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/admin/targeted-answers`, {
+        const response = await fetch(buildApiEndpoint('/admin/targeted-answers'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ initData })

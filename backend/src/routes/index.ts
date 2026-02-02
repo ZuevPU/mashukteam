@@ -77,6 +77,12 @@ router.patch('/admin/users/:id/direction', requireAuth, requireAdmin, AdminContr
 
 // === Admin Export ===
 router.post('/admin/export/answers', requireAuth, requireAdmin, ExportController.exportAnswers);
+router.post('/admin/export/events', requireAuth, requireAdmin, ExportController.exportEvents);
+router.post('/admin/export/diagnostics', requireAuth, requireAdmin, ExportController.exportDiagnostics);
+router.post('/admin/export/assignments', requireAuth, requireAdmin, ExportController.exportAssignments);
+router.post('/admin/export/questions', requireAuth, requireAdmin, ExportController.exportQuestions);
+router.post('/admin/export/users', requireAuth, requireAdmin, ExportController.exportUsers);
+router.post('/admin/export/all', requireAuth, requireAdmin, ExportController.exportAll);
 
 // === Admin Directions ===
 router.post('/admin/directions', requireAuth, requireAdmin, DirectionController.createDirection);

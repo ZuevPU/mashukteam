@@ -42,7 +42,7 @@ export const DirectionSelectionScreen: React.FC<DirectionSelectionScreenProps> =
     if (!selectedId || !initData) return;
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/user/direction`, {
+      const response = await fetch(buildApiEndpoint('/user/direction'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initData, direction_id: selectedId })

@@ -23,7 +23,7 @@ export class ReflectionService {
     // Получаем текущие баллы пользователя
     const { data: user, error: userError } = await supabase
       .from('users')
-      .select('reflection_points')
+      .select('reflection_points, reflection_level')
       .eq('id', userId)
       .single();
 
@@ -33,7 +33,17 @@ export class ReflectionService {
     }
 
     const currentPoints = user.reflection_points || 0;
+    const currentLevel = user.reflection_level || 1;
     const newPoints = currentPoints + points;
+
+    console.log(`[ReflectionService] Начисление баллов рефлексии:`, {
+      userId,
+      actionType,
+      points,
+      currentPoints,
+      currentLevel,
+      newPoints
+    });
 
     // Обновляем баллы (триггер автоматически обновит уровень)
     const { error: updateError } = await supabase
@@ -45,6 +55,8 @@ export class ReflectionService {
       console.error('Error updating reflection points:', updateError);
       throw updateError;
     }
+
+    console.log(`[ReflectionService] Баллы рефлексии успешно обновлены для пользователя ${userId}: ${currentPoints} -> ${newPoints}`);
 
     // Записываем действие в историю
     const { error: actionError } = await supabase

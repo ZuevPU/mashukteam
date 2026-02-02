@@ -49,6 +49,19 @@
   font-size: 16px;
 }
 
+.admin-section-divider {
+  margin: 24px 0 12px 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--tg-theme-hint-color, #707579);
+}
+
+.admin-section-divider h4 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--tg-theme-text-color, #000);
+}
+
 .item-info p {
   margin: 0;
   font-size: 13px;

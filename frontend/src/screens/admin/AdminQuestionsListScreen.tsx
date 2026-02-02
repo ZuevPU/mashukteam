@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TargetedQuestion } from '../../types';
 import { useTelegram } from '../../hooks/useTelegram';
+import { buildApiEndpoint } from '../../utils/apiUrl';
 import './AdminScreens.css';
 
 interface AdminQuestionsListScreenProps {
@@ -16,7 +17,7 @@ export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> =
     const load = async () => {
       if (!initData) return;
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/admin/targeted-questions`, {
+        const response = await fetch(buildApiEndpoint('/admin/targeted-questions'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ initData })

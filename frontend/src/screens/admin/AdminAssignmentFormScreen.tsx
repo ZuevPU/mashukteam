@@ -3,6 +3,7 @@ import { Assignment, CreateAssignmentRequest, UserType, User } from '../../types
 import { adminApi } from '../../services/adminApi';
 import { useTelegram } from '../../hooks/useTelegram';
 import { UserSelector } from './UserSelector';
+import { buildApiEndpoint } from '../../utils/apiUrl';
 import './AdminScreens.css';
 
 interface AdminAssignmentFormScreenProps {
@@ -67,7 +68,7 @@ export const AdminAssignmentFormScreen: React.FC<AdminAssignmentFormScreenProps>
         showAlert('Обновлено');
       } else {
         // Передаем sendNotification отдельно
-        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/admin/assignments`, {
+        const response = await fetch(buildApiEndpoint('/admin/assignments'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ initData, ...formData, sendNotification })
