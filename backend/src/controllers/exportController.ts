@@ -19,7 +19,7 @@ export class ExportController {
       logger.info('Export answers completed successfully', { size: excelBuffer.length });
       return res.send(excelBuffer);
     } catch (error: any) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Export answers error');
+      logger.error('Export answers error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ 
         error: 'Ошибка при экспорте данных',
         message: error.message || 'Неизвестная ошибка'
@@ -42,7 +42,7 @@ export class ExportController {
       logger.info('Export events completed successfully', { size: excelBuffer.length });
       return res.send(excelBuffer);
     } catch (error: any) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Export events error');
+      logger.error('Export events error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ 
         error: 'Ошибка при экспорте мероприятий',
         message: error.message || 'Неизвестная ошибка'
@@ -65,7 +65,7 @@ export class ExportController {
       logger.info('Export diagnostics completed successfully', { size: excelBuffer.length });
       return res.send(excelBuffer);
     } catch (error: any) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Export diagnostics error');
+      logger.error('Export diagnostics error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ 
         error: 'Ошибка при экспорте диагностик',
         message: error.message || 'Неизвестная ошибка'
@@ -88,7 +88,7 @@ export class ExportController {
       logger.info('Export assignments completed successfully', { size: excelBuffer.length });
       return res.send(excelBuffer);
     } catch (error: any) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Export assignments error');
+      logger.error('Export assignments error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ 
         error: 'Ошибка при экспорте заданий',
         message: error.message || 'Неизвестная ошибка'
@@ -111,7 +111,7 @@ export class ExportController {
       logger.info('Export questions completed successfully', { size: excelBuffer.length });
       return res.send(excelBuffer);
     } catch (error: any) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Export questions error');
+      logger.error('Export questions error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ 
         error: 'Ошибка при экспорте вопросов',
         message: error.message || 'Неизвестная ошибка'
@@ -157,7 +157,7 @@ export class ExportController {
       logger.info('Export all tables completed successfully', { size: excelBuffer.length });
       return res.send(excelBuffer);
     } catch (error: any) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Export all tables error');
+      logger.error('Export all tables error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ 
         error: 'Ошибка при полном экспорте данных',
         message: error.message || 'Неизвестная ошибка'

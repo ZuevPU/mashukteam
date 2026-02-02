@@ -48,10 +48,10 @@ export async function sendMessageToUser(
 
     if (!response.ok) {
       const errorText = await response.text();
-      logger.error(new Error(`Failed to send message to ${telegramId}: ${errorText}`), 'Telegram send message error');
+      logger.error('Telegram send message error', new Error(`Failed to send message to ${telegramId}: ${errorText}`));
     }
   } catch (error) {
-    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error sending telegram message');
+    logger.error('Error sending telegram message', error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -139,7 +139,7 @@ export async function notifyTargetedQuestionToUsers(
     
     logger.info('Targeted question notifications sent', { usersCount: targetUsers.length });
   } catch (error) {
-    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error sending targeted question notifications');
+    logger.error('Error sending targeted question notifications', error instanceof Error ? error : new Error(String(error)));
   }
 }
 

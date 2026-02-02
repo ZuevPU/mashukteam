@@ -38,7 +38,7 @@ export class TargetedQuestionController {
       try {
         await ReflectionService.addReflectionPoints(userId, 'targeted_answer');
       } catch (reflectionError) {
-        logger.error(reflectionError instanceof Error ? reflectionError : new Error(String(reflectionError)), 'Error adding reflection points');
+        logger.error('Error adding reflection points', reflectionError instanceof Error ? reflectionError : new Error(String(reflectionError)));
         // Не прерываем выполнение, если ошибка начисления рефлексии
       }
       
@@ -65,7 +65,7 @@ export class TargetedQuestionController {
             const users = await UserService.getAllUsers();
             const userIds = users.map(u => u.id);
             notifyTargetedQuestionToUsers(userIds, question.text, question.id).catch((err) => 
-              logger.error(err instanceof Error ? err : new Error(String(err)), 'Error sending targeted question notification')
+              logger.error('Error sending targeted question notification', err instanceof Error ? err : new Error(String(err)))
             );
           } else if (data.target_audience === 'by_type' && data.target_values) {
             // По типу пользователя
@@ -73,21 +73,21 @@ export class TargetedQuestionController {
             const targetUsers = users.filter(u => data.target_values.includes(u.user_type));
             const userIds = targetUsers.map(u => u.id);
             notifyTargetedQuestionToUsers(userIds, question.text, question.id).catch((err) => 
-              logger.error(err instanceof Error ? err : new Error(String(err)), 'Error sending targeted question notification')
+              logger.error('Error sending targeted question notification', err instanceof Error ? err : new Error(String(err)))
             );
           } else if (data.target_audience === 'individual' && data.target_values) {
             // Конкретным пользователям
             notifyTargetedQuestionToUsers(data.target_values, question.text, question.id).catch(console.error);
           }
         } catch (notifError) {
-          logger.error(notifError instanceof Error ? notifError : new Error(String(notifError)), 'Error sending notifications');
+          logger.error('Error sending notifications', notifError instanceof Error ? notifError : new Error(String(notifError)));
           // Не прерываем создание вопроса из-за ошибки уведомлений
         }
       }
       
       return res.status(201).json({ success: true, question });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Create targeted question error');
+      logger.error('Create targeted question error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при создании вопроса' });
     }
   }
@@ -100,7 +100,7 @@ export class TargetedQuestionController {
       const questions = await TargetedQuestionService.getAllQuestions();
       return res.json({ success: true, questions });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Get all questions error');
+      logger.error('Get all questions error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при получении вопросов' });
     }
   }
@@ -139,26 +139,28 @@ export class TargetedQuestionController {
             const users = await UserService.getAllUsers();
             const userIds = users.map(u => u.id);
             notifyTargetedQuestionToUsers(userIds, question.text, question.id).catch((err) => 
-              logger.error(err instanceof Error ? err : new Error(String(err)), 'Error sending targeted question notification')
+              logger.error('Error sending targeted question notification', err instanceof Error ? err : new Error(String(err)))
             );
           } else if (question.target_audience === 'by_type' && question.target_values) {
             const users = await UserService.getAllUsers();
             const targetUsers = users.filter(u => question.target_values.includes(u.user_type));
             const userIds = targetUsers.map(u => u.id);
             notifyTargetedQuestionToUsers(userIds, question.text, question.id).catch((err) => 
-              logger.error(err instanceof Error ? err : new Error(String(err)), 'Error sending targeted question notification')
+              logger.error('Error sending targeted question notification', err instanceof Error ? err : new Error(String(err)))
             );
           } else if (question.target_audience === 'individual' && question.target_values) {
-            notifyTargetedQuestionToUsers(question.target_values, question.text, question.id).catch(console.error);
+            notifyTargetedQuestionToUsers(question.target_values, question.text, question.id).catch((err) => 
+              logger.error('Error sending targeted question notification', err instanceof Error ? err : new Error(String(err)))
+            );
           }
         } catch (notifError) {
-          logger.error(notifError instanceof Error ? notifError : new Error(String(notifError)), 'Error sending notifications');
+          logger.error('Error sending notifications', notifError instanceof Error ? notifError : new Error(String(notifError)));
         }
       }
       
       return res.json({ success: true, question });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Update targeted question error');
+      logger.error('Update targeted question error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при обновлении вопроса' });
     }
   }
@@ -172,7 +174,7 @@ export class TargetedQuestionController {
       await TargetedQuestionService.deleteQuestion(id);
       return res.json({ success: true, message: 'Вопрос удален' });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Delete targeted question error');
+      logger.error('Delete targeted question error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при удалении вопроса' });
     }
   }

@@ -22,18 +22,18 @@ export class AdminController {
       if (event.status === 'published' && (process.env.NODE_ENV === 'production' || process.env.ENABLE_NOTIFICATIONS === 'true')) {
         if (event.type === 'diagnostic') {
           notifyNewDiagnostic(event.title, event.id).catch((err) => 
-            logger.error(err instanceof Error ? err : new Error(String(err)), 'Error sending diagnostic notification')
+            logger.error('Error sending diagnostic notification', err instanceof Error ? err : new Error(String(err)))
           );
         } else {
           notifyNewEvent(event.title, event.id).catch((err) => 
-            logger.error(err instanceof Error ? err : new Error(String(err)), 'Error sending event notification')
+            logger.error('Error sending event notification', err instanceof Error ? err : new Error(String(err)))
           );
         }
       }
 
       return res.status(201).json({ success: true, event });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Create event error');
+      logger.error('Create event error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при создании мероприятия' });
     }
   }
@@ -57,18 +57,18 @@ export class AdminController {
       if (updates.status === 'published' && !wasPublished && (process.env.NODE_ENV === 'production' || process.env.ENABLE_NOTIFICATIONS === 'true')) {
         if (event.type === 'diagnostic') {
           notifyNewDiagnostic(event.title, event.id).catch((err) => 
-            logger.error(err instanceof Error ? err : new Error(String(err)), 'Error sending diagnostic notification')
+            logger.error('Error sending diagnostic notification', err instanceof Error ? err : new Error(String(err)))
           );
         } else {
           notifyNewEvent(event.title, event.id).catch((err) => 
-            logger.error(err instanceof Error ? err : new Error(String(err)), 'Error sending event notification')
+            logger.error('Error sending event notification', err instanceof Error ? err : new Error(String(err)))
           );
         }
       }
       
       return res.json({ success: true, event });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Update event error');
+      logger.error('Update event error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при обновлении мероприятия' });
     }
   }
@@ -82,7 +82,7 @@ export class AdminController {
       await EventService.deleteEvent(id);
       return res.json({ success: true, message: 'Мероприятие удалено' });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Delete event error');
+      logger.error('Delete event error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при удалении мероприятия' });
     }
   }
@@ -112,7 +112,7 @@ export class AdminController {
       const users = await UserService.getAllUsers();
       return res.json({ success: true, users });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Get all users error');
+      logger.error('Get all users error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при получении пользователей' });
     }
   }
@@ -143,7 +143,7 @@ export class AdminController {
         user: { ...user, answers, targetedAnswers, submissions } 
       });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Get user details error');
+      logger.error('Get user details error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при получении деталей пользователя' });
     }
   }
@@ -160,7 +160,7 @@ export class AdminController {
       const user = await UserService.updateUserByAdmin(id, updates);
       return res.json({ success: true, user });
     } catch (error) {
-      console.error('Update user error:', error);
+      logger.error('Update user error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при обновлении пользователя' });
     }
   }
@@ -173,7 +173,7 @@ export class AdminController {
       const events = await EventService.getAllEvents();
       return res.json({ success: true, events });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Get all events error');
+      logger.error('Get all events error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при получении мероприятий' });
     }
   }
@@ -188,7 +188,7 @@ export class AdminController {
       
       return res.json({ success: true, questions, answers });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Get analytics error');
+      logger.error('Get analytics error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при получении аналитики' });
     }
   }
@@ -203,7 +203,7 @@ export class AdminController {
       const user = await UserService.setUserType(id, userType);
       return res.json({ success: true, user });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Set user type error');
+      logger.error('Set user type error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при назначении типа' });
     }
   }
@@ -225,14 +225,14 @@ export class AdminController {
         if (direction) {
           const { notifyDirectionAssigned } = await import('../utils/telegramBot');
           notifyDirectionAssigned(user.telegram_id, direction.name).catch((err) => 
-            logger.error(err instanceof Error ? err : new Error(String(err)), 'Error sending direction notification')
+            logger.error('Error sending direction notification', err instanceof Error ? err : new Error(String(err)))
           );
         }
       }
       
       return res.json({ success: true, user });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Set user direction error');
+      logger.error('Set user direction error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при назначении направления' });
     }
   }

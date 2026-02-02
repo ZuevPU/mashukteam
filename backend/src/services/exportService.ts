@@ -5,7 +5,7 @@ let XLSX: any;
 try {
   XLSX = require('xlsx');
 } catch (e) {
-  logger.error(e instanceof Error ? e : new Error(String(e)), 'xlsx library not installed. Run: npm install xlsx');
+  logger.error('xlsx library not installed. Run: npm install xlsx', e instanceof Error ? e : new Error(String(e)));
   throw new Error('xlsx library is required for export functionality');
 }
 
@@ -32,7 +32,7 @@ export class ExportService {
         .order('created_at', { ascending: false });
 
       if (eventAnswersError) {
-        logger.error(eventAnswersError instanceof Error ? eventAnswersError : new Error(String(eventAnswersError)), 'Error fetching event answers');
+        logger.error('Error fetching event answers', eventAnswersError instanceof Error ? eventAnswersError : new Error(String(eventAnswersError)));
         throw new Error(`Ошибка получения ответов на мероприятия: ${eventAnswersError.message}`);
       }
 
@@ -51,7 +51,7 @@ export class ExportService {
         .order('created_at', { ascending: false });
 
       if (targetedAnswersError) {
-        console.error('Error fetching targeted answers:', targetedAnswersError);
+        logger.error('Error fetching targeted answers', targetedAnswersError instanceof Error ? targetedAnswersError : new Error(String(targetedAnswersError)));
         throw new Error(`Ошибка получения ответов на персональные вопросы: ${targetedAnswersError.message}`);
       }
 
@@ -73,7 +73,7 @@ export class ExportService {
         .order('created_at', { ascending: false });
 
       if (submissionsError) {
-        logger.error(submissionsError instanceof Error ? submissionsError : new Error(String(submissionsError)), 'Error fetching submissions');
+        logger.error('Error fetching submissions', submissionsError instanceof Error ? submissionsError : new Error(String(submissionsError)));
         throw new Error(`Ошибка получения выполненных заданий: ${submissionsError.message}`);
       }
 
@@ -138,7 +138,7 @@ export class ExportService {
       const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
       return excelBuffer;
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Error in exportAnswersToExcel');
+      logger.error('Error in exportAnswersToExcel', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }

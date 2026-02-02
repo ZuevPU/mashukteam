@@ -45,7 +45,7 @@ export function parseInitData(initData: string): ParsedInitData | null {
       hash: params.get('hash') || '',
     };
   } catch (error) {
-    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error parsing initData');
+    logger.error('Error parsing initData', error instanceof Error ? error : new Error(String(error)));
     return null;
   }
 }
@@ -87,7 +87,7 @@ export function validateInitDataHash(initData: string, botToken: string): boolea
     // Сравниваем hash
     return calculatedHash === hash;
   } catch (error) {
-    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error validating initData hash');
+    logger.error('Error validating initData hash', error instanceof Error ? error : new Error(String(error)));
     return false;
   }
 }
@@ -126,7 +126,7 @@ export function validateInitData(initData: string): boolean {
   if (!botToken) {
     // В production это критично - валидация должна быть обязательной
     if (process.env.NODE_ENV === 'production') {
-      logger.error(new Error('TELEGRAM_BOT_TOKEN не установлен в production'), 'Critical: hash validation disabled');
+      logger.error('Critical: hash validation disabled', new Error('TELEGRAM_BOT_TOKEN не установлен в production'));
       return false; // В production не пропускаем без проверки hash
     }
     logger.warn('TELEGRAM_BOT_TOKEN не установлен, пропускаем проверку hash (development mode)');

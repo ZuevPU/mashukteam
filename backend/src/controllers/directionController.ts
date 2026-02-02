@@ -11,7 +11,7 @@ export class DirectionController {
       const directions = await DirectionService.getAllDirections();
       return res.json({ success: true, directions });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Get directions error');
+      logger.error('Get directions error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при получении направлений' });
     }
   }
@@ -25,7 +25,7 @@ export class DirectionController {
       const direction = await DirectionService.createDirection(data);
       return res.status(201).json({ success: true, direction });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Create direction error');
+      logger.error('Create direction error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при создании направления' });
     }
   }
@@ -54,7 +54,7 @@ export class DirectionController {
       await DirectionService.deleteDirection(id);
       return res.json({ success: true, message: 'Направление удалено' });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Delete direction error');
+      logger.error('Delete direction error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при удалении направления' });
     }
   }

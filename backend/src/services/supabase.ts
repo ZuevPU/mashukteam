@@ -30,7 +30,7 @@ export class UserService {
       .single();
 
     if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Error checking user existence');
+      logger.error('Error checking user existence', error instanceof Error ? error : new Error(String(error)));
       return false;
     }
 
@@ -51,7 +51,7 @@ export class UserService {
       if (error.code === 'PGRST116') {
         return null; // Пользователь не найден
       }
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Error getting user');
+      logger.error('Error getting user', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
 
@@ -77,7 +77,7 @@ export class UserService {
       .single();
 
     if (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Error creating user');
+      logger.error('Error creating user', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
 
@@ -96,7 +96,7 @@ export class UserService {
       .single();
 
     if (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Error updating user');
+      logger.error('Error updating user', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
 
@@ -115,7 +115,7 @@ export class UserService {
       .single();
 
     if (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Error updating user status');
+      logger.error('Error updating user status', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
 
@@ -161,7 +161,7 @@ export class UserService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Error getting all users');
+      logger.error('Error getting all users', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
 
@@ -180,7 +180,7 @@ export class UserService {
 
     if (error) {
       if (error.code === 'PGRST116') return null;
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Error getting user by ID');
+      logger.error('Error getting user by ID', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
 
@@ -199,7 +199,7 @@ export class UserService {
       .single();
 
     if (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Error updating user by admin');
+      logger.error('Error updating user by admin', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
 

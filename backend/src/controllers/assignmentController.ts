@@ -13,7 +13,7 @@ export class AssignmentController {
       const types = await AssignmentService.getAllUserTypes();
       return res.json({ success: true, types });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Get user types error');
+      logger.error('Get user types error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при получении типов' });
     }
   }
@@ -28,7 +28,7 @@ export class AssignmentController {
       // Отправка уведомлений, если задание опубликовано и запрошено
       if (sendNotification && assignment.status === 'published') {
         notifyNewAssignment(assignment.title, assignment.reward, assignment.id).catch((err) => 
-          logger.error(err instanceof Error ? err : new Error(String(err)), 'Error sending assignment notification')
+          logger.error('Error sending assignment notification', err instanceof Error ? err : new Error(String(err)))
         );
       }
       
@@ -53,13 +53,13 @@ export class AssignmentController {
       // Отправка уведомления, если статус изменился на published
       if (data.status === 'published' && !wasPublished && sendNotification) {
         notifyNewAssignment(assignment.title, assignment.reward, assignment.id).catch((err) => 
-          logger.error(err instanceof Error ? err : new Error(String(err)), 'Error sending assignment notification')
+          logger.error('Error sending assignment notification', err instanceof Error ? err : new Error(String(err)))
         );
       }
       
       return res.json({ success: true, assignment });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Update assignment error');
+      logger.error('Update assignment error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при обновлении задания' });
     }
   }
@@ -70,7 +70,7 @@ export class AssignmentController {
       await AssignmentService.deleteAssignment(id);
       return res.json({ success: true, message: 'Задание удалено' });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Delete assignment error');
+      logger.error('Delete assignment error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при удалении задания' });
     }
   }
@@ -80,7 +80,7 @@ export class AssignmentController {
       const assignments = await AssignmentService.getAllAssignments();
       return res.json({ success: true, assignments });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Get all assignments error');
+      logger.error('Get all assignments error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при получении заданий' });
     }
   }
@@ -103,7 +103,7 @@ export class AssignmentController {
       const submissions = await AssignmentService.getAllSubmissions();
       return res.json({ success: true, submissions });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Get all submissions error');
+      logger.error('Get all submissions error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при получении ответов' });
     }
   }
@@ -138,7 +138,7 @@ export class AssignmentController {
           await ReflectionService.addReflectionPoints(userId, 'assignment_completed');
           logger.info('Баллы рефлексии успешно начислены', { userId });
         } catch (reflectionError) {
-          logger.error(reflectionError instanceof Error ? reflectionError : new Error(String(reflectionError)), 'Error adding reflection points');
+          logger.error('Error adding reflection points', reflectionError instanceof Error ? reflectionError : new Error(String(reflectionError)));
           // Не прерываем выполнение, если ошибка начисления рефлексии
         }
       }
@@ -156,7 +156,7 @@ export class AssignmentController {
       
       return res.json({ success: true, submission });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Moderate submission error');
+      logger.error('Moderate submission error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при модерации ответа' });
     }
   }
@@ -166,7 +166,7 @@ export class AssignmentController {
       const leaderboard = await AssignmentService.getLeaderboard();
       return res.json({ success: true, leaderboard });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Get leaderboard error');
+      logger.error('Get leaderboard error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при получении рейтинга' });
     }
   }
@@ -183,7 +183,7 @@ export class AssignmentController {
       const assignments = await AssignmentService.getAssignmentsForUser(user.id, user.user_type);
       return res.json({ success: true, assignments });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Get my assignments error');
+      logger.error('Get my assignments error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при получении заданий' });
     }
   }
@@ -205,7 +205,7 @@ export class AssignmentController {
       
       return res.status(201).json({ success: true, submission });
     } catch (error: any) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Submit assignment error');
+      logger.error('Submit assignment error', error instanceof Error ? error : new Error(String(error)));
       return res.status(400).json({ error: error.message || 'Ошибка при отправке ответа' });
     }
   }
@@ -220,7 +220,7 @@ export class AssignmentController {
       const submissions = await AssignmentService.getUserSubmissions(user.id);
       return res.json({ success: true, submissions });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Get my submissions error');
+      logger.error('Get my submissions error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при получении моих ответов' });
     }
   }

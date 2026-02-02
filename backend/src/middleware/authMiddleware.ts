@@ -36,7 +36,7 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
     req.user = user;
     next();
   } catch (error) {
-    logger.error(error instanceof Error ? error : new Error(String(error)), 'Auth error');
+    logger.error('Auth error', error instanceof Error ? error : new Error(String(error)));
     return res.status(500).json({ error: 'Ошибка авторизации' });
   }
 };

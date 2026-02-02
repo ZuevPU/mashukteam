@@ -13,7 +13,7 @@ export class EventController {
       const events = await EventService.getPublishedEvents();
       return res.json({ success: true, events });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Get events error');
+      logger.error('Get events error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при получении мероприятий' });
     }
   }
@@ -65,7 +65,7 @@ export class EventController {
           await ReflectionService.addReflectionPoints(userId, actionType);
         }
       } catch (reflectionError) {
-        logger.error(reflectionError instanceof Error ? reflectionError : new Error(String(reflectionError)), 'Error adding reflection points');
+        logger.error('Error adding reflection points', reflectionError instanceof Error ? reflectionError : new Error(String(reflectionError)));
         // Не прерываем выполнение, если ошибка начисления рефлексии
       }
       
@@ -85,7 +85,7 @@ export class EventController {
       const answers = await EventService.getUserAnswers(userId);
       return res.json({ success: true, answers });
     } catch (error) {
-      logger.error(error instanceof Error ? error : new Error(String(error)), 'Get my answers error');
+      logger.error('Get my answers error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при получении истории ответов' });
     }
   }

@@ -102,7 +102,7 @@ export async function verifyAuth(req: AuthRequest, res: Response) {
         await UserService.updateUserStatus(user.telegram_id, 'new');
         user.status = 'new';
       } catch (error) {
-        logger.error(error instanceof Error ? error : new Error(String(error)), 'Error updating user status');
+        logger.error('Error updating user status', error instanceof Error ? error : new Error(String(error)));
         // Продолжаем с текущим статусом
       }
     }
@@ -123,7 +123,7 @@ export async function verifyAuth(req: AuthRequest, res: Response) {
       },
     });
   } catch (error) {
-    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error in verifyAuth');
+    logger.error('Error in verifyAuth', error instanceof Error ? error : new Error(String(error)));
     return res.status(500).json({ 
       success: false,
       error: 'Внутренняя ошибка сервера',

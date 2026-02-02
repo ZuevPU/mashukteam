@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { logger } from '../utils/logger';
 
 /**
  * Типы ошибок приложения
@@ -37,7 +38,7 @@ export function errorHandler(
   next: NextFunction
 ) {
   // Логирование ошибки
-  logger.error(err instanceof Error ? err : new Error(String(err)), 'Request error', {
+  logger.error('Request error', err instanceof Error ? err : new Error(String(err)), {
     url: req.url,
     method: req.method,
   });

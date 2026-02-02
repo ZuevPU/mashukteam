@@ -75,7 +75,7 @@ export async function addPoints(req: GamificationRequest, res: Response) {
       total_points: await PointsService.getUserTotalPoints(user.id),
     });
   } catch (error: any) {
-    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error in addPoints');
+    logger.error('Error in addPoints', error instanceof Error ? error : new Error(String(error)));
     return res.status(500).json({ error: error.message || 'Внутренняя ошибка сервера' });
   }
 }
@@ -121,7 +121,7 @@ export async function getUserPoints(req: GamificationRequest, res: Response) {
       total_points: totalPoints,
     });
   } catch (error: any) {
-    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error in getUserPoints');
+    logger.error('Error in getUserPoints', error instanceof Error ? error : new Error(String(error)));
     return res.status(500).json({ error: error.message || 'Внутренняя ошибка сервера' });
   }
 }
@@ -169,7 +169,7 @@ export async function getUserAchievements(req: GamificationRequest, res: Respons
       total_count: allAchievements.length,
     });
   } catch (error: any) {
-    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error in getUserAchievements');
+    logger.error('Error in getUserAchievements', error instanceof Error ? error : new Error(String(error)));
     return res.status(500).json({ error: error.message || 'Внутренняя ошибка сервера' });
   }
 }
@@ -218,7 +218,7 @@ export async function unlockAchievement(req: GamificationRequest, res: Response)
       message: `Достижение "${userAchievement.achievement?.name}" разблокировано!`,
     });
   } catch (error: any) {
-    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error in unlockAchievement');
+    logger.error('Error in unlockAchievement', error instanceof Error ? error : new Error(String(error)));
     return res.status(500).json({ error: error.message || 'Внутренняя ошибка сервера' });
   }
 }
@@ -301,7 +301,7 @@ export async function levelUp(req: GamificationRequest, res: Response) {
       message: `Поздравляем! Вы достигли уровня ${userLevel.level}!`,
     });
   } catch (error: any) {
-    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error in levelUp');
+    logger.error('Error in levelUp', error instanceof Error ? error : new Error(String(error)));
     return res.status(500).json({ error: error.message || 'Внутренняя ошибка сервера' });
   }
 }

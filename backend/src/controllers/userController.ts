@@ -43,7 +43,7 @@ export async function getUser(req: UserRequest, res: Response) {
       user,
     });
   } catch (error) {
-    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error in getUser');
+    logger.error('Error in getUser', error instanceof Error ? error : new Error(String(error)));
     return res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 }
@@ -210,7 +210,7 @@ export async function registerUser(req: UserRequest, res: Response) {
       message: 'Регистрация завершена успешно',
     });
   } catch (error) {
-    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error in registerUser');
+    logger.error('Error in registerUser', error instanceof Error ? error : new Error(String(error)));
     return res.status(500).json({ 
       success: false,
       error: 'Внутренняя ошибка сервера',
@@ -256,7 +256,7 @@ export async function setUserDirection(req: Request, res: Response) {
       direction_id: direction_id
     });
   } catch (error: any) {
-    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error setting user direction');
+    logger.error('Error setting user direction', error instanceof Error ? error : new Error(String(error)));
     return res.status(500).json({ 
       success: false,
       error: error.message || 'Ошибка при выборе направления' 
