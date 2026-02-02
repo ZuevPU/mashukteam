@@ -59,6 +59,7 @@ export interface TargetedQuestion {
   target_audience: 'all' | 'by_direction' | 'individual';
   target_values?: string[];
   status: 'draft' | 'published' | 'archived';
+  reflection_points?: number;
   created_at: string;
 }
 
@@ -278,13 +279,6 @@ export interface ExportFilters {
 }
 
 // === Assignments (Задания) ===
-
-export interface UserType {
-  id: number;
-  name: string;
-  slug: string;
-  created_at: string;
-}
 
 export type AssignmentFormat = 'text' | 'number' | 'link';
 export type AssignmentTargetType = 'all' | 'direction' | 'individual';

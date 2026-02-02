@@ -1051,7 +1051,6 @@ export class ExportService {
         ...u,
         created_at: u.created_at ? new Date(u.created_at).toLocaleString('ru-RU') : '',
         updated_at: u.updated_at ? new Date(u.updated_at).toLocaleString('ru-RU') : '',
-        direction_selected_at: u.direction_selected_at ? new Date(u.direction_selected_at).toLocaleString('ru-RU') : ''
       })));
       XLSX.utils.book_append_sheet(workbook, usersSheet, 'Пользователи');
     }

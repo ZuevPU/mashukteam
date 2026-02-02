@@ -170,7 +170,7 @@ export async function sendMessageToUser(
  * Параллельная отправка уведомлений с ограничением concurrency
  */
 async function sendNotificationsBatch(
-  notifications: Array<{ telegramId: number; text: string; deepLink?: string; userId?: string; type?: 'event' | 'question' | 'assignment' | 'diagnostic' | 'achievement' | 'randomizer' | 'assignment_result'; title?: string }>,
+  notifications: Array<{ telegramId: number; text: string; deepLink?: string; userId?: string; notificationType?: string; notificationTitle?: string }>,
   concurrency: number = 10
 ): Promise<{ success: number; failed: number }> {
   const results = { success: 0, failed: 0 };
@@ -178,7 +178,7 @@ async function sendNotificationsBatch(
   for (let i = 0; i < notifications.length; i += concurrency) {
     const batch = notifications.slice(i, i + concurrency);
     const promises = batch.map(notif => 
-      sendMessageToUser(notif.telegramId, notif.text, true, notif.deepLink, notif.userId, notif.type, notif.title)
+      sendMessageToUser(notif.telegramId, notif.text, true, notif.deepLink, notif.userId, notif.notificationType as any, notif.notificationTitle)
         .then((success) => { 
           if (success) {
             results.success++; 
@@ -407,7 +407,7 @@ export async function notifyTargetedQuestionToUsers(
     const targetUsers = users.filter(u => userIds.includes(u.id));
     
     // Фильтруем пользователей по настройкам уведомлений
-    const notifications: Array<{ telegramId: number; text: string; deepLink?: string }> = [];
+    const notifications: Array<{ telegramId: number; text: string; deepLink?: string; userId?: string; notificationType?: string; notificationTitle?: string }> = [];
     
     for (const user of targetUsers) {
       const shouldSend = await shouldSendNotification(user.id, 'questions');
@@ -419,8 +419,8 @@ export async function notifyTargetedQuestionToUsers(
           text,
           deepLink,
           userId: user.id,
-          type: 'question' as const,
-          title: 'Анонс нового вопроса'
+          notificationType: 'question',
+          notificationTitle: 'Анонс нового вопроса'
         });
       }
     }

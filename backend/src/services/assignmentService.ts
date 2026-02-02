@@ -9,16 +9,16 @@ import {
 } from '../types';
 
 export class AssignmentService {
-  // === User Types ===
+  // === Directions ===
   
-  static async getAllUserTypes(): Promise<UserType[]> {
+  static async getAllDirections(): Promise<Direction[]> {
     const { data, error } = await supabase
       .from('directions')
       .select('*')
       .order('id', { ascending: true });
 
     if (error) throw error;
-    return data as UserType[];
+    return data as Direction[];
   }
 
   // === Assignments CRUD ===

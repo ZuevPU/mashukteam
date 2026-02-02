@@ -161,7 +161,7 @@ export class AnalyticsService {
     try {
       const { data: directions } = await supabase
         .from('directions')
-        .select('id, name')
+        .select('id, name, slug')
         .order('name', { ascending: true });
 
       if (!directions || directions.length === 0) {

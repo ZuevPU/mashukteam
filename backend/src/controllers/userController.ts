@@ -87,7 +87,6 @@ export async function getUserStatus(req: UserRequest, res: Response) {
         status: user.status,
         is_admin: user.is_admin,
         direction: user.direction,
-        direction_selected_at: user.direction_selected_at,
       },
     });
   } catch (error) {

@@ -93,7 +93,7 @@ export class NotificationService {
   /**
    * Отметить уведомление как прочитанное
    */
-  static async markAsRead(notificationId: string, userId: string): Promise<void> {
+  static async markAsRead(userId: string, notificationId: string): Promise<void> {
     try {
       const { error } = await supabase
         .from('notifications')

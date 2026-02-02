@@ -10,11 +10,11 @@ export class AssignmentController {
   
   static async getDirections(req: Request, res: Response) {
     try {
-      const types = await AssignmentService.getAllUserTypes();
-      return res.json({ success: true, types });
+      const directions = await AssignmentService.getAllDirections();
+      return res.json({ success: true, directions });
     } catch (error) {
-      logger.error('Get user types error', error instanceof Error ? error : new Error(String(error)));
-      return res.status(500).json({ error: 'Ошибка при получении типов' });
+      logger.error('Get directions error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ error: 'Ошибка при получении направлений' });
     }
   }
 

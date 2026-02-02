@@ -139,9 +139,9 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
       {/* Активные вопросы */}
       {activeQuestions.length > 0 && (
         <>
-          <h4 className="section-title">Новые вопросы ({unansweredQuestions.length})</h4>
+          <h4 className="section-title">Активные вопросы ({activeQuestions.length})</h4>
           <div className="questions-list">
-            {unansweredQuestions.map((q) => {
+            {activeQuestions.map((q: TargetedQuestion) => {
               // Для рандомайзеров показываем специальный компонент
               if (q.type === 'randomizer' && randomizers[q.id]) {
                 return (

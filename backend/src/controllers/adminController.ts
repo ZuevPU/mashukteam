@@ -162,26 +162,10 @@ export class AdminController {
   /**
    * Получение аналитики мероприятия
    */
-  static async getEventAnalytics(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      const { questions, answers } = await EventService.getEventAnalytics(id);
-      
-      return res.json({ success: true, questions, answers });
-    } catch (error) {
-      logger.error('Get analytics error', error instanceof Error ? error : new Error(String(error)));
-      return res.status(500).json({ error: 'Ошибка при получении аналитики' });
-    }
-  }
-
-  /**
-   * Назначение типа пользователя
-   */
-
   /**
    * Назначение направления пользователю
    */
-  static async setUserDirectionFromSelection(req: Request, res: Response) {
+  static async setUserDirection(req: Request, res: Response) {
     try {
       const { id } = req.params;
       const { direction } = req.body;
@@ -192,7 +176,7 @@ export class AdminController {
       // Отправка уведомления, если направление назначено
       if (direction && user) {
         const directions = await DirectionService.getAllDirections();
-        const directionObj = directions.find(d => d.slug === direction || d.code === direction);
+        const directionObj = directions.find(d => d.slug === direction);
         if (directionObj) {
           const { notifyDirectionAssigned } = await import('../utils/telegramBot');
           notifyDirectionAssigned(user.telegram_id, directionObj.name).catch((err) => 
