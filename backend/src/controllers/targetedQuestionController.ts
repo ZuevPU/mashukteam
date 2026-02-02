@@ -101,6 +101,9 @@ export class TargetedQuestionController {
         target_values: data.target_values,
         reflection_points: data.reflection_points,
         status: data.status,
+        group_name: data.group_name,
+        group_order: data.group_order,
+        question_order: data.question_order,
       };
 
       // #region agent log

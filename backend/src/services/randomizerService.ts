@@ -46,12 +46,16 @@ export class RandomizerService {
     randomizerId: string
   ): Promise<RandomizerParticipant> {
     try {
+      console.log('[RandomizerService.participateInRandomizer] Start, userId:', userId, 'randomizerId:', randomizerId);
+      
       // Проверяем, что рандомайзер существует и открыт
       const { data: randomizer, error: randomizerError } = await supabase
         .from('randomizer_questions')
         .select('status')
         .eq('id', randomizerId)
         .single();
+
+      console.log('[RandomizerService.participateInRandomizer] Randomizer query result:', { randomizer, randomizerError });
 
       if (randomizerError || !randomizer) {
         throw new Error('Рандомайзер не найден');
@@ -62,17 +66,20 @@ export class RandomizerService {
       }
 
       // Проверяем, не участвует ли уже пользователь
-      const { data: existing } = await supabase
+      const { data: existing, error: existingError } = await supabase
         .from('randomizer_participants')
         .select('id')
         .eq('randomizer_id', randomizerId)
         .eq('user_id', userId)
         .single();
 
+      console.log('[RandomizerService.participateInRandomizer] Existing check:', { existing, existingError });
+
       if (existing) {
         throw new Error('Вы уже участвуете в этом рандомайзере');
       }
 
+      console.log('[RandomizerService.participateInRandomizer] Inserting participant...');
       const { data: participant, error } = await supabase
         .from('randomizer_participants')
         .insert({
@@ -82,6 +89,8 @@ export class RandomizerService {
         .select()
         .single();
 
+      console.log('[RandomizerService.participateInRandomizer] Insert result:', { participant, error });
+
       if (error) {
         logger.error('Error participating in randomizer', error instanceof Error ? error : new Error(String(error)));
         throw error;
@@ -89,6 +98,7 @@ export class RandomizerService {
 
       return participant as RandomizerParticipant;
     } catch (error) {
+      console.error('[RandomizerService.participateInRandomizer] Error:', error);
       logger.error('Error participating in randomizer', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }

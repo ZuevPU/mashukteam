@@ -216,49 +216,50 @@ export class AssignmentService {
       }
 
       // Обновляем звездочки пользователя: получаем сумму reward из всех одобренных заданий
-      const { data: starsData, error: starsFetchError } = await supabase
-        .from('assignment_submissions')
-        .select('assignment:assignments(reward)')
-        .eq('user_id', existingSubmission.user_id)
-        .eq('status', 'approved');
-
-      if (!starsFetchError && starsData) {
-        const totalStars = (starsData as any[]).reduce((sum, sub) => {
-          const reward = sub.assignment?.reward || 0;
-          return sum + reward;
-        }, 0);
-
-        // Обновляем stars_count в users
-        await supabase
-          .from('users')
-          .update({ stars_count: totalStars })
-          .eq('id', existingSubmission.user_id);
-      }
+      await this.recalculateUserStars(existingSubmission.user_id);
     }
     
     // Если статус изменился с approved на другой — пересчитываем звездочки
     if (existingSubmission && existingSubmission.status === 'approved' && data.status !== 'approved') {
-      const { data: starsData, error: starsFetchError } = await supabase
-        .from('assignment_submissions')
-        .select('assignment:assignments(reward)')
-        .eq('user_id', existingSubmission.user_id)
-        .eq('status', 'approved');
-
-      if (!starsFetchError && starsData) {
-        const totalStars = (starsData as any[]).reduce((sum, sub) => {
-          const reward = sub.assignment?.reward || 0;
-          return sum + reward;
-        }, 0);
-
-        // Обновляем stars_count в users
-        await supabase
-          .from('users')
-          .update({ stars_count: totalStars })
-          .eq('id', existingSubmission.user_id);
-      }
+      await this.recalculateUserStars(existingSubmission.user_id);
     }
 
     return submission as AssignmentSubmission;
+  }
+
+  /**
+   * Пересчёт звёзд пользователя по сумме reward одобренных заданий
+   */
+  static async recalculateUserStars(userId: string): Promise<number> {
+    const { data: submissions, error } = await supabase
+      .from('assignment_submissions')
+      .select('assignment_id')
+      .eq('user_id', userId)
+      .eq('status', 'approved');
+
+    if (error || !submissions?.length) {
+      await supabase.from('users').update({ stars_count: 0 }).eq('id', userId);
+      return 0;
+    }
+
+    const assignmentIds = submissions.map((s: any) => s.assignment_id);
+    const { data: assignments, error: assignError } = await supabase
+      .from('assignments')
+      .select('reward')
+      .in('id', assignmentIds);
+
+    if (assignError || !assignments?.length) {
+      await supabase.from('users').update({ stars_count: 0 }).eq('id', userId);
+      return 0;
+    }
+
+    const totalStars = (assignments as any[]).reduce((sum, a) => sum + (Number(a.reward) || 0), 0);
+    await supabase
+      .from('users')
+      .update({ stars_count: totalStars })
+      .eq('id', userId);
+
+    return totalStars;
   }
 
   // === Leaderboard ===

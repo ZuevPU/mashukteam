@@ -170,6 +170,97 @@ export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> =
     );
   }
 
+  // Группировка вопросов по group_name
+  const groupedQuestions = questions.reduce((acc, q) => {
+    const groupName = q.group_name || 'Без группы';
+    if (!acc[groupName]) {
+      acc[groupName] = [];
+    }
+    acc[groupName].push(q);
+    return acc;
+  }, {} as Record<string, TargetedQuestion[]>);
+
+  // Сортировка групп по group_order первого вопроса
+  const sortedGroups = Object.entries(groupedQuestions).sort(([, a], [, b]) => {
+    const orderA = a[0]?.group_order ?? 0;
+    const orderB = b[0]?.group_order ?? 0;
+    return orderA - orderB;
+  });
+
+  const renderQuestionCard = (q: TargetedQuestion) => (
+    <div key={q.id} className="admin-item-card">
+      <div className="item-info">
+        <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap'}}>
+          <span className={`status-badge ${q.status === 'published' ? 'published' : 'draft'}`}>
+            {q.status === 'published' ? 'Опубликовано' : 'Черновик'}
+          </span>
+          <span className="status-badge event">{getTypeLabel(q.type)}</span>
+          <span className="status-badge diagnostic">{getAudienceLabel(q.target_audience)}</span>
+        </div>
+        <h4 style={{marginBottom: 8}}>{q.text}</h4>
+        {q.type === 'randomizer' && randomizers[q.id] && (
+          <div style={{marginBottom: 8, padding: '8px', background: 'var(--color-bg-primary, #F8F8F7)', borderRadius: '6px'}}>
+            <div style={{fontSize: 12, marginBottom: 4}}>
+              <strong>Тема:</strong> {randomizers[q.id].topic}
+            </div>
+            {randomizers[q.id].description && (
+              <div style={{fontSize: 11, opacity: 0.8, marginBottom: 4}}>
+                {randomizers[q.id].description}
+              </div>
+            )}
+            <div style={{fontSize: 11, display: 'flex', gap: '12px', marginTop: 4}}>
+              <span>Столов: {randomizers[q.id].tables_count}</span>
+              <span>На стол: {randomizers[q.id].participants_per_table}</span>
+              <span>Участников: {randomizers[q.id].participantsCount}</span>
+            </div>
+            <div style={{fontSize: 11, marginTop: 4}}>
+              Статус: <strong>{randomizers[q.id].status === 'open' ? 'Открыт' : randomizers[q.id].status === 'distributed' ? 'Распределен' : 'Закрыт'}</strong>
+            </div>
+          </div>
+        )}
+        {q.options && q.options.length > 0 && (
+          <p style={{fontSize: 12, opacity: 0.7, marginBottom: 4}}>
+            Варианты: {q.options.join(', ')}
+          </p>
+        )}
+        {q.reflection_points !== undefined && (
+          <p style={{fontSize: 11, opacity: 0.7, marginTop: 4}}>
+            Баллы рефлексии: {q.reflection_points}
+          </p>
+        )}
+        <p style={{fontSize: 11, opacity: 0.5, marginTop: 8}}>
+          {new Date(q.created_at).toLocaleDateString()}
+        </p>
+      </div>
+      <div className="item-actions">
+        {q.type === 'randomizer' && randomizers[q.id] && (
+          <button
+            className="action-btn"
+            onClick={() => handleDistribute(q.id)}
+            title={randomizers[q.id].status === 'distributed' ? 'Просмотр распределения' : 'Распределить участников'}
+            style={{
+              background: randomizers[q.id].status === 'distributed' ? '#666' : '#28a745',
+              color: '#fff'
+            }}
+          >
+            🎲
+          </button>
+        )}
+        <button 
+          className="action-btn" 
+          onClick={() => handleStatusChange(q)}
+          title={q.status === 'draft' ? 'Опубликовать' : 'Скрыть'}
+        >
+          {q.status === 'draft' ? '🚀' : '🔒'}
+        </button>
+        {onEdit && (
+          <button className="action-btn" onClick={() => onEdit(q)} title="Редактировать">✏️</button>
+        )}
+        <button className="action-btn" onClick={() => handleDelete(q.id, q.text)} title="Удалить">🗑️</button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="admin-screen">
       <div className="header">
@@ -181,77 +272,22 @@ export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> =
         {questions.length === 0 ? (
           <p className="no-data">Нет созданных вопросов</p>
         ) : (
-          questions.map((q) => (
-            <div key={q.id} className="admin-item-card">
-              <div className="item-info">
-                <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px'}}>
-                  <span className={`status-badge ${q.status === 'published' ? 'published' : 'draft'}`}>
-                    {q.status === 'published' ? 'Опубликовано' : 'Черновик'}
-                  </span>
-                  <span className="status-badge event">{getTypeLabel(q.type)}</span>
-                  <span className="status-badge diagnostic">{getAudienceLabel(q.target_audience)}</span>
-                </div>
-                <h4 style={{marginBottom: 8}}>{q.text}</h4>
-                {q.type === 'randomizer' && randomizers[q.id] && (
-                  <div style={{marginBottom: 8, padding: '8px', background: 'var(--color-bg-primary, #F8F8F7)', borderRadius: '6px'}}>
-                    <div style={{fontSize: 12, marginBottom: 4}}>
-                      <strong>Тема:</strong> {randomizers[q.id].topic}
-                    </div>
-                    {randomizers[q.id].description && (
-                      <div style={{fontSize: 11, opacity: 0.8, marginBottom: 4}}>
-                        {randomizers[q.id].description}
-                      </div>
-                    )}
-                    <div style={{fontSize: 11, display: 'flex', gap: '12px', marginTop: 4}}>
-                      <span>Столов: {randomizers[q.id].tables_count}</span>
-                      <span>На стол: {randomizers[q.id].participants_per_table}</span>
-                      <span>Участников: {randomizers[q.id].participantsCount}</span>
-                    </div>
-                    <div style={{fontSize: 11, marginTop: 4}}>
-                      Статус: <strong>{randomizers[q.id].status === 'open' ? 'Открыт' : randomizers[q.id].status === 'distributed' ? 'Распределен' : 'Закрыт'}</strong>
-                    </div>
-                  </div>
-                )}
-                {q.options && q.options.length > 0 && (
-                  <p style={{fontSize: 12, opacity: 0.7, marginBottom: 4}}>
-                    Варианты: {q.options.join(', ')}
-                  </p>
-                )}
-                {q.reflection_points !== undefined && (
-                  <p style={{fontSize: 11, opacity: 0.7, marginTop: 4}}>
-                    Баллы рефлексии: {q.reflection_points}
-                  </p>
-                )}
-                <p style={{fontSize: 11, opacity: 0.5, marginTop: 8}}>
-                  {new Date(q.created_at).toLocaleDateString()}
-                </p>
+          sortedGroups.map(([groupName, groupQuestions]) => (
+            <div key={groupName} style={{marginBottom: '24px'}}>
+              <div style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: '#fff',
+                padding: '10px 16px',
+                borderRadius: '8px',
+                marginBottom: '12px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <span style={{fontWeight: 600}}>📁 {groupName}</span>
+                <span style={{fontSize: 12, opacity: 0.9}}>{groupQuestions.length} вопр.</span>
               </div>
-              <div className="item-actions">
-                {q.type === 'randomizer' && randomizers[q.id] && (
-                  <button
-                    className="action-btn"
-                    onClick={() => handleDistribute(q.id)}
-                    title={randomizers[q.id].status === 'distributed' ? 'Просмотр распределения' : 'Распределить участников'}
-                    style={{
-                      background: randomizers[q.id].status === 'distributed' ? '#666' : '#28a745',
-                      color: '#fff'
-                    }}
-                  >
-                    🎲
-                  </button>
-                )}
-                <button 
-                  className="action-btn" 
-                  onClick={() => handleStatusChange(q)}
-                  title={q.status === 'draft' ? 'Опубликовать' : 'Скрыть'}
-                >
-                  {q.status === 'draft' ? '🚀' : '🔒'}
-                </button>
-                {onEdit && (
-                  <button className="action-btn" onClick={() => onEdit(q)} title="Редактировать">✏️</button>
-                )}
-                <button className="action-btn" onClick={() => handleDelete(q.id, q.text)} title="Удалить">🗑️</button>
-              </div>
+              {groupQuestions.map(renderQuestionCard)}
             </div>
           ))
         )}

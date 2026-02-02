@@ -79,6 +79,7 @@ router.post('/randomizer/my', requireAuth, RandomizerController.getMyRandomizers
 router.post('/randomizer/:id', requireAuth, RandomizerController.getRandomizer);
 router.post('/randomizer/:id/distributions', requireAuth, requireAdmin, RandomizerController.getDistributions);
 router.post('/randomizer/:id/participants-count', requireAuth, requireAdmin, RandomizerController.getParticipantsCount);
+router.post('/randomizer/:id/participants', requireAuth, requireAdmin, RandomizerController.getParticipants);
 router.post('/randomizer/by-question/:questionId', requireAuth, requireAdmin, RandomizerController.getRandomizerByQuestionId);
 
 // === Admin Randomizer Preview ===
@@ -134,6 +135,7 @@ router.delete('/admin/directions/:id', requireAuth, requireAdmin, DirectionContr
 // === Admin Assignments ===
 router.post('/admin/assignments', requireAuth, requireAdmin, AssignmentController.createAssignment);
 router.post('/admin/assignments/list', requireAuth, requireAdmin, AssignmentController.getAllAssignments);
+router.post('/admin/assignments/recalculate-stars', requireAuth, requireAdmin, AssignmentController.recalculateAllStars);
 router.put('/admin/assignments/:id', requireAuth, requireAdmin, AssignmentController.updateAssignment);
 router.delete('/admin/assignments/:id', requireAuth, requireAdmin, AssignmentController.deleteAssignment);
 router.post('/admin/assignments/:id/submissions', requireAuth, requireAdmin, AssignmentController.getSubmissionsForAssignment);

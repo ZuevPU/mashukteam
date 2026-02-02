@@ -48,7 +48,10 @@ export class RandomizerController {
   static async participate(req: Request, res: Response) {
     try {
       const userId = (req as any).user?.id;
+      console.log('[Randomizer participate] userId:', userId, 'user:', (req as any).user);
+      
       if (!userId) {
+        console.log('[Randomizer participate] No userId found');
         return res.status(401).json({
           success: false,
           error: 'Не авторизован',
@@ -56,6 +59,8 @@ export class RandomizerController {
       }
 
       const { randomizer_id } = req.body;
+      console.log('[Randomizer participate] randomizer_id:', randomizer_id);
+      
       if (!randomizer_id) {
         return res.status(400).json({
           success: false,
@@ -63,13 +68,16 @@ export class RandomizerController {
         });
       }
 
+      console.log('[Randomizer participate] Calling participateInRandomizer...');
       const participant = await RandomizerService.participateInRandomizer(userId, randomizer_id);
+      console.log('[Randomizer participate] Success, participant:', participant);
 
       return res.json({
         success: true,
         participant,
       });
     } catch (error: any) {
+      console.error('[Randomizer participate] Error:', error);
       logger.error('Participate in randomizer error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({
         success: false,
@@ -413,6 +421,37 @@ export class RandomizerController {
       return res.status(500).json({
         success: false,
         error: error.message || 'Ошибка при получении количества участников',
+      });
+    }
+  }
+
+  /**
+   * POST /api/randomizer/:id/participants
+   * Получение списка участников рандомайзера (админ)
+   */
+  static async getParticipants(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      
+      const { data: participants, error } = await supabase
+        .from('randomizer_participants')
+        .select('*, user:users(id, first_name, last_name, middle_name, telegram_username)')
+        .eq('randomizer_id', id)
+        .order('participated_at', { ascending: true });
+
+      if (error) {
+        throw error;
+      }
+
+      return res.json({
+        success: true,
+        participants: participants || [],
+      });
+    } catch (error: any) {
+      logger.error('Get participants error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({
+        success: false,
+        error: error.message || 'Ошибка при получении списка участников',
       });
     }
   }

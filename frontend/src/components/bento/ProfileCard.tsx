@@ -57,12 +57,14 @@ export function ProfileCard({ user, className = '' }: ProfileCardProps) {
         </div>
       </div>
       <div className="profile-details">
-        {user.stars_count !== undefined && (
-          <div className="profile-detail-item">
-            <span className="profile-detail-label">⭐ Звездочки:</span>
-            <span className="profile-detail-value">{user.stars_count}</span>
-          </div>
-        )}
+        <div className="profile-detail-item">
+          <span className="profile-detail-label">📊 Баллы:</span>
+          <span className="profile-detail-value">{user.total_points ?? 0}</span>
+        </div>
+        <div className="profile-detail-item">
+          <span className="profile-detail-label">⭐ Звездочки:</span>
+          <span className="profile-detail-value">{user.stars_count ?? 0}</span>
+        </div>
         {user.telegram_username && (
           <div className="profile-detail-item">
             <span className="profile-detail-label">Telegram:</span>

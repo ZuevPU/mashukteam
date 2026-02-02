@@ -127,9 +127,33 @@ export class AdminController {
         .eq('user_id', id)
         .order('updated_at', { ascending: false });
 
+      // Ответы на мероприятия и диагностики (таблица answers: event_id, question_id, answer_data)
+      const { data: answers, error: answersError } = await supabase
+        .from('answers')
+        .select('id, event_id, question_id, answer_data, created_at, events(id, title, type, event_date), questions(id, text, type)')
+        .eq('user_id', id)
+        .order('created_at', { ascending: false });
+
+      if (answersError) {
+        logger.error('Error fetching user answers', answersError);
+      }
+
+      // Нормализуем ответы: Supabase может вернуть events и questions как объекты или массивы при join
+      const normalizedAnswers = (answers || []).map((a: any) => ({
+        ...a,
+        events: Array.isArray(a.events) ? a.events[0] : a.events,
+        questions: Array.isArray(a.questions) ? a.questions[0] : a.questions,
+      }));
+
       return res.json({ 
         success: true, 
-        user: { ...user, targetedAnswers, submissions, eventNotes: eventNotes || [] } 
+        user: { 
+          ...user, 
+          targetedAnswers, 
+          submissions, 
+          eventNotes: eventNotes || [],
+          answers: normalizedAnswers,
+        } 
       });
     } catch (error) {
       logger.error('Get user details error', error instanceof Error ? error : new Error(String(error)));

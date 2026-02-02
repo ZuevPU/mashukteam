@@ -25,8 +25,15 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
     char_limit: editingQuestion?.char_limit || 1000,
     target_audience: editingQuestion?.target_audience || 'all',
     target_values: editingQuestion?.target_values || [],
-    reflection_points: editingQuestion?.reflection_points || 1
+    reflection_points: editingQuestion?.reflection_points || 1,
+    group_name: editingQuestion?.group_name || '',
+    group_order: editingQuestion?.group_order || 0,
+    question_order: editingQuestion?.question_order || 0,
+    status: editingQuestion?.status || 'draft'
   });
+  
+  // Состояние для выбора публикации при создании
+  const [publishOnCreate, setPublishOnCreate] = useState(false);
 
   // Состояние для рандомайзера
   const [randomizerData, setRandomizerData] = useState({
@@ -128,6 +135,9 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
         type: question.type,
         target_audience: question.target_audience,
         reflection_points: question.reflection_points || 1,
+        group_name: question.group_name || null,
+        group_order: question.group_order || 0,
+        question_order: question.question_order || 0,
       };
       
       // Для рандомайзера не отправляем options
@@ -155,8 +165,8 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
         // #endregion
         const createdQuestion = await adminApi.createTargetedQuestion({ 
           ...dataToSend, 
-          status: 'published', 
-          sendNotification 
+          status: publishOnCreate ? 'published' : 'draft', 
+          sendNotification: publishOnCreate && sendNotification 
         }, initData);
         
         // Если тип рандомайзер, создаем рандомайзер
@@ -395,20 +405,96 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
           </small>
         </div>
 
-        {/* 5. УВЕДОМЛЕНИЕ */}
+        {/* ГРУППИРОВКА ВОПРОСОВ */}
         <div className="form-group">
-          <label className="checkbox-item" style={{display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer'}}>
-            <input
-              type="checkbox"
-              checked={sendNotification}
-              onChange={(e) => setSendNotification(e.target.checked)}
-            />
-            <span>Отправить уведомление пользователям</span>
-          </label>
+          <label>Группа вопросов</label>
+          <input
+            type="text"
+            className="form-input"
+            value={question.group_name || ''}
+            onChange={(e) => setQuestion((prev: CreateTargetedQuestionRequest) => ({...prev, group_name: e.target.value}))}
+            placeholder="Например: Рефлексия, Обратная связь, День 1..."
+          />
+          <small style={{fontSize: 12, opacity: 0.7, display: 'block', marginTop: 4}}>
+            Вопросы с одинаковым названием группы будут отображаться вместе
+          </small>
         </div>
 
+        <div style={{display: 'flex', gap: '12px'}}>
+          <div className="form-group" style={{flex: 1}}>
+            <label>Порядок группы</label>
+            <input
+              type="number"
+              className="form-input"
+              value={question.group_order ?? 0}
+              onChange={(e) => {
+                const value = e.target.value;
+                setQuestion((prev: CreateTargetedQuestionRequest) => ({
+                  ...prev, 
+                  group_order: value === '' ? 0 : parseInt(value, 10) || 0
+                }));
+              }}
+              min="0"
+              placeholder="0"
+            />
+          </div>
+          <div className="form-group" style={{flex: 1}}>
+            <label>Порядок в группе</label>
+            <input
+              type="number"
+              className="form-input"
+              value={question.question_order ?? 0}
+              onChange={(e) => {
+                const value = e.target.value;
+                setQuestion((prev: CreateTargetedQuestionRequest) => ({
+                  ...prev, 
+                  question_order: value === '' ? 0 : parseInt(value, 10) || 0
+                }));
+              }}
+              min="0"
+              placeholder="0"
+            />
+          </div>
+        </div>
+
+        {/* ПУБЛИКАЦИЯ И УВЕДОМЛЕНИЕ */}
+        {!editingQuestion && (
+          <div className="form-group">
+            <label className="checkbox-item" style={{display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer'}}>
+              <input
+                type="checkbox"
+                checked={publishOnCreate}
+                onChange={(e) => setPublishOnCreate(e.target.checked)}
+              />
+              <span>🚀 Сразу опубликовать вопрос</span>
+            </label>
+            <small style={{fontSize: 12, opacity: 0.7, display: 'block', marginTop: 4}}>
+              Если не отмечено, вопрос будет сохранен как черновик
+            </small>
+          </div>
+        )}
+
+        {!editingQuestion && publishOnCreate && (
+          <div className="form-group">
+            <label className="checkbox-item" style={{display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer'}}>
+              <input
+                type="checkbox"
+                checked={sendNotification}
+                onChange={(e) => setSendNotification(e.target.checked)}
+              />
+              <span>📬 Отправить уведомление пользователям</span>
+            </label>
+          </div>
+        )}
+
         <button type="submit" className="save-btn" disabled={loading}>
-          {loading ? (editingQuestion ? 'Обновление...' : 'Создание...') : (editingQuestion ? '✓ Сохранить изменения' : '✓ Создать и отправить')}
+          {loading 
+            ? (editingQuestion ? 'Обновление...' : 'Создание...') 
+            : (editingQuestion 
+                ? '✓ Сохранить изменения' 
+                : (publishOnCreate ? '🚀 Создать и опубликовать' : '💾 Сохранить как черновик')
+              )
+          }
         </button>
       </form>
     </div>

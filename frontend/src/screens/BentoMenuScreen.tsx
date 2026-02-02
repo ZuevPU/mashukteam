@@ -166,18 +166,20 @@ export function BentoMenuScreen() {
         }
 
         const userId = statusResponse.user.id;
+        const u = statusResponse.user as Record<string, unknown>;
         const userData: User = {
           id: userId,
-          telegram_id: statusResponse.user.telegram_id,
-          telegram_username: null,
-          first_name: statusResponse.user.first_name,
-          last_name: '',
-          middle_name: null,
+          telegram_id: u.telegram_id as number,
+          telegram_username: (u.telegram_username as string) ?? null,
+          first_name: u.first_name as string,
+          last_name: (u.last_name as string) ?? '',
+          middle_name: (u.middle_name as string) ?? null,
           motivation: '',
           status: (statusResponse.status || 'new') as 'new' | 'registered',
-          is_admin: (statusResponse.user as any).is_admin,
-          direction: (statusResponse.user as any).direction,
-          stars_count: (statusResponse.user as any).stars_count || 0,
+          is_admin: u.is_admin as number | undefined,
+          direction: u.direction as string | undefined,
+          total_points: (u.total_points as number) ?? 0,
+          stars_count: (u.stars_count as number) ?? 0,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };

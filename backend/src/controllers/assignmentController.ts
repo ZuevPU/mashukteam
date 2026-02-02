@@ -215,4 +215,22 @@ export class AssignmentController {
       return res.status(500).json({ error: 'Ошибка при получении моих ответов' });
     }
   }
+
+  /**
+   * Пересчёт звёзд для всех пользователей (админ) — для исправления данных после миграции
+   */
+  static async recalculateAllStars(req: Request, res: Response) {
+    try {
+      const users = await UserService.getAllUsers();
+      let updated = 0;
+      for (const u of users) {
+        await AssignmentService.recalculateUserStars(u.id);
+        updated++;
+      }
+      return res.json({ success: true, message: `Пересчитаны звёзды для ${updated} пользователей` });
+    } catch (error) {
+      logger.error('Recalculate all stars error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ error: 'Ошибка пересчёта звёзд' });
+    }
+  }
 }

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Assignment, AssignmentSubmission } from '../../types';
 import { assignmentApi } from '../../services/assignmentApi';
+import { randomizerApi } from '../../services/randomizerApi';
+import { RandomizerCard } from '../../components/questions/RandomizerCard';
 import { useTelegram } from '../../hooks/useTelegram';
 import './AssignmentsScreen.css';
 
@@ -13,18 +15,21 @@ export const AssignmentsListScreen: React.FC<AssignmentsListScreenProps> = ({ on
   const { initData } = useTelegram();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [submissions, setSubmissions] = useState<AssignmentSubmission[]>([]);
+  const [randomizers, setRandomizers] = useState<Array<{ randomizer: { id: string; question_id: string; status: string }; isParticipant: boolean; distribution?: any }>>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       if (!initData) return;
       try {
-        const [assignmentsData, submissionsData] = await Promise.all([
+        const [assignmentsData, submissionsData, randomizersData] = await Promise.all([
           assignmentApi.getMyAssignments(initData),
-          assignmentApi.getMySubmissions(initData)
+          assignmentApi.getMySubmissions(initData),
+          randomizerApi.getMyRandomizers(initData).catch(() => [])
         ]);
         setAssignments(assignmentsData);
         setSubmissions(submissionsData);
+        setRandomizers(randomizersData);
       } catch (error) {
         console.error('Error loading assignments:', error);
       } finally {
@@ -40,6 +45,9 @@ export const AssignmentsListScreen: React.FC<AssignmentsListScreenProps> = ({ on
   const submittedIds = new Set(submissions.map(s => s.assignment_id));
   const available = assignments.filter(a => !submittedIds.has(a.id));
   const completed = assignments.filter(a => submittedIds.has(a.id));
+  // Рандомайзеры (открытые и с результатом)
+  const openRandomizers = randomizers.filter(r => r.randomizer.status === 'open');
+  const distributedRandomizers = randomizers.filter(r => r.randomizer.status === 'distributed');
 
   return (
     <div className="assignments-screen">
@@ -63,6 +71,25 @@ export const AssignmentsListScreen: React.FC<AssignmentsListScreenProps> = ({ on
                   <span className="format">{getFormatIcon(a.answer_format)} {getFormatLabel(a.answer_format)}</span>
                   <span className="action">Выполнить →</span>
                 </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Рандомайзеры */}
+      {(openRandomizers.length > 0 || distributedRandomizers.length > 0) && (
+        <>
+          <h4 className="section-title">Рандомайзеры</h4>
+          <div className="assignments-list" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {openRandomizers.map((r) => (
+              <div key={r.randomizer.id} className="assignment-card" style={{ padding: 0, overflow: 'hidden' }}>
+                <RandomizerCard questionId={r.randomizer.question_id} randomizerId={r.randomizer.id} />
+              </div>
+            ))}
+            {distributedRandomizers.map((r) => (
+              <div key={r.randomizer.id} className="assignment-card completed" style={{ padding: 0, overflow: 'hidden' }}>
+                <RandomizerCard questionId={r.randomizer.question_id} randomizerId={r.randomizer.id} />
               </div>
             ))}
           </div>
@@ -94,8 +121,8 @@ export const AssignmentsListScreen: React.FC<AssignmentsListScreenProps> = ({ on
         </>
       )}
 
-      {assignments.length === 0 && (
-        <p className="no-data">Нет доступных заданий</p>
+      {assignments.length === 0 && randomizers.length === 0 && (
+        <p className="no-data">Нет доступных заданий и рандомайзеров</p>
       )}
     </div>
   );

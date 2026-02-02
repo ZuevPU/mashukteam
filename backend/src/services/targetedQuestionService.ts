@@ -18,7 +18,10 @@ export class TargetedQuestionService {
       target_audience: data.target_audience,
       char_limit: data.char_limit || null,
       reflection_points: data.reflection_points || 1,
-      status: data.status || 'published',
+      status: data.status || 'draft',
+      group_name: data.group_name || null,
+      group_order: data.group_order ?? 0,
+      question_order: data.question_order ?? 0,
     };
 
     // Обработка options: для рандомайзера null, для других типов - массив или null
@@ -70,11 +73,13 @@ export class TargetedQuestionService {
     activeQuestions: TargetedQuestion[];
     answeredQuestions: TargetedQuestion[];
   }> {
-    // Получаем все опубликованные вопросы
+    // Получаем все опубликованные вопросы, сортируем по группам
     const { data: questions, error } = await supabase
       .from('targeted_questions')
       .select('*')
       .eq('status', 'published')
+      .order('group_order', { ascending: true })
+      .order('question_order', { ascending: true })
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -189,6 +194,8 @@ export class TargetedQuestionService {
     const { data, error } = await supabase
       .from('targeted_questions')
       .select('*')
+      .order('group_order', { ascending: true })
+      .order('question_order', { ascending: true })
       .order('created_at', { ascending: false });
 
     if (error) {

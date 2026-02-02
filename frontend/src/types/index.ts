@@ -67,6 +67,9 @@ export interface TargetedQuestion {
   target_values?: string[];
   status: 'draft' | 'published' | 'archived';
   reflection_points?: number;
+  group_name?: string; // Название группы вопросов
+  group_order?: number; // Порядок группы для сортировки
+  question_order?: number; // Порядок вопроса внутри группы
   created_at: string;
 }
 
@@ -254,6 +257,9 @@ export interface CreateTargetedQuestionRequest extends CreateTargetedQuestionDto
   target_values?: string[];
   status?: 'draft' | 'published' | 'archived';
   reflection_points?: number;
+  group_name?: string;
+  group_order?: number;
+  question_order?: number;
 }
 
 export interface Notification {

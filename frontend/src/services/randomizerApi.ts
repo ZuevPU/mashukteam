@@ -205,4 +205,18 @@ export const randomizerApi = {
     );
     return response.distributions;
   },
+
+  /**
+   * Получение списка участников рандомайзера (админ)
+   */
+  getParticipants: async (initData: string, randomizerId: string): Promise<Array<RandomizerParticipant & { user: { id: string; first_name: string; last_name: string; middle_name: string | null; telegram_username: string | null } }>> => {
+    const response = await fetchApi<{ success: boolean; participants: Array<RandomizerParticipant & { user: { id: string; first_name: string; last_name: string; middle_name: string | null; telegram_username: string | null } }> }>(
+      `/randomizer/${randomizerId}/participants`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ initData }),
+      }
+    );
+    return response.participants;
+  },
 };

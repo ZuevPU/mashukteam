@@ -84,9 +84,14 @@ export async function getUserStatus(req: UserRequest, res: Response) {
         id: user.id,
         telegram_id: user.telegram_id,
         first_name: user.first_name,
+        last_name: user.last_name,
+        middle_name: user.middle_name,
+        telegram_username: user.telegram_username,
         status: user.status,
         is_admin: user.is_admin,
         direction: user.direction,
+        total_points: user.total_points ?? 0,
+        stars_count: user.stars_count ?? 0,
       },
     });
   } catch (error) {
