@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { TargetedQuestion } from '../../types';
+import { TargetedQuestion, RandomizerQuestion } from '../../types';
 import { useTelegram } from '../../hooks/useTelegram';
 import { buildApiEndpoint } from '../../utils/apiUrl';
 import { adminApi } from '../../services/adminApi';
+import { randomizerApi } from '../../services/randomizerApi';
 import './AdminScreens.css';
 
 interface AdminQuestionsListScreenProps {
