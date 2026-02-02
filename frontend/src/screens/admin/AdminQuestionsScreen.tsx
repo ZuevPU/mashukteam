@@ -39,23 +39,23 @@ export const AdminQuestionsScreen: React.FC<AdminQuestionsScreenProps> = ({ even
   }, [event.id, initData]);
 
   const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setQuestion(prev => ({ ...prev, type: e.target.value as QuestionType }));
+    setQuestion((prev: CreateQuestionRequest) => ({ ...prev, type: e.target.value as QuestionType }));
   };
 
   const handleOptionChange = (index: number, value: string) => {
     const newOptions = [...(question.options || [])];
     newOptions[index] = value;
-    setQuestion(prev => ({ ...prev, options: newOptions }));
+    setQuestion((prev: CreateQuestionRequest) => ({ ...prev, options: newOptions }));
   };
 
   const addOption = () => {
-    setQuestion(prev => ({ ...prev, options: [...(prev.options || []), ''] }));
+    setQuestion((prev: CreateQuestionRequest) => ({ ...prev, options: [...(prev.options || []), ''] }));
   };
 
   const removeOption = (index: number) => {
     const newOptions = [...(question.options || [])];
     newOptions.splice(index, 1);
-    setQuestion(prev => ({ ...prev, options: newOptions }));
+    setQuestion((prev: CreateQuestionRequest) => ({ ...prev, options: newOptions }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,7 +68,7 @@ export const AdminQuestionsScreen: React.FC<AdminQuestionsScreenProps> = ({ even
     }
 
     if ((question.type === 'single' || question.type === 'multiple') && 
-        (!question.options || question.options.filter(o => o.trim()).length < 2)) {
+        (!question.options || question.options.filter((o: string) => o.trim()).length < 2)) {
       showAlert('Добавьте минимум 2 варианта ответа');
       return;
     }
@@ -77,7 +77,7 @@ export const AdminQuestionsScreen: React.FC<AdminQuestionsScreenProps> = ({ even
     try {
       const dataToSend = {
         ...question,
-        options: question.options?.filter(o => o.trim())
+        options: question.options?.filter((o: string) => o.trim())
       };
 
       const newQuestion = await adminApi.addQuestion(event.id, dataToSend, initData);
@@ -151,7 +151,7 @@ export const AdminQuestionsScreen: React.FC<AdminQuestionsScreenProps> = ({ even
           <textarea 
             className="form-textarea"
             value={question.text}
-            onChange={(e) => setQuestion({...question, text: e.target.value})}
+            onChange={(e) => setQuestion((prev: CreateQuestionRequest) => ({...prev, text: e.target.value}))}
             placeholder="Введите текст вопроса..."
             style={{minHeight: 80}}
           />
@@ -174,7 +174,7 @@ export const AdminQuestionsScreen: React.FC<AdminQuestionsScreenProps> = ({ even
         {(question.type === 'single' || question.type === 'multiple') && (
           <div className="form-group">
             <label>Варианты ответов</label>
-            {question.options?.map((opt, idx) => (
+            {question.options?.map((opt: string, idx: number) => (
               <div key={idx} className="option-row">
                 <input 
                   className="form-input"
@@ -204,7 +204,7 @@ export const AdminQuestionsScreen: React.FC<AdminQuestionsScreenProps> = ({ even
               type="number"
               className="form-input"
               value={question.char_limit}
-              onChange={(e) => setQuestion({...question, char_limit: parseInt(e.target.value) || 1000})}
+              onChange={(e) => setQuestion((prev: CreateQuestionRequest) => ({...prev, char_limit: parseInt(e.target.value) || 1000}))}
             />
           </div>
         )}

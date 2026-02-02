@@ -35,7 +35,7 @@ export const AdminAssignmentFormScreen: React.FC<AdminAssignmentFormScreenProps>
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ 
+    setFormData((prev: CreateAssignmentRequest) => ({ 
       ...prev, 
       [name]: name === 'reward' ? Number(value) : value,
       // Reset target_values when target_type changes
@@ -46,9 +46,9 @@ export const AdminAssignmentFormScreen: React.FC<AdminAssignmentFormScreenProps>
   const handleTypeCheckbox = (slug: string) => {
     const current = formData.target_values || [];
     if (current.includes(slug)) {
-      setFormData(prev => ({ ...prev, target_values: current.filter(v => v !== slug) }));
+      setFormData((prev: CreateAssignmentRequest) => ({ ...prev, target_values: current.filter((v: string) => v !== slug) }));
     } else {
-      setFormData(prev => ({ ...prev, target_values: [...current, slug] }));
+      setFormData((prev: CreateAssignmentRequest) => ({ ...prev, target_values: [...current, slug] }));
     }
   };
 
@@ -178,7 +178,7 @@ export const AdminAssignmentFormScreen: React.FC<AdminAssignmentFormScreenProps>
             <label>Выберите пользователей</label>
             <UserSelector 
               selectedUserIds={formData.target_values || []}
-              onChange={(ids) => setFormData(prev => ({ ...prev, target_values: ids }))}
+              onChange={(ids: string[]) => setFormData((prev: CreateAssignmentRequest) => ({ ...prev, target_values: ids }))}
             />
           </div>
         )}

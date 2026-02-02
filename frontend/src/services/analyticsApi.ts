@@ -60,9 +60,9 @@ export const analyticsApi = {
    * Получение статистики активности пользователей
    */
   getUserActivity: async (
+    initData: string,
     dateFrom?: string,
-    dateTo?: string,
-    initData: string
+    dateTo?: string
   ): Promise<UserActivityStats> => {
     const response = await fetchApi<{ success: boolean; stats: UserActivityStats }>(
       '/admin/analytics/user-activity',

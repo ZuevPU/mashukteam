@@ -32,19 +32,19 @@ export const ThemeSettingsScreen: React.FC<ThemeSettingsScreenProps> = ({ onBack
   };
 
   const applyTheme = (theme: 'light' | 'dark' | 'auto') => {
-    const webApp = window.Telegram?.WebApp;
+    const webApp = window.Telegram?.WebApp as any;
     if (!webApp) return;
 
     if (theme === 'light') {
-      webApp.setHeaderColor('#FFFFFF');
-      webApp.setBackgroundColor('#F8F8F7');
+      webApp.setHeaderColor?.('#FFFFFF');
+      webApp.setBackgroundColor?.('#F8F8F7');
     } else if (theme === 'dark') {
-      webApp.setHeaderColor('#1C1C1E');
-      webApp.setBackgroundColor('#000000');
+      webApp.setHeaderColor?.('#1C1C1E');
+      webApp.setBackgroundColor?.('#000000');
     } else {
       // auto - используем системную тему Telegram
-      webApp.setHeaderColor('#FFFFFF');
-      webApp.setBackgroundColor('#F8F8F7');
+      webApp.setHeaderColor?.('#FFFFFF');
+      webApp.setBackgroundColor?.('#F8F8F7');
     }
   };
 

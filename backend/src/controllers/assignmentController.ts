@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { AssignmentService } from '../services/assignmentService';
 import { UserService } from '../services/supabase';
 import { ReflectionService } from '../services/reflectionService';
+import { AchievementService } from '../services/gamification';
 import { notifyAssignmentResult, notifyNewAssignment } from '../utils/telegramBot';
 import { logger } from '../utils/logger';
 
@@ -137,6 +138,14 @@ export class AssignmentController {
           logger.info('Начисление баллов рефлексии за выполнение задания', { userId });
           await ReflectionService.addReflectionPoints(userId, 'assignment_completed');
           logger.info('Баллы рефлексии успешно начислены', { userId });
+          
+          // Проверка достижений после начисления баллов
+          try {
+            await AchievementService.checkAndUnlockAchievements(userId);
+          } catch (achievementError) {
+            logger.error('Error checking achievements', achievementError instanceof Error ? achievementError : new Error(String(achievementError)));
+            // Не прерываем выполнение, если ошибка проверки достижений
+          }
         } catch (reflectionError) {
           logger.error('Error adding reflection points', reflectionError instanceof Error ? reflectionError : new Error(String(reflectionError)));
           // Не прерываем выполнение, если ошибка начисления рефлексии
@@ -144,14 +153,15 @@ export class AssignmentController {
       }
       
       // Отправляем уведомление пользователю
-      if (subDataBefore.user?.telegram_id && subDataBefore.assignment) {
+      if (subDataBefore.user?.telegram_id && subDataBefore.assignment && submission.user_id) {
         notifyAssignmentResult(
+          submission.user_id,
           subDataBefore.user.telegram_id,
           subDataBefore.assignment.title,
           data.status === 'approved',
           subDataBefore.assignment.reward || 0,
           data.admin_comment
-        ).catch(console.error);
+        ).catch((err) => logger.error('Error sending assignment result notification', err instanceof Error ? err : new Error(String(err))));
       }
       
       return res.json({ success: true, submission });

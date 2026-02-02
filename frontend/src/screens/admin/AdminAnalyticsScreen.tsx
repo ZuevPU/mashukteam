@@ -52,7 +52,7 @@ export const AdminAnalyticsScreen: React.FC<AdminAnalyticsScreenProps> = ({ onBa
       
       switch (activeTab) {
         case 'activity':
-          const activity = await analyticsApi.getUserActivity(dateRange.dateFrom, dateRange.dateTo, initData);
+          const activity = await analyticsApi.getUserActivity(initData, dateRange.dateFrom, dateRange.dateTo);
           setActivityStats(activity);
           break;
         case 'directions':

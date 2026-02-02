@@ -40,7 +40,7 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
 
   const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newType = e.target.value as QuestionType;
-    setQuestion(prev => ({ 
+    setQuestion((prev: CreateTargetedQuestionRequest) => ({ 
       ...prev, 
       type: newType,
       options: (newType === 'single' || newType === 'multiple') ? ['', ''] : []
@@ -50,18 +50,18 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
   const handleOptionChange = (index: number, value: string) => {
     const newOptions = [...(question.options || [])];
     newOptions[index] = value;
-    setQuestion(prev => ({ ...prev, options: newOptions }));
+    setQuestion((prev: CreateTargetedQuestionRequest) => ({ ...prev, options: newOptions }));
   };
 
   const addOption = () => {
-    setQuestion(prev => ({ ...prev, options: [...(prev.options || []), ''] }));
+    setQuestion((prev: CreateTargetedQuestionRequest) => ({ ...prev, options: [...(prev.options || []), ''] }));
   };
 
   const removeOption = (index: number) => {
     if ((question.options?.length || 0) <= 2) return;
     const newOptions = [...(question.options || [])];
     newOptions.splice(index, 1);
-    setQuestion(prev => ({ ...prev, options: newOptions }));
+    setQuestion((prev: CreateTargetedQuestionRequest) => ({ ...prev, options: newOptions }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,7 +83,7 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
     }
 
     if ((question.type === 'single' || question.type === 'multiple')) {
-      const validOptions = question.options?.filter(o => o.trim()) || [];
+      const validOptions = question.options?.filter((o: string) => o.trim()) || [];
       if (validOptions.length < 2) {
         showAlert('Добавьте минимум 2 варианта ответа');
         return;
@@ -94,7 +94,7 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
     try {
       const dataToSend = {
         ...question,
-        options: question.options?.filter(o => o.trim()),
+        options: question.options?.filter((o: string) => o.trim()),
         sendNotification
       };
       
@@ -129,7 +129,7 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
           <select 
             className="form-select"
             value={question.target_audience}
-            onChange={(e) => setQuestion({...question, target_audience: e.target.value as any, target_values: []})}
+            onChange={(e) => setQuestion((prev: CreateTargetedQuestionRequest) => ({...prev, target_audience: e.target.value as 'all' | 'by_type' | 'individual', target_values: []}))}
           >
             <option value="all">👥 Всем пользователям</option>
             <option value="by_type">📋 По типу пользователя</option>
@@ -149,9 +149,9 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
                     onChange={(e) => {
                       const vals = question.target_values || [];
                       if (e.target.checked) {
-                        setQuestion({...question, target_values: [...vals, t.slug]});
+                        setQuestion((prev: CreateTargetedQuestionRequest) => ({...prev, target_values: [...vals, t.slug]}));
                       } else {
-                        setQuestion({...question, target_values: vals.filter(v => v !== t.slug)});
+                        setQuestion((prev: CreateTargetedQuestionRequest) => ({...prev, target_values: vals.filter((v: string) => v !== t.slug)}));
                       }
                     }}
                   />
@@ -167,7 +167,7 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
             <label>Выберите пользователей:</label>
             <UserSelector 
               selectedUserIds={question.target_values || []}
-              onChange={(ids) => setQuestion({...question, target_values: ids})}
+              onChange={(ids: string[]) => setQuestion((prev: CreateTargetedQuestionRequest) => ({...prev, target_values: ids}))}
             />
           </div>
         )}
@@ -187,7 +187,7 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
         {(question.type === 'single' || question.type === 'multiple') && (
           <div className="form-group">
             <label>3. Варианты ответов</label>
-            {question.options?.map((opt, idx) => (
+            {question.options?.map((opt: string, idx: number) => (
               <div key={idx} className="option-row">
                 <input 
                   className="form-input"
@@ -216,7 +216,7 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
           <textarea 
             className="form-textarea"
             value={question.text}
-            onChange={(e) => setQuestion({...question, text: e.target.value})}
+            onChange={(e) => setQuestion((prev: CreateTargetedQuestionRequest) => ({...prev, text: e.target.value}))}
             placeholder="Введите текст вопроса..."
             rows={3}
           />

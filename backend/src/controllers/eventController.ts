@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { EventService } from '../services/eventService';
 import { ReflectionService } from '../services/reflectionService';
+import { AchievementService } from '../services/gamification';
 import { logger } from '../utils/logger';
 
 export class EventController {
@@ -63,6 +64,14 @@ export class EventController {
         if (event) {
           const actionType = event.type === 'diagnostic' ? 'diagnostic_answer' : 'event_answer';
           await ReflectionService.addReflectionPoints(userId, actionType);
+          
+          // Проверка достижений после начисления баллов
+          try {
+            await AchievementService.checkAndUnlockAchievements(userId);
+          } catch (achievementError) {
+            logger.error('Error checking achievements', achievementError instanceof Error ? achievementError : new Error(String(achievementError)));
+            // Не прерываем выполнение, если ошибка проверки достижений
+          }
         }
       } catch (reflectionError) {
         logger.error('Error adding reflection points', reflectionError instanceof Error ? reflectionError : new Error(String(reflectionError)));

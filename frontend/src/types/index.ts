@@ -159,3 +159,68 @@ export interface UserStats {
   reflection_points?: number;
   reflection_to_next_level?: number;
 }
+
+// Типы для геймификации
+export interface PointsTransaction {
+  id: string;
+  user_id: string;
+  points: number;
+  reason: string | null;
+  created_at: string;
+}
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string | null;
+  icon_url: string | null;
+  points_reward: number;
+  created_at: string;
+}
+
+export interface UserAchievement {
+  id: string;
+  user_id: string;
+  achievement_id: string;
+  unlocked_at: string;
+  achievement?: Achievement;
+}
+
+// Request типы для создания сущностей
+export interface CreateAssignmentRequest {
+  title: string;
+  description?: string;
+  answer_format: 'text' | 'number' | 'link';
+  reward: number;
+  target_type: 'all' | 'user_type' | 'individual';
+  target_values?: string[];
+}
+
+export interface CreateEventRequest {
+  title: string;
+  speaker?: string;
+  description?: string;
+  audience?: string;
+  event_date?: string;
+  event_time?: string;
+  group_name?: string;
+  group_order?: number;
+  event_order?: number;
+}
+
+export interface CreateQuestionRequest {
+  text: string;
+  type: QuestionType;
+  options?: string[];
+  char_limit?: number;
+}
+
+export interface CreateTargetedQuestionRequest {
+  text: string;
+  type: QuestionType;
+  options?: string[];
+  char_limit?: number;
+  target_audience: 'all' | 'by_type' | 'individual';
+  target_values?: string[];
+  status?: 'draft' | 'published' | 'archived';
+}

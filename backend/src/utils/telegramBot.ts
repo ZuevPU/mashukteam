@@ -1,4 +1,5 @@
 import { UserService } from '../services/supabase';
+import { UserPreferencesService, UserPreferences } from '../services/userPreferencesService';
 import { logger } from './logger';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -12,6 +13,66 @@ function buildAppLink(type: 'event' | 'question' | 'assignment' | 'diagnostic', 
 }
 
 /**
+ * Проверка, нужно ли отправлять уведомление пользователю
+ */
+async function shouldSendNotification(
+  userId: string,
+  notificationType: 'events' | 'questions' | 'assignments' | 'diagnostics'
+): Promise<boolean> {
+  try {
+    const preferences = await UserPreferencesService.getUserPreferences(userId);
+    
+    // Если все уведомления отключены
+    if (!preferences.notifications_enabled) {
+      return false;
+    }
+    
+    // Проверяем конкретный тип уведомления
+    switch (notificationType) {
+      case 'events':
+        return preferences.notification_events;
+      case 'questions':
+        return preferences.notification_questions;
+      case 'assignments':
+        return preferences.notification_assignments;
+      case 'diagnostics':
+        return preferences.notification_diagnostics;
+      default:
+        return true;
+    }
+  } catch (error) {
+    logger.error('Error checking notification preferences', error instanceof Error ? error : new Error(String(error)));
+    // В случае ошибки отправляем уведомление (fail-safe)
+    return true;
+  }
+}
+
+/**
+ * Массовая загрузка настроек пользователей
+ */
+async function getUserPreferencesBatch(userIds: string[]): Promise<Map<string, UserPreferences>> {
+  const preferencesMap = new Map<string, UserPreferences>();
+  
+  // Загружаем настройки батчами по 100 пользователей
+  const batchSize = 100;
+  for (let i = 0; i < userIds.length; i += batchSize) {
+    const batch = userIds.slice(i, i + batchSize);
+    const preferencesPromises = batch.map(userId => 
+      UserPreferencesService.getUserPreferences(userId).catch(() => null)
+    );
+    const preferences = await Promise.all(preferencesPromises);
+    
+    preferences.forEach((pref, index) => {
+      if (pref) {
+        preferencesMap.set(batch[index], pref);
+      }
+    });
+  }
+  
+  return preferencesMap;
+}
+
+/**
  * Отправка сообщения пользователю через Telegram Bot API
  */
 export async function sendMessageToUser(
@@ -21,8 +82,8 @@ export async function sendMessageToUser(
   deepLink?: string
 ) {
   if (!BOT_TOKEN) {
-    console.warn('TELEGRAM_BOT_TOKEN не установлен, уведомление не отправлено');
-    return;
+    logger.warn('TELEGRAM_BOT_TOKEN не установлен, уведомление не отправлено');
+    return false;
   }
 
   // Добавляем ссылку на мини-апп
@@ -49,27 +110,128 @@ export async function sendMessageToUser(
     if (!response.ok) {
       const errorText = await response.text();
       logger.error('Telegram send message error', new Error(`Failed to send message to ${telegramId}: ${errorText}`));
+      return false;
     }
+    
+    logger.debug('Telegram message sent successfully', { telegramId });
+    return true;
   } catch (error) {
     logger.error('Error sending telegram message', error instanceof Error ? error : new Error(String(error)));
+    return false;
   }
+}
+
+/**
+ * Параллельная отправка уведомлений с ограничением concurrency
+ */
+async function sendNotificationsBatch(
+  notifications: Array<{ telegramId: number; text: string; deepLink?: string }>,
+  concurrency: number = 10
+): Promise<{ success: number; failed: number }> {
+  const results = { success: 0, failed: 0 };
+  
+  for (let i = 0; i < notifications.length; i += concurrency) {
+    const batch = notifications.slice(i, i + concurrency);
+    const promises = batch.map(notif => 
+      sendMessageToUser(notif.telegramId, notif.text, true, notif.deepLink)
+        .then((success) => { 
+          if (success) {
+            results.success++; 
+          } else {
+            results.failed++;
+          }
+        })
+        .catch(() => { results.failed++; })
+    );
+    
+    await Promise.all(promises);
+    // Небольшая задержка между батчами для избежания rate limiting
+    if (i + concurrency < notifications.length) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+  
+  return results;
 }
 
 /**
  * Рассылка уведомления всем пользователям
  */
-export async function broadcastMessage(text: string, deepLink?: string) {
+export async function broadcastMessage(
+  text: string, 
+  deepLink?: string,
+  notificationType?: 'events' | 'questions' | 'assignments' | 'diagnostics'
+) {
+  const startTime = Date.now();
+  
   try {
     const users = await UserService.getAllUsers();
     
-    for (const user of users) {
-      await sendMessageToUser(user.telegram_id, text, true, deepLink);
-      await new Promise(resolve => setTimeout(resolve, 50));
+    // Если указан тип уведомления, фильтруем пользователей
+    if (notificationType) {
+      const userIds = users.map(u => u.id);
+      const preferencesMap = await getUserPreferencesBatch(userIds);
+      
+      const filteredUsers = users.filter(user => {
+        const prefs = preferencesMap.get(user.id);
+        if (!prefs) return true; // Если настроек нет, отправляем (дефолт)
+        
+        if (!prefs.notifications_enabled) return false;
+        
+        switch (notificationType) {
+          case 'events':
+            return prefs.notification_events;
+          case 'questions':
+            return prefs.notification_questions;
+          case 'assignments':
+            return prefs.notification_assignments;
+          case 'diagnostics':
+            return prefs.notification_diagnostics;
+          default:
+            return true;
+        }
+      });
+      
+      // Подготавливаем уведомления для батч-отправки
+      const notifications = filteredUsers.map(user => ({
+        telegramId: user.telegram_id,
+        text,
+        deepLink
+      }));
+      
+      // Отправляем батчами
+      const results = await sendNotificationsBatch(notifications);
+      const duration = Date.now() - startTime;
+      
+      logger.info('Broadcast completed', { 
+        totalUsers: users.length, 
+        notifiedUsers: filteredUsers.length,
+        skippedUsers: users.length - filteredUsers.length,
+        success: results.success,
+        failed: results.failed,
+        notificationType,
+        duration: `${duration}ms`
+      });
+    } else {
+      // Если тип не указан, отправляем всем (для обратной совместимости)
+      const notifications = users.map(user => ({
+        telegramId: user.telegram_id,
+        text,
+        deepLink
+      }));
+      
+      const results = await sendNotificationsBatch(notifications);
+      const duration = Date.now() - startTime;
+      
+      logger.info('Broadcast completed', { 
+        usersCount: users.length,
+        success: results.success,
+        failed: results.failed,
+        duration: `${duration}ms`
+      });
     }
-    
-    console.log(`Broadcast completed for ${users.length} users`);
   } catch (error) {
-    console.error('Broadcast error:', error);
+    logger.error('Broadcast error', error instanceof Error ? error : new Error(String(error)));
   }
 }
 
@@ -79,19 +241,27 @@ export async function broadcastMessage(text: string, deepLink?: string) {
 export async function notifyNewAssignment(title: string, reward: number, assignmentId: string) {
   const text = `📋 <b>Анонс нового задания</b>\n\n${title}\n\n🎁 Награда: ${reward} баллов`;
   const deepLink = buildAppLink('assignment', assignmentId);
-  await broadcastMessage(text, deepLink);
+  await broadcastMessage(text, deepLink, 'assignments');
 }
 
 /**
  * Отправка уведомления о результате проверки задания
  */
 export async function notifyAssignmentResult(
+  userId: string,
   telegramId: number, 
   assignmentTitle: string, 
   approved: boolean,
   reward: number,
   comment?: string
 ) {
+  // Проверяем настройки пользователя
+  const shouldSend = await shouldSendNotification(userId, 'assignments');
+  if (!shouldSend) {
+    logger.debug('Notification skipped due to user preferences', { userId, notificationType: 'assignments' });
+    return;
+  }
+  
   let text: string;
   
   if (approved) {
@@ -132,12 +302,32 @@ export async function notifyTargetedQuestionToUsers(
     const users = await UserService.getAllUsers();
     const targetUsers = users.filter(u => userIds.includes(u.id));
     
+    // Фильтруем пользователей по настройкам уведомлений
+    const notifications: Array<{ telegramId: number; text: string; deepLink?: string }> = [];
+    
     for (const user of targetUsers) {
-      await notifyNewTargetedQuestion(user.telegram_id, questionText, questionId);
-      await new Promise(resolve => setTimeout(resolve, 50));
+      const shouldSend = await shouldSendNotification(user.id, 'questions');
+      if (shouldSend) {
+        const text = `❓ <b>Анонс нового вопроса</b>\n\n${questionText}`;
+        const deepLink = buildAppLink('question', questionId);
+        notifications.push({
+          telegramId: user.telegram_id,
+          text,
+          deepLink
+        });
+      }
     }
     
-    logger.info('Targeted question notifications sent', { usersCount: targetUsers.length });
+    // Отправляем батчами
+    const results = await sendNotificationsBatch(notifications);
+    
+    logger.info('Targeted question notifications sent', { 
+      totalUsers: targetUsers.length,
+      notifiedUsers: notifications.length,
+      skippedUsers: targetUsers.length - notifications.length,
+      success: results.success,
+      failed: results.failed
+    });
   } catch (error) {
     logger.error('Error sending targeted question notifications', error instanceof Error ? error : new Error(String(error)));
   }
@@ -175,5 +365,5 @@ export async function notifyNewDiagnostic(
 ) {
   const text = `🩺 <b>Анонс новой диагностики</b>\n\n${diagnosticTitle}`;
   const deepLink = buildAppLink('diagnostic', diagnosticId);
-  await broadcastMessage(text, deepLink);
+  await broadcastMessage(text, deepLink, 'diagnostics');
 }

@@ -195,7 +195,6 @@ export class AchievementService {
 
   /**
    * Проверка условий и автоматическая разблокировка достижений
-   * TODO: Реализовать логику проверки условий для разных типов достижений
    */
   static async checkAndUnlockAchievements(userId: string): Promise<UserAchievement[]> {
     const unlocked: UserAchievement[] = [];
@@ -218,6 +217,29 @@ export class AchievementService {
       return unlocked;
     }
 
+    // Получаем статистику пользователя для проверки условий
+    const reflectionLevel = user.reflection_level || 1;
+    const reflectionPoints = user.reflection_points || 0;
+
+    // Подсчитываем количество выполненных заданий
+    const { count: assignmentsCount } = await supabase
+      .from('assignment_submissions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'approved');
+
+    // Подсчитываем количество ответов на вопросы
+    const { count: targetedAnswersCount } = await supabase
+      .from('targeted_answers')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
+    // Подсчитываем количество ответов на мероприятия/диагностики
+    const { count: eventAnswersCount } = await supabase
+      .from('answers')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId);
+
     // Проверяем каждое достижение
     for (const achievement of allAchievements) {
       if (unlockedIds.has(achievement.id)) {
@@ -225,20 +247,84 @@ export class AchievementService {
       }
 
       let shouldUnlock = false;
+      const achievementNameLower = achievement.name.toLowerCase();
 
-      // Примеры условий (можно расширить)
-      switch (achievement.name.toLowerCase()) {
-        case 'первая регистрация':
-          if (user.status === 'registered') {
+      // Проверка условий по названию достижения
+      if (achievementNameLower.includes('регистрация') || achievementNameLower.includes('первая регистрация')) {
+        if (user.status === 'registered') {
+          shouldUnlock = true;
+        }
+      } else if (achievementNameLower.includes('первые баллы') || achievementNameLower.includes('первые очки')) {
+        if ((user.total_points || 0) > 0 || reflectionPoints > 0) {
+          shouldUnlock = true;
+        }
+      } else if (achievementNameLower.includes('уровень 2') || achievementNameLower.includes('уровень рефлексии 2')) {
+        if (reflectionLevel >= 2) {
+          shouldUnlock = true;
+        }
+      } else if (achievementNameLower.includes('уровень 3') || achievementNameLower.includes('уровень рефлексии 3')) {
+        if (reflectionLevel >= 3) {
+          shouldUnlock = true;
+        }
+      } else if (achievementNameLower.includes('уровень 4') || achievementNameLower.includes('уровень рефлексии 4')) {
+        if (reflectionLevel >= 4) {
+          shouldUnlock = true;
+        }
+      } else if (achievementNameLower.includes('уровень 5') || achievementNameLower.includes('мастер рефлексии')) {
+        if (reflectionLevel >= 5) {
+          shouldUnlock = true;
+        }
+      } else if (achievementNameLower.includes('задание') || achievementNameLower.includes('заданий')) {
+        // Проверка на количество выполненных заданий
+        if (achievementNameLower.includes('первое') || achievementNameLower.includes('1')) {
+          if ((assignmentsCount || 0) >= 1) {
             shouldUnlock = true;
           }
-          break;
-        case 'первые баллы':
-          if ((user.total_points || 0) > 0) {
+        } else if (achievementNameLower.includes('5') || achievementNameLower.includes('пять')) {
+          if ((assignmentsCount || 0) >= 5) {
             shouldUnlock = true;
           }
-          break;
-        // Добавить другие условия по необходимости
+        } else if (achievementNameLower.includes('10') || achievementNameLower.includes('десять')) {
+          if ((assignmentsCount || 0) >= 10) {
+            shouldUnlock = true;
+          }
+        }
+      } else if (achievementNameLower.includes('вопрос') || achievementNameLower.includes('ответ')) {
+        // Проверка на количество ответов на вопросы
+        const totalAnswers = (targetedAnswersCount || 0) + (eventAnswersCount || 0);
+        if (achievementNameLower.includes('первый') || achievementNameLower.includes('1')) {
+          if (totalAnswers >= 1) {
+            shouldUnlock = true;
+          }
+        } else if (achievementNameLower.includes('10') || achievementNameLower.includes('десять')) {
+          if (totalAnswers >= 10) {
+            shouldUnlock = true;
+          }
+        } else if (achievementNameLower.includes('50') || achievementNameLower.includes('пятьдесят')) {
+          if (totalAnswers >= 50) {
+            shouldUnlock = true;
+          }
+        }
+      } else if (achievementNameLower.includes('мероприятие') || achievementNameLower.includes('событие')) {
+        // Проверка на участие в мероприятиях
+        if ((eventAnswersCount || 0) >= 1) {
+          shouldUnlock = true;
+        }
+      } else if (achievementNameLower.includes('балл') || achievementNameLower.includes('очк')) {
+        // Проверка на количество баллов рефлексии
+        if (achievementNameLower.includes('50') || achievementNameLower.includes('пятьдесят')) {
+          if (reflectionPoints >= 50) {
+            shouldUnlock = true;
+          }
+        } else if (achievementNameLower.includes('100') || achievementNameLower.includes('сто')) {
+          if (reflectionPoints >= 100) {
+            shouldUnlock = true;
+          }
+        } else if (achievementNameLower.includes('200') || achievementNameLower.includes('двести')) {
+          if (reflectionPoints >= 200) {
+            shouldUnlock = true;
+          }
+        }
       }
 
       if (shouldUnlock) {

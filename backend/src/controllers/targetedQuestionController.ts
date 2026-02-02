@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { TargetedQuestionService } from '../services/targetedQuestionService';
 import { ReflectionService } from '../services/reflectionService';
+import { AchievementService } from '../services/gamification';
 import { notifyTargetedQuestionToUsers } from '../utils/telegramBot';
 import { UserService } from '../services/supabase';
 import { logger } from '../utils/logger';
@@ -37,6 +38,14 @@ export class TargetedQuestionController {
       // Начисление баллов рефлексии за ответ на персональный вопрос
       try {
         await ReflectionService.addReflectionPoints(userId, 'targeted_answer');
+        
+        // Проверка достижений после начисления баллов
+        try {
+          await AchievementService.checkAndUnlockAchievements(userId);
+        } catch (achievementError) {
+          logger.error('Error checking achievements', achievementError instanceof Error ? achievementError : new Error(String(achievementError)));
+          // Не прерываем выполнение, если ошибка проверки достижений
+        }
       } catch (reflectionError) {
         logger.error('Error adding reflection points', reflectionError instanceof Error ? reflectionError : new Error(String(reflectionError)));
         // Не прерываем выполнение, если ошибка начисления рефлексии
