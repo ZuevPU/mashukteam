@@ -12,6 +12,8 @@ import {
   UserStats,
 } from '../types';
 import { ReflectionService } from './reflectionService';
+import { UserService } from './supabase';
+import { logger } from '../utils/logger';
 
 /**
  * Сервис для работы с баллами пользователей

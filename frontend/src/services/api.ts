@@ -7,6 +7,7 @@ import {
   Achievement,
   UserAchievement,
   UserStats,
+  User,
 } from '../types';
 
 // Получаем API URL из переменных окружения
