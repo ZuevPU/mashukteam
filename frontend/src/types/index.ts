@@ -206,6 +206,7 @@ export interface CreateEventRequest {
   group_name?: string;
   group_order?: number;
   event_order?: number;
+  status?: 'draft' | 'published' | 'completed';
 }
 
 export interface CreateQuestionRequest {
