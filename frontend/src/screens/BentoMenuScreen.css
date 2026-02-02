@@ -25,8 +25,8 @@
 
 /* Новые карточки */
 .diagnostic-card {
-  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
-  color: white;
+  background: var(--color-primary, #3E529B);
+  color: var(--color-text-on-primary, #FFFFFF);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -34,11 +34,19 @@
   text-align: center;
   height: 100%;
   cursor: pointer;
+  border-radius: 16px;
+  transition: all 0.2s ease;
+}
+
+.diagnostic-card:hover {
+  background: var(--color-primary-hover, #2d3d7a);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(62, 82, 155, 0.3);
 }
 
 .questions-card {
-  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
-  color: white;
+  background: var(--color-primary, #3E529B);
+  color: var(--color-text-on-primary, #FFFFFF);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -46,6 +54,14 @@
   text-align: center;
   height: 100%;
   cursor: pointer;
+  border-radius: 16px;
+  transition: all 0.2s ease;
+}
+
+.questions-card:hover {
+  background: var(--color-primary-hover, #2d3d7a);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(62, 82, 155, 0.3);
 }
 
 .bento-card h3 {
