@@ -284,27 +284,27 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
             <div className="admin-list" style={{marginBottom: 24}}>
               {paginated.length > 0 ? (
                 paginated.map((sub: any) => (
-            <div key={sub.id} className="admin-item-card block">
-              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: 8}}>
-                <span style={{fontWeight: 600}}>{sub.assignment?.title || 'Задание'}</span>
-                {getStatusBadge(sub.status)}
-              </div>
-              <p className="answer-box">{sub.content}</p>
-              {sub.admin_comment && (
-                <p style={{fontSize: 12, marginTop: 8, opacity: 0.7}}>
-                  💬 {sub.admin_comment}
-                </p>
+                  <div key={sub.id} className="admin-item-card block">
+                    <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: 8}}>
+                      <span style={{fontWeight: 600}}>{sub.assignment?.title || 'Задание'}</span>
+                      {getStatusBadge(sub.status)}
+                    </div>
+                    <p className="answer-box">{sub.content}</p>
+                    {sub.admin_comment && (
+                      <p style={{fontSize: 12, marginTop: 8, opacity: 0.7}}>
+                        💬 {sub.admin_comment}
+                      </p>
+                    )}
+                    {sub.status === 'approved' && sub.assignment?.reward && (
+                      <p style={{fontSize: 12, marginTop: 4, color: '#34c759'}}>
+                        +{sub.assignment.reward} баллов
+                      </p>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className="no-data">Нет выполненных заданий</p>
               )}
-              {sub.status === 'approved' && sub.assignment?.reward && (
-                <p style={{fontSize: 12, marginTop: 4, color: '#34c759'}}>
-                  +{sub.assignment.reward} баллов
-                </p>
-              )}
-            </div>
-          ))
-                )) : (
-                  <p className="no-data">Нет выполненных заданий</p>
-                )}
             </div>
             {totalPages > 1 && (
               <div style={{display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: 24}}>
@@ -344,14 +344,13 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
             <div className="admin-list" style={{marginBottom: 24}}>
               {paginated.length > 0 ? (
                 paginated.map((answer: TargetedAnswerWithQuestion) => (
-            <div key={answer.id} className="admin-item-card block" style={{background: 'rgba(255, 149, 0, 0.1)'}}>
-              <h4 style={{marginBottom: 8}}>{answer.question?.text || 'Вопрос'}</h4>
-              <p className="answer-box">{formatAnswer(answer.answer_data)}</p>
-              <p style={{fontSize: 11, opacity: 0.6, marginTop: 8}}>
-                {new Date(answer.created_at).toLocaleDateString()}
-              </p>
-            </div>
-          ))
+                  <div key={answer.id} className="admin-item-card block" style={{background: 'rgba(255, 149, 0, 0.1)'}}>
+                    <h4 style={{marginBottom: 8}}>{answer.question?.text || 'Вопрос'}</h4>
+                    <p className="answer-box">{formatAnswer(answer.answer_data)}</p>
+                    <p style={{fontSize: 11, opacity: 0.6, marginTop: 8}}>
+                      {new Date(answer.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
                 ))
               ) : (
                 <p className="no-data">Нет ответов</p>
@@ -396,14 +395,13 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
             <div className="admin-list" style={{marginBottom: 24}}>
               {paginated.length > 0 ? (
                 paginated.map((answer: any) => (
-            <div key={answer.id} className="admin-item-card block" style={{background: 'rgba(52, 199, 89, 0.1)'}}>
-              <p style={{fontSize: 12, opacity: 0.7, marginBottom: 4}}>
-                {answer.events?.title}
-              </p>
-              <h4 style={{marginBottom: 8}}>{answer.questions?.text}</h4>
-              <p className="answer-box">{formatAnswer(answer.answer_data)}</p>
-            </div>
-          ))
+                  <div key={answer.id} className="admin-item-card block" style={{background: 'rgba(52, 199, 89, 0.1)'}}>
+                    <p style={{fontSize: 12, opacity: 0.7, marginBottom: 4}}>
+                      {answer.events?.title}
+                    </p>
+                    <h4 style={{marginBottom: 8}}>{answer.questions?.text}</h4>
+                    <p className="answer-box">{formatAnswer(answer.answer_data)}</p>
+                  </div>
                 ))
               ) : (
                 <p className="no-data">Диагностика не пройдена</p>
@@ -448,17 +446,17 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
             <div className="admin-list" style={{marginBottom: 24}}>
               {paginated.length > 0 ? (
                 paginated.map((answer: any) => (
-            <div key={answer.id} className="admin-item-card block">
-              <p style={{fontSize: 12, opacity: 0.7, marginBottom: 4}}>
-                {new Date(answer.created_at).toLocaleDateString()} • {answer.events?.title}
-              </p>
-              <h4 style={{marginBottom: 8}}>{answer.questions?.text}</h4>
-              <p className="answer-box">{formatAnswer(answer.answer_data)}</p>
-            </div>
-          ))
-                )) : (
-                  <p className="no-data">Нет ответов</p>
-                )}
+                  <div key={answer.id} className="admin-item-card block">
+                    <p style={{fontSize: 12, opacity: 0.7, marginBottom: 4}}>
+                      {new Date(answer.created_at).toLocaleDateString()} • {answer.events?.title}
+                    </p>
+                    <h4 style={{marginBottom: 8}}>{answer.questions?.text}</h4>
+                    <p className="answer-box">{formatAnswer(answer.answer_data)}</p>
+                  </div>
+                ))
+              ) : (
+                <p className="no-data">Нет ответов</p>
+              )}
             </div>
             {totalPages > 1 && (
               <div style={{display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: 24}}>
