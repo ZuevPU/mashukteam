@@ -8,9 +8,10 @@ import './TargetedQuestionsListScreen.css';
 
 interface TargetedQuestionsListScreenProps {
   onBack: () => void;
+  onAnswerSubmitted?: () => void; // Callback для обновления статистики после ответа
 }
 
-export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenProps> = ({ onBack }) => {
+export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenProps> = ({ onBack, onAnswerSubmitted }) => {
   const { initData, showAlert } = useTelegram();
   const [activeQuestions, setActiveQuestions] = useState<TargetedQuestion[]>([]);
   const [answeredQuestions, setAnsweredQuestions] = useState<TargetedQuestion[]>([]);
@@ -97,6 +98,10 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
         setAnsweredQuestions(prev => [...prev, answeredQuestion]);
       }
       showAlert('Ответ отправлен!');
+      // Вызываем callback для обновления статистики
+      if (onAnswerSubmitted) {
+        onAnswerSubmitted();
+      }
     } catch (error) {
       console.error('Error submitting answer:', error);
       showAlert('Ошибка отправки');

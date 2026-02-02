@@ -46,19 +46,34 @@ export class ReflectionService {
     const currentLevel = user.reflection_level || 1;
     const newPoints = currentPoints + points;
 
+    // Вычисляем новый уровень рефлексии на основе баллов
+    const calculateLevel = (points: number): number => {
+      if (points <= 20) return 1; // "Начал задумываться"
+      if (points <= 50) return 2; // "Поймал смысл"
+      if (points <= 100) return 3; // "Опять рефлексирует"
+      if (points <= 200) return 4; // "Уже хватит рефлексировать"
+      return 5; // "Мастер рефлексии"
+    };
+
+    const newLevel = calculateLevel(newPoints);
+
     console.log(`[ReflectionService] Начисление баллов рефлексии:`, {
       userId,
       actionType,
       points,
       currentPoints,
       currentLevel,
-      newPoints
+      newPoints,
+      newLevel
     });
 
-    // Обновляем баллы (триггер автоматически обновит уровень)
+    // Обновляем баллы и уровень рефлексии явно
     const { error: updateError } = await supabase
       .from('users')
-      .update({ reflection_points: newPoints })
+      .update({ 
+        reflection_points: newPoints,
+        reflection_level: newLevel
+      })
       .eq('id', userId);
 
     if (updateError) {
@@ -66,7 +81,7 @@ export class ReflectionService {
       throw updateError;
     }
 
-    console.log(`[ReflectionService] Баллы рефлексии успешно обновлены для пользователя ${userId}: ${currentPoints} -> ${newPoints}`);
+    console.log(`[ReflectionService] Баллы и уровень рефлексии успешно обновлены для пользователя ${userId}: ${currentPoints} -> ${newPoints}, уровень ${currentLevel} -> ${newLevel}`);
 
     // Записываем действие в историю
     const { error: actionError } = await supabase
@@ -106,10 +121,16 @@ export class ReflectionService {
     const level = user.reflection_level || 1;
     const points = user.reflection_points || 0;
 
-    // Определяем пороги для уровней
-    const levelThresholds = [0, 21, 51, 101, 201];
+    // Определяем пороги для уровней (пороги для перехода на следующий уровень)
+    const levelThresholds: Record<number, number> = {
+      1: 21,  // Для уровня 1 следующий порог - 21
+      2: 51,  // Для уровня 2 следующий порог - 51
+      3: 101, // Для уровня 3 следующий порог - 101
+      4: 201, // Для уровня 4 следующий порог - 201
+      5: 201  // Для уровня 5 максимальный порог
+    };
     const nextLevelThreshold = levelThresholds[level] || 201;
-    const pointsToNextLevel = Math.max(0, nextLevelThreshold - points);
+    const pointsToNextLevel = level < 5 ? Math.max(0, nextLevelThreshold - points) : 0;
 
     const levelNames: Record<number, string> = {
       1: 'Начал задумываться',

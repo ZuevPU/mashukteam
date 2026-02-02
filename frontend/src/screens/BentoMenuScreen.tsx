@@ -11,6 +11,7 @@ import { AssignmentsCard } from '../components/bento/AssignmentsCard';
 import { ReflectionProgress } from '../components/gamification/ReflectionProgress';
 import { EventsListScreen } from './events/EventsListScreen';
 import { EventDetailsScreen } from './events/EventDetailsScreen';
+import { DiagnosticSurveyScreen } from './diagnostics/DiagnosticSurveyScreen';
 import { AdminDashboard } from './admin/AdminDashboard';
 import { AdminEventsScreen } from './admin/AdminEventsScreen';
 import { AdminEventFormScreen } from './admin/AdminEventFormScreen';
@@ -42,6 +43,7 @@ type ScreenView =
   | 'menu' 
   | 'events_list' 
   | 'diagnostic_list'
+  | 'diagnostic_survey'
   | 'targeted_questions'
   | 'event_survey' 
   | 'assignments_list'
@@ -228,12 +230,32 @@ export function BentoMenuScreen() {
   if (view === 'diagnostic_list') {
     return <EventsListScreen 
       typeFilter="diagnostic"
-      onEventClick={(id) => { setSelectedEventId(id); setView('event_survey'); }} 
+      onEventClick={(id) => { setSelectedEventId(id); setView('diagnostic_survey'); }} 
       onBack={() => setView('menu')} 
     />;
   }
+  // Функция для обновления статистики
+  const refreshStats = async () => {
+    if (user?.id && initData) {
+      try {
+        const response = await getUserStats(user.id, initData);
+        if (response.success && response.stats) {
+          setStats(response.stats);
+        }
+      } catch (e) {
+        console.warn('Error refreshing stats:', e);
+      }
+    }
+  };
+
   if (view === 'targeted_questions') {
-    return <TargetedQuestionsListScreen onBack={() => setView('menu')} />;
+    return <TargetedQuestionsListScreen 
+      onBack={() => {
+        refreshStats();
+        setView('menu');
+      }}
+      onAnswerSubmitted={refreshStats}
+    />;
   }
   if (view === 'assignments_list') {
     return <AssignmentsListScreen 
@@ -250,6 +272,9 @@ export function BentoMenuScreen() {
   }
   if (view === 'event_survey' && selectedEventId) {
     return <EventDetailsScreen eventId={selectedEventId} onBack={() => setView('events_list')} />;
+  }
+  if (view === 'diagnostic_survey' && selectedEventId) {
+    return <DiagnosticSurveyScreen eventId={selectedEventId} onBack={() => setView('diagnostic_list')} />;
   }
 
   // Админская часть

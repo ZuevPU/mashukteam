@@ -83,4 +83,43 @@ export const eventApi = {
     }>('/events/notes/my', initData);
     return response.notes;
   },
+
+  /**
+   * Получение вопросов диагностики для пользователя
+   */
+  getDiagnosticQuestions: async (
+    eventId: string,
+    initData: string
+  ): Promise<{ event: Event; questions: any[]; userAnswers: any[] }> => {
+    const response = await fetchApiWithAuth<{
+      success: boolean;
+      event: Event;
+      questions: any[];
+      userAnswers: any[];
+    }>(`/events/${eventId}/diagnostic/questions`, initData);
+    return {
+      event: response.event,
+      questions: response.questions,
+      userAnswers: response.userAnswers
+    };
+  },
+
+  /**
+   * Отправка ответа на вопрос диагностики
+   */
+  submitDiagnosticAnswer: async (
+    eventId: string,
+    questionId: string,
+    answerData: any,
+    initData: string
+  ): Promise<{ id: string; answer_data: any }> => {
+    const response = await fetchApi<{
+      success: boolean;
+      answer: { id: string; answer_data: any };
+    }>(`/events/${eventId}/diagnostic/answer`, {
+      method: 'POST',
+      body: JSON.stringify({ initData, questionId, answerData }),
+    });
+    return response.answer;
+  },
 };

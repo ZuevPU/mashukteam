@@ -188,7 +188,7 @@ export class AssignmentService {
 
     if (error) throw error;
 
-    // Если статус approved — начисляем баллы
+    // Если статус approved — начисляем баллы и звездочки
     if (data.status === 'approved' && existingSubmission) {
       const reward = (existingSubmission as any).assignment?.reward || 0;
       if (reward > 0) {
@@ -212,6 +212,48 @@ export class AssignmentService {
         await supabase
           .from('users')
           .update({ total_points: currentPoints + reward })
+          .eq('id', existingSubmission.user_id);
+      }
+
+      // Обновляем звездочки пользователя: получаем сумму reward из всех одобренных заданий
+      const { data: starsData, error: starsFetchError } = await supabase
+        .from('assignment_submissions')
+        .select('assignment:assignments(reward)')
+        .eq('user_id', existingSubmission.user_id)
+        .eq('status', 'approved');
+
+      if (!starsFetchError && starsData) {
+        const totalStars = (starsData as any[]).reduce((sum, sub) => {
+          const reward = sub.assignment?.reward || 0;
+          return sum + reward;
+        }, 0);
+
+        // Обновляем stars_count в users
+        await supabase
+          .from('users')
+          .update({ stars_count: totalStars })
+          .eq('id', existingSubmission.user_id);
+      }
+    }
+    
+    // Если статус изменился с approved на другой — пересчитываем звездочки
+    if (existingSubmission && existingSubmission.status === 'approved' && data.status !== 'approved') {
+      const { data: starsData, error: starsFetchError } = await supabase
+        .from('assignment_submissions')
+        .select('assignment:assignments(reward)')
+        .eq('user_id', existingSubmission.user_id)
+        .eq('status', 'approved');
+
+      if (!starsFetchError && starsData) {
+        const totalStars = (starsData as any[]).reduce((sum, sub) => {
+          const reward = sub.assignment?.reward || 0;
+          return sum + reward;
+        }, 0);
+
+        // Обновляем stars_count в users
+        await supabase
+          .from('users')
+          .update({ stars_count: totalStars })
           .eq('id', existingSubmission.user_id);
       }
     }

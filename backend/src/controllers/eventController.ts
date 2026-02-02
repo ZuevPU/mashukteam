@@ -88,4 +88,41 @@ export class EventController {
       return res.status(500).json({ error: 'Ошибка при получении заметок' });
     }
   }
+
+  /**
+   * Получение вопросов диагностики для пользователя
+   */
+  static async getDiagnosticQuestions(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+
+      const result = await EventService.getDiagnosticQuestions(id, userId);
+      return res.json({ success: true, ...result });
+    } catch (error) {
+      logger.error('Get diagnostic questions error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ error: 'Ошибка при получении вопросов диагностики' });
+    }
+  }
+
+  /**
+   * Отправка ответа на вопрос диагностики
+   */
+  static async submitDiagnosticAnswer(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+      const { questionId, answerData } = req.body;
+
+      if (!questionId || answerData === undefined) {
+        return res.status(400).json({ error: 'questionId и answerData обязательны' });
+      }
+
+      const answer = await EventService.submitDiagnosticAnswer(userId, id, questionId, answerData);
+      return res.json({ success: true, answer });
+    } catch (error) {
+      logger.error('Submit diagnostic answer error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ error: 'Ошибка при отправке ответа' });
+    }
+  }
 }
