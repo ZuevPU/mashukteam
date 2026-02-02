@@ -17,7 +17,8 @@ export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> =
   const [questions, setQuestions] = useState<TargetedQuestion[]>([]);
   const [randomizers, setRandomizers] = useState<Record<string, RandomizerQuestion & { participantsCount: number }>>({});
   const [loading, setLoading] = useState(true);
-  const [distributing, setDistributing] = useState<string | null>(null);
+  const [previewRandomizerId, setPreviewRandomizerId] = useState<string | null>(null);
+  const [previewRandomizer, setPreviewRandomizer] = useState<RandomizerQuestion | null>(null);
 
   const loadQuestions = async () => {
     if (!initData) return;

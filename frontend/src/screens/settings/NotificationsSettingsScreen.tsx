@@ -14,6 +14,9 @@ export const NotificationsSettingsScreen: React.FC<NotificationsSettingsScreenPr
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
 
   useEffect(() => {
     loadPreferences();
@@ -38,8 +41,8 @@ export const NotificationsSettingsScreen: React.FC<NotificationsSettingsScreenPr
     setLoadingNotifications(true);
     try {
       const data = await notificationApi.getMyNotifications(initData, 100);
-      setNotifications(data.notifications);
-      setUnreadCount(data.unreadCount);
+      setNotifications(data.notifications || []);
+      setUnreadCount(data.unreadCount || 0);
     } catch (error: any) {
       console.error('Error loading notifications:', error);
       // Не показываем ошибку, так как это не критично
@@ -52,8 +55,8 @@ export const NotificationsSettingsScreen: React.FC<NotificationsSettingsScreenPr
     if (!initData) return;
     try {
       await notificationApi.markAsRead(initData, notificationId);
-      setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read: true } : n));
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      setNotifications((prev: Notification[]) => prev.map((n: Notification) => n.id === notificationId ? { ...n, read: true } : n));
+      setUnreadCount((prev: number) => Math.max(0, prev - 1));
     } catch (error: any) {
       console.error('Error marking notification as read:', error);
     }
@@ -63,7 +66,7 @@ export const NotificationsSettingsScreen: React.FC<NotificationsSettingsScreenPr
     if (!initData) return;
     try {
       await notificationApi.markAllAsRead(initData);
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setNotifications((prev: Notification[]) => prev.map((n: Notification) => ({ ...n, read: true })));
       setUnreadCount(0);
       showAlert('Все уведомления отмечены как прочитанные');
     } catch (error: any) {

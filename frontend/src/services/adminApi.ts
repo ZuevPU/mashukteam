@@ -267,6 +267,6 @@ export const adminApi = {
       '/directions',
       { method: 'GET' }
     );
-    return response.types;
+    return response.directions;
   }
 };

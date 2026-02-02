@@ -36,16 +36,16 @@ export const AdminRandomizerPreviewScreen: React.FC<AdminRandomizerPreviewScreen
       // Если распределение уже опубликовано, загружаем финальное распределение
       if (randomizer.status === 'distributed') {
         const finalDistributions = await randomizerApi.getDistributions(initData, randomizerId);
-        setDistributions(finalDistributions);
+        setDistributions(finalDistributions as any);
       } else {
         // Пытаемся загрузить предпросмотр
         try {
           const previewData = await randomizerApi.getPreview(initData, randomizerId);
-          setDistributions(previewData);
+          setDistributions(previewData as any);
         } catch (error) {
           // Если предпросмотра нет, создаем его
           const createdPreview = await randomizerApi.createPreview(initData, randomizerId);
-          setDistributions(createdPreview);
+          setDistributions(createdPreview as any);
         }
       }
     } catch (error: any) {

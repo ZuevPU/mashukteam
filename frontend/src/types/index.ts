@@ -66,6 +66,7 @@ export interface TargetedQuestion {
   target_audience: 'all' | 'by_direction' | 'individual';
   target_values?: string[];
   status: 'draft' | 'published' | 'archived';
+  reflection_points?: number;
   created_at: string;
 }
 
@@ -99,7 +100,7 @@ export interface RandomizerDistribution {
     id: string;
     first_name: string;
     last_name?: string;
-    middle_name?: string;
+    middle_name?: string | null;
     telegram_username?: string;
   };
 }
@@ -165,13 +166,6 @@ export interface AssignmentSubmission {
   admin_comment?: string;
   created_at: string;
   updated_at: string;
-}
-
-export interface Direction {
-  id: number;
-  name: string;
-  code: string;
-  created_at: string;
 }
 
 export interface Direction {
@@ -259,4 +253,16 @@ export interface CreateTargetedQuestionRequest extends CreateTargetedQuestionDto
   target_audience: 'all' | 'by_direction' | 'individual';
   target_values?: string[];
   status?: 'draft' | 'published' | 'archived';
+  reflection_points?: number;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  message: string;
+  deep_link?: string;
+  read: boolean;
+  created_at: string;
 }

@@ -129,18 +129,15 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
 
   if (loading) return <div className="loading">Загрузка...</div>;
 
-  const unansweredQuestions = questions.filter(q => !answers.find(a => a.question_id === q.id));
-  const answeredQuestions = questions.filter(q => answers.find(a => a.question_id === q.id));
-
   return (
     <div className="targeted-screen">
       <div className="header">
         <button onClick={onBack} className="back-button">← Назад</button>
-        <h3>Мои вопросы</h3>
+        <h3>Вопросы</h3>
       </div>
 
-      {/* Неотвеченные вопросы */}
-      {unansweredQuestions.length > 0 && (
+      {/* Активные вопросы */}
+      {activeQuestions.length > 0 && (
         <>
           <h4 className="section-title">Новые вопросы ({unansweredQuestions.length})</h4>
           <div className="questions-list">
@@ -173,7 +170,7 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
                     {/* Один вариант (radio) */}
                     {q.type === 'single' && q.options && (
                       <div className="options-list">
-                        {q.options.map((opt, idx) => (
+                        {q.options.map((opt: string, idx: number) => (
                           <label key={idx} className={`option-item ${inputValues[q.id] === opt ? 'selected' : ''}`}>
                             <input
                               type="radio"
@@ -191,7 +188,7 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
                     {/* Несколько вариантов (checkbox) */}
                     {q.type === 'multiple' && q.options && (
                       <div className="options-list">
-                        {q.options.map((opt, idx) => (
+                        {q.options.map((opt: string, idx: number) => (
                           <label key={idx} className={`option-item ${(inputValues[q.id] || []).includes(opt) ? 'selected' : ''}`}>
                             <input
                               type="checkbox"

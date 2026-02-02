@@ -1196,14 +1196,7 @@ export class ExportService {
       XLSX.utils.book_append_sheet(workbook, directionsSheet, 'Направления');
     }
 
-    // 15. Направления (уже добавлено выше, удаляем дубликат)
-        ...ut,
-        created_at: ut.created_at ? new Date(ut.created_at).toLocaleString('ru-RU') : ''
-      })));
-      XLSX.utils.book_append_sheet(workbook, directionsSheet, 'Направления');
-    }
-
-    // 16. Транзакции баллов
+    // 15. Транзакции баллов
     const { data: pointsTransactions } = await supabase.from('points_transactions').select('*').order('created_at', { ascending: false });
     if (pointsTransactions && pointsTransactions.length > 0) {
       const pointsTransactionsSheet = XLSX.utils.json_to_sheet(pointsTransactions.map((pt: any) => ({
