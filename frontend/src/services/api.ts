@@ -53,14 +53,14 @@ export async function fetchApi<T>(
   // Формируем URL без двойных слэшей
   const url = `${API_URL.replace(/\/+$/, '')}/api/${cleanEndpoint}`;
   
-  // Логируем запрос для отладки
-  console.log('API Request:', {
-    method: options.method || 'GET',
-    url,
-    apiUrl: API_URL,
-    hasBody: !!options.body,
-    bodyPreview: options.body ? String(options.body).substring(0, 100) : undefined,
-  });
+  // Логируем запрос только в development режиме
+  if (import.meta.env.DEV) {
+    console.debug('API Request:', {
+      method: options.method || 'GET',
+      url,
+      apiUrl: API_URL,
+    });
+  }
   
   try {
     const response = await fetch(url, {
@@ -71,19 +71,13 @@ export async function fetchApi<T>(
       },
     });
 
-    // Логируем ответ для отладки
-    console.log('API Response:', {
-      status: response.status,
-      statusText: response.statusText,
-      url,
-      ok: response.ok,
-    });
-
     if (!response.ok) {
       let errorData: ApiError;
       try {
         const text = await response.text();
-        console.log('Error response text:', text);
+        if (import.meta.env.DEV) {
+          console.debug('Error response text:', text);
+        }
         errorData = JSON.parse(text);
       } catch (parseError) {
         errorData = {
@@ -91,21 +85,24 @@ export async function fetchApi<T>(
         };
       }
       
-      console.error('API Error:', errorData);
+      if (import.meta.env.DEV) {
+        console.error('API Error:', errorData);
+      }
       throw new Error(errorData.error || 'Ошибка запроса');
     }
 
     const data = await response.json();
-    console.log('API Success:', { url, data: Object.keys(data) });
     return data;
   } catch (error) {
     // Обработка сетевых ошибок
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      console.error('Network error:', {
-        url,
-        apiUrl: API_URL,
-        error: error.message,
-      });
+      if (import.meta.env.DEV) {
+        console.error('Network error:', {
+          url,
+          apiUrl: API_URL,
+          error: error.message,
+        });
+      }
       throw new Error(
         `Не удалось подключиться к серверу. Проверьте, что API_URL настроен правильно (текущий: ${API_URL})`
       );

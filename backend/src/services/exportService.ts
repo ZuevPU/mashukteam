@@ -1,10 +1,11 @@
 import { supabase } from './supabase';
+import { logger } from '../utils/logger';
 // Используем динамический импорт для xlsx
 let XLSX: any;
 try {
   XLSX = require('xlsx');
 } catch (e) {
-  console.error('xlsx library not installed. Run: npm install xlsx');
+  logger.error(e instanceof Error ? e : new Error(String(e)), 'xlsx library not installed. Run: npm install xlsx');
   throw new Error('xlsx library is required for export functionality');
 }
 
@@ -31,7 +32,7 @@ export class ExportService {
         .order('created_at', { ascending: false });
 
       if (eventAnswersError) {
-        console.error('Error fetching event answers:', eventAnswersError);
+        logger.error(eventAnswersError instanceof Error ? eventAnswersError : new Error(String(eventAnswersError)), 'Error fetching event answers');
         throw new Error(`Ошибка получения ответов на мероприятия: ${eventAnswersError.message}`);
       }
 
@@ -72,7 +73,7 @@ export class ExportService {
         .order('created_at', { ascending: false });
 
       if (submissionsError) {
-        console.error('Error fetching submissions:', submissionsError);
+        logger.error(submissionsError instanceof Error ? submissionsError : new Error(String(submissionsError)), 'Error fetching submissions');
         throw new Error(`Ошибка получения выполненных заданий: ${submissionsError.message}`);
       }
 
@@ -137,7 +138,7 @@ export class ExportService {
       const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
       return excelBuffer;
     } catch (error) {
-      console.error('Error in exportAnswersToExcel:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Error in exportAnswersToExcel');
       throw error;
     }
   }
@@ -645,71 +646,147 @@ export class ExportService {
       `)
       .order('created_at', { ascending: false });
 
-    const usersData = await Promise.all((users || []).map(async (user: any) => {
-      // Получаем достижения пользователя
-      const { data: achievements } = await supabase
+    if (!users || users.length === 0) {
+      const workbook = XLSX.utils.book_new();
+      const sheet = XLSX.utils.json_to_sheet([]);
+      XLSX.utils.book_append_sheet(workbook, sheet, 'Пользователи');
+      return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    }
+
+    const userIds = users.map(u => u.id);
+
+    // Оптимизация: получаем все данные одним батчем для всех пользователей
+    const [
+      allAchievements,
+      allUserLevels,
+      allAnswers,
+      allSubmissions,
+      allTargetedAnswers,
+      allPointsTransactions,
+      allReflectionHistory
+    ] = await Promise.all([
+      // Достижения всех пользователей
+      supabase
         .from('user_achievements')
-        .select('achievement:achievements(name)')
-        .eq('user_id', user.id);
-
-      const achievementsList = (achievements || []).map((a: any) => a.achievement?.name).filter(Boolean).join(', ');
-
-      // Получаем уровень пользователя
-      const { data: userLevel } = await supabase
+        .select('user_id, achievement:achievements(name)')
+        .in('user_id', userIds),
+      // Уровни всех пользователей
+      supabase
         .from('user_levels')
-        .select('level, experience_points')
-        .eq('user_id', user.id)
-        .single();
-
-      // Подсчет активности
-      const { count: eventsCount } = await supabase
+        .select('user_id, level, experience_points')
+        .in('user_id', userIds),
+      // Ответы на мероприятия (для подсчета)
+      supabase
         .from('answers')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
-
-      const { count: assignmentsCount } = await supabase
+        .select('user_id')
+        .in('user_id', userIds),
+      // Выполненные задания (для подсчета и статусов)
+      supabase
         .from('assignment_submissions')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
-
-      const { count: targetedAnswersCount } = await supabase
+        .select('user_id, status')
+        .in('user_id', userIds),
+      // Ответы на персональные вопросы (для подсчета)
+      supabase
         .from('targeted_answers')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
-
-      // Получаем последние транзакции баллов
-      const { data: recentPoints } = await supabase
+        .select('user_id')
+        .in('user_id', userIds),
+      // Транзакции баллов (для последних 5)
+      supabase
         .from('points_transactions')
-        .select('points, reason, created_at')
-        .eq('user_id', user.id)
+        .select('user_id, points, reason, created_at')
+        .in('user_id', userIds)
+        .order('created_at', { ascending: false }),
+      // История рефлексии (для последних 10)
+      supabase
+        .from('reflection_actions')
+        .select('user_id, action_type, points_awarded, created_at')
+        .in('user_id', userIds)
         .order('created_at', { ascending: false })
-        .limit(5);
+    ]);
 
-      const recentPointsText = (recentPoints || []).map((p: any) => 
+    // Группируем данные по user_id для быстрого доступа
+    const achievementsMap = new Map<string, string[]>();
+    (allAchievements.data || []).forEach((a: any) => {
+      const userId = a.user_id;
+      if (!achievementsMap.has(userId)) {
+        achievementsMap.set(userId, []);
+      }
+      if (a.achievement?.name) {
+        achievementsMap.get(userId)!.push(a.achievement.name);
+      }
+    });
+
+    const levelsMap = new Map<string, { level: number; experience_points: number }>();
+    (allUserLevels.data || []).forEach((ul: any) => {
+      levelsMap.set(ul.user_id, { level: ul.level, experience_points: ul.experience_points });
+    });
+
+    const answersCountMap = new Map<string, number>();
+    (allAnswers.data || []).forEach((a: any) => {
+      answersCountMap.set(a.user_id, (answersCountMap.get(a.user_id) || 0) + 1);
+    });
+
+    const submissionsMap = new Map<string, { approved: number; pending: number; rejected: number; total: number }>();
+    (allSubmissions.data || []).forEach((s: any) => {
+      const userId = s.user_id;
+      if (!submissionsMap.has(userId)) {
+        submissionsMap.set(userId, { approved: 0, pending: 0, rejected: 0, total: 0 });
+      }
+      const stats = submissionsMap.get(userId)!;
+      stats.total++;
+      if (s.status === 'approved') stats.approved++;
+      else if (s.status === 'pending') stats.pending++;
+      else if (s.status === 'rejected') stats.rejected++;
+    });
+
+    const targetedAnswersCountMap = new Map<string, number>();
+    (allTargetedAnswers.data || []).forEach((a: any) => {
+      targetedAnswersCountMap.set(a.user_id, (targetedAnswersCountMap.get(a.user_id) || 0) + 1);
+    });
+
+    // Группируем транзакции и рефлексию по пользователям (берем только последние)
+    const pointsMap = new Map<string, any[]>();
+    (allPointsTransactions.data || []).forEach((p: any) => {
+      const userId = p.user_id;
+      if (!pointsMap.has(userId)) {
+        pointsMap.set(userId, []);
+      }
+      const userPoints = pointsMap.get(userId)!;
+      if (userPoints.length < 5) {
+        userPoints.push(p);
+      }
+    });
+
+    const reflectionMap = new Map<string, any[]>();
+    (allReflectionHistory.data || []).forEach((r: any) => {
+      const userId = r.user_id;
+      if (!reflectionMap.has(userId)) {
+        reflectionMap.set(userId, []);
+      }
+      const userReflection = reflectionMap.get(userId)!;
+      if (userReflection.length < 10) {
+        userReflection.push(r);
+      }
+    });
+
+    // Формируем данные для экспорта
+    const usersData = users.map((user: any) => {
+      const userId = user.id;
+      const achievementsList = (achievementsMap.get(userId) || []).join(', ');
+      const userLevel = levelsMap.get(userId);
+      const eventsCount = answersCountMap.get(userId) || 0;
+      const submissionStats = submissionsMap.get(userId) || { approved: 0, pending: 0, rejected: 0, total: 0 };
+      const targetedAnswersCount = targetedAnswersCountMap.get(userId) || 0;
+      const recentPoints = pointsMap.get(userId) || [];
+      const reflectionHistory = reflectionMap.get(userId) || [];
+
+      const recentPointsText = recentPoints.map((p: any) => 
         `${new Date(p.created_at).toLocaleDateString('ru-RU')}: ${p.points} (${p.reason || ''})`
       ).join('; ');
 
-      // Получаем историю рефлексии
-      const { data: reflectionHistory } = await supabase
-        .from('reflection_actions')
-        .select('action_type, points_awarded, created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      const reflectionHistoryText = (reflectionHistory || []).map((r: any) => 
+      const reflectionHistoryText = reflectionHistory.map((r: any) => 
         `${new Date(r.created_at).toLocaleDateString('ru-RU')}: ${r.action_type} (+${r.points_awarded})`
       ).join('; ');
-
-      // Статусы заданий
-      const { data: assignmentStatuses } = await supabase
-        .from('assignment_submissions')
-        .select('status')
-        .eq('user_id', user.id);
-
-      const approvedCount = (assignmentStatuses || []).filter((s: any) => s.status === 'approved').length;
-      const pendingCount = (assignmentStatuses || []).filter((s: any) => s.status === 'pending').length;
-      const rejectedCount = (assignmentStatuses || []).filter((s: any) => s.status === 'rejected').length;
 
       return {
         'ID': user.id,
@@ -730,18 +807,18 @@ export class ExportService {
         'Уровень (геймификация)': userLevel?.level || user.current_level || 1,
         'Опыт': userLevel?.experience_points || 0,
         'Достижения': achievementsList,
-        'Участие в мероприятиях': eventsCount || 0,
-        'Выполнено заданий': assignmentsCount || 0,
-        'Заданий принято': approvedCount,
-        'Заданий на проверке': pendingCount,
-        'Заданий отклонено': rejectedCount,
-        'Ответов на вопросы': targetedAnswersCount || 0,
+        'Участие в мероприятиях': eventsCount,
+        'Выполнено заданий': submissionStats.total,
+        'Заданий принято': submissionStats.approved,
+        'Заданий на проверке': submissionStats.pending,
+        'Заданий отклонено': submissionStats.rejected,
+        'Ответов на вопросы': targetedAnswersCount,
         'Последние транзакции баллов': recentPointsText,
         'История рефлексии': reflectionHistoryText,
         'Администратор': user.is_admin === 1 ? 'Да' : 'Нет',
         'Дата обновления': new Date(user.updated_at).toLocaleString('ru-RU')
       };
-    }));
+    });
 
     const workbook = XLSX.utils.book_new();
     const sheet = XLSX.utils.json_to_sheet(usersData);

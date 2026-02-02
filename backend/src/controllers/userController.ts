@@ -4,6 +4,7 @@ import { DirectionService } from '../services/directionService';
 import { getTelegramIdFromInitData, validateInitData } from '../utils/telegramAuth';
 import { CreateUserDto } from '../types';
 import { requireAuth } from '../middleware/authMiddleware';
+import { logger } from '../utils/logger';
 
 /**
  * Контроллер для работы с пользователями
@@ -42,7 +43,7 @@ export async function getUser(req: UserRequest, res: Response) {
       user,
     });
   } catch (error) {
-    console.error('Error in getUser:', error);
+    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error in getUser');
     return res.status(500).json({ error: 'Внутренняя ошибка сервера' });
   }
 }
@@ -105,10 +106,9 @@ export async function registerUser(req: UserRequest, res: Response) {
   try {
     const { initData, registrationData } = req.body;
 
-    console.log('registerUser called:', {
+    logger.debug('registerUser called', {
       hasInitData: !!initData,
       hasRegistrationData: !!registrationData,
-      registrationData,
     });
 
     if (!initData) {
@@ -155,7 +155,7 @@ export async function registerUser(req: UserRequest, res: Response) {
     
     // Если пользователь не найден, создаем его
     if (!existingUser) {
-      console.log('registerUser: Пользователь не найден, создаем нового, telegramId:', telegramId);
+      logger.info('registerUser: Пользователь не найден, создаем нового', { telegramId });
       
       // Парсим данные пользователя из initData для создания
       const { parseInitData } = await import('../utils/telegramAuth');
@@ -178,12 +178,12 @@ export async function registerUser(req: UserRequest, res: Response) {
         motivation: registrationData.motivation || '', // Мотивация необязательна
       });
       
-      console.log('User created during registration:', existingUser.id);
+      logger.info('User created during registration', { userId: existingUser.id });
     }
 
     // Проверяем, не зарегистрирован ли пользователь уже
     if (existingUser.status === 'registered') {
-      console.log('User already registered:', existingUser.id);
+      logger.info('User already registered', { userId: existingUser.id });
       return res.json({
         success: true,
         user: existingUser,
@@ -191,7 +191,7 @@ export async function registerUser(req: UserRequest, res: Response) {
       });
     }
 
-    console.log('Completing registration for user:', existingUser.id);
+    logger.info('Completing registration for user', { userId: existingUser.id });
 
     // Завершение регистрации
     const updatedUser = await UserService.completeRegistration(telegramId, {
@@ -202,7 +202,7 @@ export async function registerUser(req: UserRequest, res: Response) {
       motivation: registrationData.motivation || '', // Мотивация больше не обязательна
     });
 
-    console.log('Registration completed successfully:', updatedUser.id);
+    logger.info('Registration completed successfully', { userId: updatedUser.id });
 
     return res.json({
       success: true,
@@ -210,7 +210,7 @@ export async function registerUser(req: UserRequest, res: Response) {
       message: 'Регистрация завершена успешно',
     });
   } catch (error) {
-    console.error('Error in registerUser:', error);
+    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error in registerUser');
     return res.status(500).json({ 
       success: false,
       error: 'Внутренняя ошибка сервера',
@@ -227,7 +227,7 @@ export async function setUserDirection(req: Request, res: Response) {
   try {
     const userId = (req as any).user?.id;
     if (!userId) {
-      console.error('[setUserDirection] No user ID found in request');
+      logger.warn('setUserDirection: No user ID found in request');
       return res.status(401).json({ 
         success: false,
         error: 'Не авторизован' 
@@ -237,18 +237,18 @@ export async function setUserDirection(req: Request, res: Response) {
     const { direction_id } = req.body;
     
     if (!direction_id) {
-      console.error('[setUserDirection] No direction_id provided');
+      logger.warn('setUserDirection: No direction_id provided');
       return res.status(400).json({ 
         success: false,
         error: 'direction_id обязателен' 
       });
     }
 
-    console.log('[setUserDirection] Setting direction for user:', { userId, direction_id });
+    logger.info('Setting direction for user', { userId, direction_id });
 
     await DirectionService.setUserDirection(userId, direction_id);
     
-    console.log('[setUserDirection] Direction set successfully');
+    logger.info('Direction set successfully', { userId, direction_id });
     
     return res.status(200).json({ 
       success: true, 
@@ -256,7 +256,7 @@ export async function setUserDirection(req: Request, res: Response) {
       direction_id: direction_id
     });
   } catch (error: any) {
-    console.error('[setUserDirection] Error setting user direction:', error);
+    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error setting user direction');
     return res.status(500).json({ 
       success: false,
       error: error.message || 'Ошибка при выборе направления' 

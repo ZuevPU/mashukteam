@@ -1,4 +1,5 @@
 import { UserService } from '../services/supabase';
+import { logger } from './logger';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const MINI_APP_URL = 't.me/mashukteam_bot/mashuk_team';
@@ -46,10 +47,11 @@ export async function sendMessageToUser(
     });
 
     if (!response.ok) {
-      console.error(`Failed to send message to ${telegramId}:`, await response.text());
+      const errorText = await response.text();
+      logger.error(new Error(`Failed to send message to ${telegramId}: ${errorText}`), 'Telegram send message error');
     }
   } catch (error) {
-    console.error('Error sending telegram message:', error);
+    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error sending telegram message');
   }
 }
 
@@ -135,9 +137,9 @@ export async function notifyTargetedQuestionToUsers(
       await new Promise(resolve => setTimeout(resolve, 50));
     }
     
-    console.log(`Targeted question notifications sent to ${targetUsers.length} users`);
+    logger.info('Targeted question notifications sent', { usersCount: targetUsers.length });
   } catch (error) {
-    console.error('Error sending targeted question notifications:', error);
+    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error sending targeted question notifications');
   }
 }
 

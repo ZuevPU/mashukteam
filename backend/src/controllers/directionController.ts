@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { DirectionService } from '../services/directionService';
+import { logger } from '../utils/logger';
 
 export class DirectionController {
   /**
@@ -10,7 +11,7 @@ export class DirectionController {
       const directions = await DirectionService.getAllDirections();
       return res.json({ success: true, directions });
     } catch (error) {
-      console.error('Get directions error:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Get directions error');
       return res.status(500).json({ error: 'Ошибка при получении направлений' });
     }
   }
@@ -24,7 +25,7 @@ export class DirectionController {
       const direction = await DirectionService.createDirection(data);
       return res.status(201).json({ success: true, direction });
     } catch (error) {
-      console.error('Create direction error:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Create direction error');
       return res.status(500).json({ error: 'Ошибка при создании направления' });
     }
   }
@@ -53,7 +54,7 @@ export class DirectionController {
       await DirectionService.deleteDirection(id);
       return res.json({ success: true, message: 'Направление удалено' });
     } catch (error) {
-      console.error('Delete direction error:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Delete direction error');
       return res.status(500).json({ error: 'Ошибка при удалении направления' });
     }
   }

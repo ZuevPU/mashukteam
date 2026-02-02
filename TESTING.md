@@ -18,6 +18,8 @@
 # 008_add_directions_system.sql
 # 009_add_reflection_levels.sql
 # 010_add_event_groups.sql
+# 011_fix_user_statuses.sql
+# 012_make_motivation_optional.sql
 ```
 
 ### 2. Наполнение тестовыми данными

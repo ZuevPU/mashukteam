@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { getTelegramIdFromInitData } from '../utils/telegramAuth';
 import { UserService } from '../services/supabase';
+import { logger } from '../utils/logger';
 
 // Расширяем интерфейс Request для добавления пользователя
 declare global {
@@ -35,7 +36,7 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
     req.user = user;
     next();
   } catch (error) {
-    console.error('Auth error:', error);
+    logger.error(error instanceof Error ? error : new Error(String(error)), 'Auth error');
     return res.status(500).json({ error: 'Ошибка авторизации' });
   }
 };

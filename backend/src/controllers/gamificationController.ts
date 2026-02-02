@@ -8,6 +8,7 @@ import {
   AnalyticsService,
 } from '../services/gamification';
 import { AddPointsDto, UnlockAchievementDto } from '../types';
+import { logger } from '../utils/logger';
 
 /**
  * Контроллер для работы с геймификацией
@@ -74,7 +75,7 @@ export async function addPoints(req: GamificationRequest, res: Response) {
       total_points: await PointsService.getUserTotalPoints(user.id),
     });
   } catch (error: any) {
-    console.error('Error in addPoints:', error);
+    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error in addPoints');
     return res.status(500).json({ error: error.message || 'Внутренняя ошибка сервера' });
   }
 }
@@ -120,7 +121,7 @@ export async function getUserPoints(req: GamificationRequest, res: Response) {
       total_points: totalPoints,
     });
   } catch (error: any) {
-    console.error('Error in getUserPoints:', error);
+    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error in getUserPoints');
     return res.status(500).json({ error: error.message || 'Внутренняя ошибка сервера' });
   }
 }
@@ -168,7 +169,7 @@ export async function getUserAchievements(req: GamificationRequest, res: Respons
       total_count: allAchievements.length,
     });
   } catch (error: any) {
-    console.error('Error in getUserAchievements:', error);
+    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error in getUserAchievements');
     return res.status(500).json({ error: error.message || 'Внутренняя ошибка сервера' });
   }
 }
@@ -217,7 +218,7 @@ export async function unlockAchievement(req: GamificationRequest, res: Response)
       message: `Достижение "${userAchievement.achievement?.name}" разблокировано!`,
     });
   } catch (error: any) {
-    console.error('Error in unlockAchievement:', error);
+    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error in unlockAchievement');
     return res.status(500).json({ error: error.message || 'Внутренняя ошибка сервера' });
   }
 }
@@ -300,7 +301,7 @@ export async function levelUp(req: GamificationRequest, res: Response) {
       message: `Поздравляем! Вы достигли уровня ${userLevel.level}!`,
     });
   } catch (error: any) {
-    console.error('Error in levelUp:', error);
+    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error in levelUp');
     return res.status(500).json({ error: error.message || 'Внутренняя ошибка сервера' });
   }
 }

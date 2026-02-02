@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { validateInitData, getTelegramIdFromInitData } from '../utils/telegramAuth';
 import { UserService } from '../services/supabase';
+import { logger } from '../utils/logger';
 
 /**
  * Контроллер для аутентификации через Telegram initData
@@ -20,14 +21,13 @@ export async function verifyAuth(req: AuthRequest, res: Response) {
   try {
     const { initData } = req.body;
 
-    console.log('verifyAuth called:', {
+    logger.debug('verifyAuth called', {
       hasInitData: !!initData,
       initDataLength: initData?.length || 0,
-      body: req.body,
     });
 
     if (!initData) {
-      console.warn('verifyAuth: initData отсутствует');
+      logger.warn('verifyAuth: initData отсутствует');
       return res.status(400).json({ 
         success: false,
         error: 'initData обязателен' 
@@ -36,10 +36,10 @@ export async function verifyAuth(req: AuthRequest, res: Response) {
 
     // Валидация initData
     const isValid = validateInitData(initData);
-    console.log('validateInitData result:', isValid);
+    logger.debug('validateInitData result', { isValid });
     
     if (!isValid) {
-      console.warn('verifyAuth: Невалидный initData');
+      logger.warn('verifyAuth: Невалидный initData');
       return res.status(401).json({ 
         success: false,
         error: 'Невалидный initData' 
@@ -48,10 +48,10 @@ export async function verifyAuth(req: AuthRequest, res: Response) {
 
     // Извлечение telegram_id
     const telegramId = getTelegramIdFromInitData(initData);
-    console.log('Extracted telegramId:', telegramId);
+    logger.debug('Extracted telegramId', { telegramId });
     
     if (!telegramId) {
-      console.warn('verifyAuth: Не удалось извлечь telegram_id');
+      logger.warn('verifyAuth: Не удалось извлечь telegram_id');
       return res.status(400).json({ 
         success: false,
         error: 'Не удалось извлечь telegram_id' 
@@ -60,24 +60,24 @@ export async function verifyAuth(req: AuthRequest, res: Response) {
 
     // Проверка существования пользователя
     let user = await UserService.getUserByTelegramId(telegramId);
-    console.log('User exists:', !!user, 'status:', user?.status);
+    logger.debug('User exists', { exists: !!user, status: user?.status });
 
     // Если пользователь не существует, создаём нового со статусом "new"
     if (!user) {
-      console.log('Creating new user...');
+      logger.info('Creating new user', { telegramId });
       // Парсим данные пользователя из initData для создания
       const { parseInitData } = await import('../utils/telegramAuth');
       const parsed = parseInitData(initData);
       
       if (!parsed) {
-        console.error('verifyAuth: Ошибка парсинга initData');
+        logger.error(new Error('Ошибка парсинга initData'));
         return res.status(400).json({ 
           success: false,
           error: 'Ошибка парсинга initData' 
         });
       }
 
-      console.log('Parsed initData:', parsed);
+      logger.debug('Parsed initData', { username: parsed.username });
 
       user = await UserService.createUser({
         telegram_id: telegramId,
@@ -88,7 +88,7 @@ export async function verifyAuth(req: AuthRequest, res: Response) {
         motivation: '', // Будет заполнено при регистрации
       });
       
-      console.log('User created:', user.id, 'status:', user.status);
+      logger.info('User created', { userId: user.id, status: user.status });
     }
 
     // Нормализуем статус: если не 'registered', считаем 'new'
@@ -97,21 +97,20 @@ export async function verifyAuth(req: AuthRequest, res: Response) {
     
     // Если статус был не 'registered', но пользователь существует, обновляем статус на 'new'
     if (user.status !== 'registered' && user.status !== 'new') {
-      console.log('Normalizing user status from', user.status, 'to new');
+      logger.info('Normalizing user status', { from: user.status, to: 'new', userId: user.id });
       try {
         await UserService.updateUserStatus(user.telegram_id, 'new');
         user.status = 'new';
       } catch (error) {
-        console.error('Error updating user status:', error);
+        logger.error(error instanceof Error ? error : new Error(String(error)), 'Error updating user status');
         // Продолжаем с текущим статусом
       }
     }
 
-    console.log('verifyAuth returning:', {
+    logger.debug('verifyAuth returning', {
       userId: user.id,
       telegramId: user.telegram_id,
       status: normalizedStatus,
-      originalStatus: user.status,
     });
 
     return res.json({
@@ -124,7 +123,7 @@ export async function verifyAuth(req: AuthRequest, res: Response) {
       },
     });
   } catch (error) {
-    console.error('Error in verifyAuth:', error);
+    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error in verifyAuth');
     return res.status(500).json({ 
       success: false,
       error: 'Внутренняя ошибка сервера',

@@ -128,7 +128,7 @@ backend/
 - first_name (TEXT, NOT NULL)
 - last_name (TEXT, NOT NULL)
 - middle_name (TEXT, nullable)
-- motivation (TEXT, NOT NULL)
+- motivation (TEXT, nullable) - необязательное поле
 - status (TEXT: 'new' | 'registered')
 - created_at (TIMESTAMP)
 - updated_at (TIMESTAMP)
@@ -253,15 +253,10 @@ POST /api/gamification/level/up
 - Проверка `auth_date` (не старше 24 часов)
 - Использование Service Role Key для Supabase (только на backend)
 
-### TODO для Production
-1. **Полная валидация hash**:
-   ```typescript
-   // Использовать секретный ключ от Telegram Bot API
-   const secretKey = crypto.createHmac('sha256', 'WebAppData')
-     .update(botToken)
-     .digest();
-   // Проверить hash через HMAC-SHA-256
-   ```
+### Реализовано для Production
+1. **Полная валидация hash**: ✅ Реализована через HMAC-SHA-256 с использованием секретного ключа от Telegram Bot API
+   - Валидация обязательна в production режиме
+   - В development режиме может быть отключена для удобства разработки
 
 2. **Row Level Security (RLS)** в Supabase:
    - Настроить политики доступа

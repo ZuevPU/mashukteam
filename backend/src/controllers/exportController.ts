@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { ExportService } from '../services/exportService';
+import { logger } from '../utils/logger';
 
 export class ExportController {
   /**
@@ -7,7 +8,7 @@ export class ExportController {
    */
   static async exportAnswers(req: Request, res: Response) {
     try {
-      console.log('[ExportController] Starting export answers...');
+      logger.info('Starting export answers');
       const excelBuffer = await ExportService.exportAnswersToExcel();
       
       // Устанавливаем заголовки для скачивания файла
@@ -15,10 +16,10 @@ export class ExportController {
       res.setHeader('Content-Disposition', 'attachment; filename=answers_export.xlsx');
       res.setHeader('Content-Length', excelBuffer.length);
       
-      console.log('[ExportController] Export answers completed successfully');
+      logger.info('Export answers completed successfully', { size: excelBuffer.length });
       return res.send(excelBuffer);
     } catch (error: any) {
-      console.error('[ExportController] Export answers error:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Export answers error');
       return res.status(500).json({ 
         error: 'Ошибка при экспорте данных',
         message: error.message || 'Неизвестная ошибка'
@@ -31,17 +32,17 @@ export class ExportController {
    */
   static async exportEvents(req: Request, res: Response) {
     try {
-      console.log('[ExportController] Starting export events...');
+      logger.info('Starting export events');
       const excelBuffer = await ExportService.exportEvents();
       
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', 'attachment; filename=events_export.xlsx');
       res.setHeader('Content-Length', excelBuffer.length);
       
-      console.log('[ExportController] Export events completed successfully');
+      logger.info('Export events completed successfully', { size: excelBuffer.length });
       return res.send(excelBuffer);
     } catch (error: any) {
-      console.error('[ExportController] Export events error:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Export events error');
       return res.status(500).json({ 
         error: 'Ошибка при экспорте мероприятий',
         message: error.message || 'Неизвестная ошибка'
@@ -54,17 +55,17 @@ export class ExportController {
    */
   static async exportDiagnostics(req: Request, res: Response) {
     try {
-      console.log('[ExportController] Starting export diagnostics...');
+      logger.info('Starting export diagnostics');
       const excelBuffer = await ExportService.exportDiagnosticsWithResults();
       
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', 'attachment; filename=diagnostics_export.xlsx');
       res.setHeader('Content-Length', excelBuffer.length);
       
-      console.log('[ExportController] Export diagnostics completed successfully');
+      logger.info('Export diagnostics completed successfully', { size: excelBuffer.length });
       return res.send(excelBuffer);
     } catch (error: any) {
-      console.error('[ExportController] Export diagnostics error:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Export diagnostics error');
       return res.status(500).json({ 
         error: 'Ошибка при экспорте диагностик',
         message: error.message || 'Неизвестная ошибка'
@@ -77,17 +78,17 @@ export class ExportController {
    */
   static async exportAssignments(req: Request, res: Response) {
     try {
-      console.log('[ExportController] Starting export assignments...');
+      logger.info('Starting export assignments');
       const excelBuffer = await ExportService.exportAssignmentsWithResults();
       
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', 'attachment; filename=assignments_export.xlsx');
       res.setHeader('Content-Length', excelBuffer.length);
       
-      console.log('[ExportController] Export assignments completed successfully');
+      logger.info('Export assignments completed successfully', { size: excelBuffer.length });
       return res.send(excelBuffer);
     } catch (error: any) {
-      console.error('[ExportController] Export assignments error:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Export assignments error');
       return res.status(500).json({ 
         error: 'Ошибка при экспорте заданий',
         message: error.message || 'Неизвестная ошибка'
@@ -100,17 +101,17 @@ export class ExportController {
    */
   static async exportQuestions(req: Request, res: Response) {
     try {
-      console.log('[ExportController] Starting export questions...');
+      logger.info('Starting export questions');
       const excelBuffer = await ExportService.exportQuestionsWithAnswers();
       
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', 'attachment; filename=questions_export.xlsx');
       res.setHeader('Content-Length', excelBuffer.length);
       
-      console.log('[ExportController] Export questions completed successfully');
+      logger.info('Export questions completed successfully', { size: excelBuffer.length });
       return res.send(excelBuffer);
     } catch (error: any) {
-      console.error('[ExportController] Export questions error:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Export questions error');
       return res.status(500).json({ 
         error: 'Ошибка при экспорте вопросов',
         message: error.message || 'Неизвестная ошибка'
@@ -146,17 +147,17 @@ export class ExportController {
    */
   static async exportAll(req: Request, res: Response) {
     try {
-      console.log('[ExportController] Starting export all tables...');
+      logger.info('Starting export all tables');
       const excelBuffer = await ExportService.exportAllTables();
       
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', 'attachment; filename=full_export.xlsx');
       res.setHeader('Content-Length', excelBuffer.length);
       
-      console.log('[ExportController] Export all tables completed successfully');
+      logger.info('Export all tables completed successfully', { size: excelBuffer.length });
       return res.send(excelBuffer);
     } catch (error: any) {
-      console.error('[ExportController] Export all tables error:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Export all tables error');
       return res.status(500).json({ 
         error: 'Ошибка при полном экспорте данных',
         message: error.message || 'Неизвестная ошибка'

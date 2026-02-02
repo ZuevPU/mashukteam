@@ -37,12 +37,9 @@ export function errorHandler(
   next: NextFunction
 ) {
   // Логирование ошибки
-  console.error('Error:', {
-    message: err.message,
-    stack: err.stack,
+  logger.error(err instanceof Error ? err : new Error(String(err)), 'Request error', {
     url: req.url,
     method: req.method,
-    timestamp: new Date().toISOString(),
   });
 
   // Если это AppError, используем его свойства

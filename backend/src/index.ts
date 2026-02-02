@@ -59,9 +59,9 @@ app.use((req, res, next) => {
     return res.status(204).end(); // No Content
   }
   
-  // Логируем только не-OPTIONS запросы
-  if (req.method !== 'OPTIONS') {
-    logger.info(`${req.method} ${req.path}`, {
+  // Логируем только не-OPTIONS запросы и только в development
+  if (req.method !== 'OPTIONS' && process.env.NODE_ENV === 'development') {
+    logger.debug(`${req.method} ${req.path}`, {
       ip: req.ip,
       userAgent: req.get('user-agent'),
     });
@@ -89,6 +89,7 @@ export default app;
 // Запуск сервера только в development
 if (process.env.NODE_ENV !== 'production' || process.env.VERCEL !== '1') {
   app.listen(PORT, () => {
+    // Логи запуска сервера всегда показываем
     console.log(`🚀 Backend сервер запущен на порту ${PORT}`);
     console.log(`📡 API доступен по адресу: http://localhost:${PORT}/api`);
     console.log(`🏥 Health check: http://localhost:${PORT}/health`);

@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { logger } from './logger';
 
 /**
  * Валидация initData от Telegram WebApp
@@ -44,7 +45,7 @@ export function parseInitData(initData: string): ParsedInitData | null {
       hash: params.get('hash') || '',
     };
   } catch (error) {
-    console.error('Error parsing initData:', error);
+    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error parsing initData');
     return null;
   }
 }
@@ -86,7 +87,7 @@ export function validateInitDataHash(initData: string, botToken: string): boolea
     // Сравниваем hash
     return calculatedHash === hash;
   } catch (error) {
-    console.error('Error validating initData hash:', error);
+    logger.error(error instanceof Error ? error : new Error(String(error)), 'Error validating initData hash');
     return false;
   }
 }
@@ -123,11 +124,20 @@ export function validateInitData(initData: string): boolean {
   // Проверка hash через HMAC-SHA-256
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   if (!botToken) {
-    console.warn('TELEGRAM_BOT_TOKEN не установлен, пропускаем проверку hash');
+    // В production это критично - валидация должна быть обязательной
+    if (process.env.NODE_ENV === 'production') {
+      logger.error(new Error('TELEGRAM_BOT_TOKEN не установлен в production'), 'Critical: hash validation disabled');
+      return false; // В production не пропускаем без проверки hash
+    }
+    logger.warn('TELEGRAM_BOT_TOKEN не установлен, пропускаем проверку hash (development mode)');
     return true; // В режиме разработки разрешаем без проверки hash
   }
 
-  return validateInitDataHash(initData, botToken);
+  const isValidHash = validateInitDataHash(initData, botToken);
+  if (!isValidHash) {
+    logger.warn('initData hash validation failed', { telegramId: parsed.telegram_id });
+  }
+  return isValidHash;
 }
 
 /**

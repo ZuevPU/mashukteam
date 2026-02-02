@@ -3,6 +3,7 @@ import '../config/env';
 
 import { createClient } from '@supabase/supabase-js';
 import { User, CreateUserDto, UpdateUserStatusDto } from '../types';
+import { logger } from '../utils/logger';
 
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
   throw new Error('SUPABASE_URL и SUPABASE_SERVICE_KEY должны быть установлены в переменных окружения');
@@ -29,7 +30,7 @@ export class UserService {
       .single();
 
     if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-      console.error('Error checking user existence:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Error checking user existence');
       return false;
     }
 
@@ -50,7 +51,7 @@ export class UserService {
       if (error.code === 'PGRST116') {
         return null; // Пользователь не найден
       }
-      console.error('Error getting user:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Error getting user');
       throw error;
     }
 
@@ -76,7 +77,7 @@ export class UserService {
       .single();
 
     if (error) {
-      console.error('Error creating user:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Error creating user');
       throw error;
     }
 
@@ -95,7 +96,7 @@ export class UserService {
       .single();
 
     if (error) {
-      console.error('Error updating user:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Error updating user');
       throw error;
     }
 
@@ -114,7 +115,7 @@ export class UserService {
       .single();
 
     if (error) {
-      console.error('Error updating user status:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Error updating user status');
       throw error;
     }
 
@@ -160,7 +161,7 @@ export class UserService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error getting all users:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Error getting all users');
       throw error;
     }
 
@@ -179,7 +180,7 @@ export class UserService {
 
     if (error) {
       if (error.code === 'PGRST116') return null;
-      console.error('Error getting user by ID:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Error getting user by ID');
       throw error;
     }
 
@@ -198,7 +199,7 @@ export class UserService {
       .single();
 
     if (error) {
-      console.error('Error updating user by admin:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Error updating user by admin');
       throw error;
     }
 

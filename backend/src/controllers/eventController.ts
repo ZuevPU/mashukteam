@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { EventService } from '../services/eventService';
 import { ReflectionService } from '../services/reflectionService';
+import { logger } from '../utils/logger';
 
 export class EventController {
   /**
@@ -12,7 +13,7 @@ export class EventController {
       const events = await EventService.getPublishedEvents();
       return res.json({ success: true, events });
     } catch (error) {
-      console.error('Get events error:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Get events error');
       return res.status(500).json({ error: 'Ошибка при получении мероприятий' });
     }
   }
@@ -64,7 +65,7 @@ export class EventController {
           await ReflectionService.addReflectionPoints(userId, actionType);
         }
       } catch (reflectionError) {
-        console.error('Error adding reflection points:', reflectionError);
+        logger.error(reflectionError instanceof Error ? reflectionError : new Error(String(reflectionError)), 'Error adding reflection points');
         // Не прерываем выполнение, если ошибка начисления рефлексии
       }
       
@@ -84,7 +85,7 @@ export class EventController {
       const answers = await EventService.getUserAnswers(userId);
       return res.json({ success: true, answers });
     } catch (error) {
-      console.error('Get my answers error:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Get my answers error');
       return res.status(500).json({ error: 'Ошибка при получении истории ответов' });
     }
   }

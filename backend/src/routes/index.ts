@@ -14,7 +14,7 @@ import {
 import { EventController } from '../controllers/eventController';
 import { AdminController } from '../controllers/adminController';
 import { requireAuth, requireAdmin } from '../middleware/authMiddleware';
-import { authRateLimiter, gamificationRateLimiter } from '../middleware/rateLimiter';
+import { authRateLimiter, gamificationRateLimiter, registrationRateLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 
@@ -24,7 +24,7 @@ router.post('/auth/verify', authRateLimiter, verifyAuth);
 // Пользователи
 router.get('/user/:telegramId', getUser);
 router.post('/user/status', getUserStatus); // POST, т.к. требует initData в body
-router.post('/user/register', registerUser);
+router.post('/user/register', registrationRateLimiter, registerUser); // Добавлен rate limiter для регистрации
 
 // Геймификация (с rate limiting для геймификации)
 router.post('/gamification/points/add', gamificationRateLimiter, addPoints);

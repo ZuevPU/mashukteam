@@ -45,6 +45,14 @@ function formatLog(entry: LogEntry): string {
  */
 class Logger {
   private log(level: LogLevel, message: string, data?: any, error?: Error) {
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    // В production показываем только WARN и ERROR
+    if (isProduction && (level === LogLevel.DEBUG || level === LogLevel.INFO)) {
+      return;
+    }
+
     const entry: LogEntry = {
       level,
       message,
@@ -63,12 +71,15 @@ class Logger {
         console.warn(formattedLog);
         break;
       case LogLevel.DEBUG:
-        if (process.env.NODE_ENV === 'development') {
+        if (isDevelopment) {
           console.debug(formattedLog);
         }
         break;
       default:
-        console.log(formattedLog);
+        // INFO логи только в development
+        if (isDevelopment) {
+          console.log(formattedLog);
+        }
     }
   }
 

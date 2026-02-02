@@ -3,6 +3,7 @@ import { TargetedQuestionService } from '../services/targetedQuestionService';
 import { ReflectionService } from '../services/reflectionService';
 import { notifyTargetedQuestionToUsers } from '../utils/telegramBot';
 import { UserService } from '../services/supabase';
+import { logger } from '../utils/logger';
 
 export class TargetedQuestionController {
   /**
@@ -37,7 +38,7 @@ export class TargetedQuestionController {
       try {
         await ReflectionService.addReflectionPoints(userId, 'targeted_answer');
       } catch (reflectionError) {
-        console.error('Error adding reflection points:', reflectionError);
+        logger.error(reflectionError instanceof Error ? reflectionError : new Error(String(reflectionError)), 'Error adding reflection points');
         // Не прерываем выполнение, если ошибка начисления рефлексии
       }
       
@@ -63,26 +64,30 @@ export class TargetedQuestionController {
             // Всем пользователям
             const users = await UserService.getAllUsers();
             const userIds = users.map(u => u.id);
-            notifyTargetedQuestionToUsers(userIds, question.text, question.id).catch(console.error);
+            notifyTargetedQuestionToUsers(userIds, question.text, question.id).catch((err) => 
+              logger.error(err instanceof Error ? err : new Error(String(err)), 'Error sending targeted question notification')
+            );
           } else if (data.target_audience === 'by_type' && data.target_values) {
             // По типу пользователя
             const users = await UserService.getAllUsers();
             const targetUsers = users.filter(u => data.target_values.includes(u.user_type));
             const userIds = targetUsers.map(u => u.id);
-            notifyTargetedQuestionToUsers(userIds, question.text, question.id).catch(console.error);
+            notifyTargetedQuestionToUsers(userIds, question.text, question.id).catch((err) => 
+              logger.error(err instanceof Error ? err : new Error(String(err)), 'Error sending targeted question notification')
+            );
           } else if (data.target_audience === 'individual' && data.target_values) {
             // Конкретным пользователям
             notifyTargetedQuestionToUsers(data.target_values, question.text, question.id).catch(console.error);
           }
         } catch (notifError) {
-          console.error('Error sending notifications:', notifError);
+          logger.error(notifError instanceof Error ? notifError : new Error(String(notifError)), 'Error sending notifications');
           // Не прерываем создание вопроса из-за ошибки уведомлений
         }
       }
       
       return res.status(201).json({ success: true, question });
     } catch (error) {
-      console.error('Create targeted question error:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Create targeted question error');
       return res.status(500).json({ error: 'Ошибка при создании вопроса' });
     }
   }
@@ -95,7 +100,7 @@ export class TargetedQuestionController {
       const questions = await TargetedQuestionService.getAllQuestions();
       return res.json({ success: true, questions });
     } catch (error) {
-      console.error('Get all questions error:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Get all questions error');
       return res.status(500).json({ error: 'Ошибка при получении вопросов' });
     }
   }
@@ -133,23 +138,27 @@ export class TargetedQuestionController {
           if (question.target_audience === 'all') {
             const users = await UserService.getAllUsers();
             const userIds = users.map(u => u.id);
-            notifyTargetedQuestionToUsers(userIds, question.text, question.id).catch(console.error);
+            notifyTargetedQuestionToUsers(userIds, question.text, question.id).catch((err) => 
+              logger.error(err instanceof Error ? err : new Error(String(err)), 'Error sending targeted question notification')
+            );
           } else if (question.target_audience === 'by_type' && question.target_values) {
             const users = await UserService.getAllUsers();
             const targetUsers = users.filter(u => question.target_values.includes(u.user_type));
             const userIds = targetUsers.map(u => u.id);
-            notifyTargetedQuestionToUsers(userIds, question.text, question.id).catch(console.error);
+            notifyTargetedQuestionToUsers(userIds, question.text, question.id).catch((err) => 
+              logger.error(err instanceof Error ? err : new Error(String(err)), 'Error sending targeted question notification')
+            );
           } else if (question.target_audience === 'individual' && question.target_values) {
             notifyTargetedQuestionToUsers(question.target_values, question.text, question.id).catch(console.error);
           }
         } catch (notifError) {
-          console.error('Error sending notifications:', notifError);
+          logger.error(notifError instanceof Error ? notifError : new Error(String(notifError)), 'Error sending notifications');
         }
       }
       
       return res.json({ success: true, question });
     } catch (error) {
-      console.error('Update targeted question error:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Update targeted question error');
       return res.status(500).json({ error: 'Ошибка при обновлении вопроса' });
     }
   }
@@ -163,7 +172,7 @@ export class TargetedQuestionController {
       await TargetedQuestionService.deleteQuestion(id);
       return res.json({ success: true, message: 'Вопрос удален' });
     } catch (error) {
-      console.error('Delete targeted question error:', error);
+      logger.error(error instanceof Error ? error : new Error(String(error)), 'Delete targeted question error');
       return res.status(500).json({ error: 'Ошибка при удалении вопроса' });
     }
   }
