@@ -13,6 +13,8 @@ export interface User {
   status: 'new' | 'registered';
   is_admin?: number;
   user_type?: string; // Тип пользователя
+  direction_id?: string; // ID направления
+  direction_selected_at?: string; // Дата выбора направления
   total_points?: number;
   current_level?: number;
   created_at: string;
@@ -29,6 +31,9 @@ export interface Event {
   event_time?: string;
   status: 'draft' | 'published' | 'completed';
   type: 'event' | 'diagnostic';
+  group_name?: string; // Название группы (например, "День 1")
+  group_order?: number; // Порядок группы для сортировки
+  event_order?: number; // Порядок мероприятия внутри группы
   created_at: string;
 }
 
@@ -91,6 +96,9 @@ export interface CreateEventRequest {
   event_time?: string;
   type?: 'event' | 'diagnostic';
   status?: 'draft' | 'published' | 'completed';
+  group_name?: string;
+  group_order?: number;
+  event_order?: number;
 }
 
 export interface CreateQuestionRequest {
@@ -146,6 +154,9 @@ export interface UserStats {
   achievements_count: number;
   recent_achievements: Achievement[];
   recent_points_transactions: PointsTransaction[];
+  reflection_level?: number;
+  reflection_points?: number;
+  reflection_to_next_level?: number;
 }
 
 export interface ApiResponse<T> {
@@ -153,6 +164,17 @@ export interface ApiResponse<T> {
   data?: T;
   error?: string;
   user?: Partial<User>;
+}
+
+// === Directions (Направления) ===
+
+export interface Direction {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // === Assignments (Задания) ===

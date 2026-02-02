@@ -3,6 +3,7 @@ import { EventService } from '../services/eventService';
 import { UserService } from '../services/supabase';
 import { TargetedQuestionService } from '../services/targetedQuestionService';
 import { AssignmentService } from '../services/assignmentService';
+import { DirectionService } from '../services/directionService';
 import { broadcastMessage } from '../utils/telegramBot';
 
 export class AdminController {
@@ -179,6 +180,33 @@ export class AdminController {
     } catch (error) {
       console.error('Set user type error:', error);
       return res.status(500).json({ error: 'Ошибка при назначении типа' });
+    }
+  }
+
+  /**
+   * Назначение направления пользователю
+   */
+  static async setUserDirection(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { direction_id } = req.body;
+      
+      await DirectionService.setUserDirection(id, direction_id || null);
+      const user = await UserService.getUserById(id);
+      
+      // Отправка уведомления, если направление назначено
+      if (direction_id && user) {
+        const direction = await DirectionService.getDirectionById(direction_id);
+        if (direction) {
+          const { notifyDirectionAssigned } = await import('../utils/telegramBot');
+          notifyDirectionAssigned(user.telegram_id, direction.name).catch(console.error);
+        }
+      }
+      
+      return res.json({ success: true, user });
+    } catch (error) {
+      console.error('Set user direction error:', error);
+      return res.status(500).json({ error: 'Ошибка при назначении направления' });
     }
   }
 }

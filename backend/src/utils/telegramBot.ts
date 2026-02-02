@@ -89,3 +89,47 @@ export async function notifyAssignmentResult(
   
   await sendMessageToUser(telegramId, text, true);
 }
+
+/**
+ * Отправка уведомления о новом персональном вопросе
+ */
+export async function notifyNewTargetedQuestion(
+  telegramId: number,
+  questionText: string
+) {
+  const text = `❓ <b>Новый персональный вопрос</b>\n\n${questionText}`;
+  await sendMessageToUser(telegramId, text, true);
+}
+
+/**
+ * Рассылка уведомления о новом персональном вопросе выбранным пользователям
+ */
+export async function notifyTargetedQuestionToUsers(
+  userIds: string[],
+  questionText: string
+) {
+  try {
+    const users = await UserService.getAllUsers();
+    const targetUsers = users.filter(u => userIds.includes(u.id));
+    
+    for (const user of targetUsers) {
+      await notifyNewTargetedQuestion(user.telegram_id, questionText);
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    
+    console.log(`Targeted question notifications sent to ${targetUsers.length} users`);
+  } catch (error) {
+    console.error('Error sending targeted question notifications:', error);
+  }
+}
+
+/**
+ * Уведомление о назначении направления
+ */
+export async function notifyDirectionAssigned(
+  telegramId: number,
+  directionName: string
+) {
+  const text = `🎯 <b>Вам назначено направление</b>\n\n${directionName}`;
+  await sendMessageToUser(telegramId, text, true);
+}

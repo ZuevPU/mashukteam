@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { User, UserType, AssignmentSubmission } from '../../types';
+import { User, UserType, AssignmentSubmission, Direction } from '../../types';
 import { adminApi } from '../../services/adminApi';
 import { useTelegram } from '../../hooks/useTelegram';
 import './AdminScreens.css';
@@ -30,19 +30,24 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
   const { initData, showAlert } = useTelegram();
   const [user, setUser] = useState<UserWithDetails | null>(null);
   const [userTypes, setUserTypes] = useState<UserType[]>([]);
+  const [directions, setDirections] = useState<Direction[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState('');
+  const [selectedDirection, setSelectedDirection] = useState('');
 
   const loadDetails = async () => {
     if (!initData) return;
     try {
-      const [userData, typesData] = await Promise.all([
+      const [userData, typesData, directionsResponse] = await Promise.all([
         adminApi.getUserDetails(userId, initData),
-        adminApi.getUserTypes()
+        adminApi.getUserTypes(),
+        fetch(`${import.meta.env.VITE_API_URL || ''}/api/directions`).then(r => r.json())
       ]);
       setUser(userData as UserWithDetails);
       setUserTypes(typesData);
+      setDirections(directionsResponse.directions || []);
       setSelectedType(userData.user_type || '');
+      setSelectedDirection(userData.direction_id || '');
     } catch (error) {
       console.error('Error loading user details:', error);
     } finally {
@@ -62,6 +67,26 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
       loadDetails();
     } catch (error) {
       console.error('Error saving user type:', error);
+      showAlert('Ошибка сохранения');
+    }
+  };
+
+  const handleSaveDirection = async () => {
+    if (!initData) return;
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/admin/users/${userId}/direction`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ initData, direction_id: selectedDirection || null })
+      });
+      if (response.ok) {
+        showAlert('Направление сохранено');
+        loadDetails();
+      } else {
+        showAlert('Ошибка сохранения');
+      }
+    } catch (error) {
+      console.error('Error saving direction:', error);
       showAlert('Ошибка сохранения');
     }
   };
@@ -121,6 +146,30 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
               className="save-btn" 
               style={{marginTop: 0, padding: '0 20px'}} 
               onClick={handleSaveType}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+
+        <div className="form-group" style={{marginTop: 16}}>
+          <label>Направление</label>
+          <div style={{display: 'flex', gap: 8}}>
+            <select 
+              className="form-select"
+              value={selectedDirection}
+              onChange={(e) => setSelectedDirection(e.target.value)}
+              style={{flex: 1}}
+            >
+              <option value="">— Не выбрано —</option>
+              {directions.map(d => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
+            <button 
+              className="save-btn" 
+              style={{marginTop: 0, padding: '0 20px'}} 
+              onClick={handleSaveDirection}
             >
               OK
             </button>

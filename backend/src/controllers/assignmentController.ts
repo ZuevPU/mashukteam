@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { AssignmentService } from '../services/assignmentService';
 import { UserService } from '../services/supabase';
-import { notifyAssignmentResult } from '../utils/telegramBot';
+import { notifyAssignmentResult, notifyNewAssignment } from '../utils/telegramBot';
 
 export class AssignmentController {
   // === User Types ===
@@ -20,8 +20,14 @@ export class AssignmentController {
 
   static async createAssignment(req: Request, res: Response) {
     try {
-      const { initData, ...data } = req.body;
+      const { initData, sendNotification, ...data } = req.body;
       const assignment = await AssignmentService.createAssignment(data);
+      
+      // Отправка уведомлений, если задание опубликовано и запрошено
+      if (sendNotification && assignment.status === 'published') {
+        notifyNewAssignment(assignment.title, assignment.reward).catch(console.error);
+      }
+      
       return res.status(201).json({ success: true, assignment });
     } catch (error) {
       console.error('Create assignment error:', error);
@@ -101,6 +107,16 @@ export class AssignmentController {
       
       const submission = await AssignmentService.moderateSubmission(id, data);
       
+      // Начисление баллов рефлексии при одобрении задания
+      if (data.status === 'approved' && subData?.user?.id) {
+        try {
+          await ReflectionService.addReflectionPoints(subData.user.id, 'assignment_completed');
+        } catch (reflectionError) {
+          console.error('Error adding reflection points:', reflectionError);
+          // Не прерываем выполнение, если ошибка начисления рефлексии
+        }
+      }
+      
       // Отправляем уведомление пользователю
       if (subData?.user?.telegram_id && subData?.assignment) {
         notifyAssignmentResult(
@@ -157,6 +173,10 @@ export class AssignmentController {
       const { initData, ...data } = req.body;
       
       const submission = await AssignmentService.submitAssignment(user.id, id, data);
+      
+      // Начисление баллов рефлексии за выполнение задания
+      // Баллы начисляются при одобрении задания, поэтому здесь не начисляем
+      
       return res.status(201).json({ success: true, submission });
     } catch (error: any) {
       console.error('Submit assignment error:', error);

@@ -1,5 +1,8 @@
 import { Request, Response } from 'express';
 import { TargetedQuestionService } from '../services/targetedQuestionService';
+import { ReflectionService } from '../services/reflectionService';
+import { notifyTargetedQuestionToUsers } from '../utils/telegramBot';
+import { UserService } from '../services/supabase';
 
 export class TargetedQuestionController {
   /**
@@ -29,6 +32,15 @@ export class TargetedQuestionController {
       const { questionId, answerData } = req.body;
       
       const answer = await TargetedQuestionService.submitAnswer(userId, questionId, answerData);
+      
+      // Начисление баллов рефлексии за ответ на персональный вопрос
+      try {
+        await ReflectionService.addReflectionPoints(userId, 'targeted_answer');
+      } catch (reflectionError) {
+        console.error('Error adding reflection points:', reflectionError);
+        // Не прерываем выполнение, если ошибка начисления рефлексии
+      }
+      
       return res.json({ success: true, answer });
     } catch (error) {
       console.error('Submit targeted answer error:', error);
@@ -41,8 +53,33 @@ export class TargetedQuestionController {
    */
   static async createQuestion(req: Request, res: Response) {
     try {
-      const { initData, ...data } = req.body;
+      const { initData, sendNotification, ...data } = req.body;
       const question = await TargetedQuestionService.createQuestion(data);
+      
+      // Отправка уведомлений, если запрошено
+      if (sendNotification && question.status === 'published') {
+        try {
+          if (data.target_audience === 'all') {
+            // Всем пользователям
+            const users = await UserService.getAllUsers();
+            const userIds = users.map(u => u.id);
+            notifyTargetedQuestionToUsers(userIds, question.text).catch(console.error);
+          } else if (data.target_audience === 'by_type' && data.target_values) {
+            // По типу пользователя
+            const users = await UserService.getAllUsers();
+            const targetUsers = users.filter(u => data.target_values.includes(u.user_type));
+            const userIds = targetUsers.map(u => u.id);
+            notifyTargetedQuestionToUsers(userIds, question.text).catch(console.error);
+          } else if (data.target_audience === 'individual' && data.target_values) {
+            // Конкретным пользователям
+            notifyTargetedQuestionToUsers(data.target_values, question.text).catch(console.error);
+          }
+        } catch (notifError) {
+          console.error('Error sending notifications:', notifError);
+          // Не прерываем создание вопроса из-за ошибки уведомлений
+        }
+      }
+      
       return res.status(201).json({ success: true, question });
     } catch (error) {
       console.error('Create targeted question error:', error);
@@ -60,6 +97,19 @@ export class TargetedQuestionController {
     } catch (error) {
       console.error('Get all questions error:', error);
       return res.status(500).json({ error: 'Ошибка при получении вопросов' });
+    }
+  }
+
+  /**
+   * Получение всех ответов (Админ)
+   */
+  static async getAllAnswers(req: Request, res: Response) {
+    try {
+      const answers = await TargetedQuestionService.getAllAnswersWithDetails();
+      return res.json({ success: true, answers });
+    } catch (error) {
+      console.error('Get all answers error:', error);
+      return res.status(500).json({ error: 'Ошибка при получении ответов' });
     }
   }
 }

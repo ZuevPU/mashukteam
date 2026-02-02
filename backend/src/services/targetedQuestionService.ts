@@ -139,4 +139,21 @@ export class TargetedQuestionService {
 
     return data || [];
   }
+
+  /**
+   * Получение всех ответов с деталями (для админа - "Проверить ответы")
+   */
+  static async getAllAnswersWithDetails(): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('targeted_answers')
+      .select('*, user:users(id, first_name, last_name, telegram_username), question:targeted_questions(id, text, type)')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error getting all targeted answers with details:', error);
+      throw error;
+    }
+
+    return data || [];
+  }
 }

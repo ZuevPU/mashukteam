@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { EventService } from '../services/eventService';
+import { ReflectionService } from '../services/reflectionService';
 
 export class EventController {
   /**
@@ -54,6 +55,19 @@ export class EventController {
       const answerData = req.body; // SubmitAnswerDto
 
       const answer = await EventService.submitAnswer(userId, id, answerData);
+      
+      // Начисление баллов рефлексии
+      try {
+        const event = await EventService.getEventById(id);
+        if (event) {
+          const actionType = event.type === 'diagnostic' ? 'diagnostic_answer' : 'event_answer';
+          await ReflectionService.addReflectionPoints(userId, actionType);
+        }
+      } catch (reflectionError) {
+        console.error('Error adding reflection points:', reflectionError);
+        // Не прерываем выполнение, если ошибка начисления рефлексии
+      }
+      
       return res.status(201).json({ success: true, answer });
     } catch (error) {
       console.error('Submit answer error:', error);

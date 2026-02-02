@@ -8,7 +8,36 @@
 .header {
   display: flex;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+}
+
+.events-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--tg-theme-hint-color, rgba(0, 0, 0, 0.1));
+}
+
+.events-tab {
+  flex: 1;
+  padding: 12px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--tg-theme-hint-color, rgba(0, 0, 0, 0.6));
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.events-tab.active {
+  color: var(--tg-theme-button-color, #3390ec);
+  border-bottom-color: var(--tg-theme-button-color, #3390ec);
+}
+
+.events-tab:active {
+  opacity: 0.7;
 }
 
 .back-button {

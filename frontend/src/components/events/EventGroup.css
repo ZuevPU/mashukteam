@@ -1,0 +1,56 @@
+.event-group {
+  margin-bottom: 24px;
+}
+
+.event-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--tg-theme-hint-color, rgba(0, 0, 0, 0.1));
+}
+
+.event-group-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--tg-theme-text-color, #000);
+}
+
+.event-group-count {
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, rgba(0, 0, 0, 0.5));
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
+.event-group-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.event-group-items .event-card {
+  margin-left: 12px;
+  border-left: 3px solid var(--tg-theme-button-color, #3390ec);
+  padding-left: 12px;
+}
+
+.event-group-items .event-card h4 {
+  font-size: 16px;
+  margin: 0 0 8px 0;
+}
+
+.event-group-items .event-card .event-date,
+.event-group-items .event-card .event-speaker {
+  font-size: 13px;
+  margin: 4px 0;
+}
+
+.event-group-items .event-card .event-description {
+  font-size: 13px;
+  margin-top: 8px;
+  opacity: 0.8;
+}

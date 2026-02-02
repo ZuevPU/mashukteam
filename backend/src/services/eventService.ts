@@ -63,6 +63,9 @@ export class EventService {
     const { data, error } = await supabase
       .from('events')
       .select('*')
+      .order('group_order', { ascending: true, nullsFirst: false })
+      .order('event_order', { ascending: true, nullsFirst: false })
+      .order('event_date', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -81,17 +84,15 @@ export class EventService {
       .from('events')
       .select('*')
       .in('status', ['published', 'completed'])
-      // Сортировка: сначала новые (по дате проведения)
-      .order('event_date', { ascending: false });
+      // Сортировка: сначала по группе, потом по порядку внутри группы, потом по дате
+      .order('group_order', { ascending: true, nullsFirst: false })
+      .order('event_order', { ascending: true, nullsFirst: false })
+      .order('event_date', { ascending: true, nullsFirst: false });
 
     if (error) {
       console.error('Error getting published events:', error);
       throw error;
     }
-
-    // Дополнительная сортировка в коде, чтобы 'published' были выше 'completed', если даты совпадают
-    // Но для простоты оставим по дате события. 
-    // Актуальные (будущие) будут сверху, если дата в будущем.
     
     return data as Event[];
   }

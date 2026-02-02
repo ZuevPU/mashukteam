@@ -11,6 +11,7 @@ import {
   AddPointsDto,
   UserStats,
 } from '../types';
+import { ReflectionService } from './reflectionService';
 
 /**
  * Сервис для работы с баллами пользователей
@@ -444,6 +445,20 @@ export class AnalyticsService {
       .map(ua => ua.achievement)
       .filter(Boolean) as Achievement[];
 
+    // Получаем статистику рефлексии
+    let reflectionStats;
+    try {
+      reflectionStats = await ReflectionService.getReflectionStats(userId);
+    } catch (reflectionError) {
+      console.error('Error getting reflection stats:', reflectionError);
+      reflectionStats = {
+        level: 1,
+        points: 0,
+        pointsToNextLevel: 21,
+        levelName: 'Начал задумываться'
+      };
+    }
+
     return {
       user_id: userId,
       total_points: user.total_points || 0,
@@ -453,6 +468,9 @@ export class AnalyticsService {
       achievements_count: userAchievements.length,
       recent_achievements: recentAchievements,
       recent_points_transactions: recentPoints,
+      reflection_level: reflectionStats.level,
+      reflection_points: reflectionStats.points,
+      reflection_to_next_level: reflectionStats.pointsToNextLevel,
     };
   }
 }

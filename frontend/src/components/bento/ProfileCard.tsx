@@ -1,4 +1,5 @@
-import { User } from '../../types';
+import { useState, useEffect } from 'react';
+import { User, Direction } from '../../types';
 import './ProfileCard.css';
 
 interface ProfileCardProps {
@@ -10,6 +11,25 @@ interface ProfileCardProps {
  * Компонент карточки профиля пользователя
  */
 export function ProfileCard({ user, className = '' }: ProfileCardProps) {
+  const [direction, setDirection] = useState<Direction | null>(null);
+
+  useEffect(() => {
+    if (user.direction_id) {
+      const loadDirection = async () => {
+        try {
+          const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/directions`);
+          if (response.ok) {
+            const data = await response.json();
+            const found = data.directions?.find((d: Direction) => d.id === user.direction_id);
+            if (found) setDirection(found);
+          }
+        } catch (error) {
+          console.error('Error loading direction:', error);
+        }
+      };
+      loadDirection();
+    }
+  }, [user.direction_id]);
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('ru-RU', {
@@ -57,6 +77,11 @@ export function ProfileCard({ user, className = '' }: ProfileCardProps) {
                 {userTypeName}
               </span>
             )}
+            {direction && (
+              <span className="status-badge status-direction">
+                {direction.name}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -65,6 +90,18 @@ export function ProfileCard({ user, className = '' }: ProfileCardProps) {
           <span className="profile-detail-label">Дата регистрации:</span>
           <span className="profile-detail-value">{formatDate(user.created_at)}</span>
         </div>
+        {user.user_type && (
+          <div className="profile-detail-item">
+            <span className="profile-detail-label">Тип:</span>
+            <span className="profile-detail-value">{userTypeName}</span>
+          </div>
+        )}
+        {direction && (
+          <div className="profile-detail-item">
+            <span className="profile-detail-label">Направление:</span>
+            <span className="profile-detail-value">{direction.name}</span>
+          </div>
+        )}
         {user.telegram_username && (
           <div className="profile-detail-item">
             <span className="profile-detail-label">Telegram:</span>

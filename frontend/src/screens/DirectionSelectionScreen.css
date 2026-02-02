@@ -1,0 +1,131 @@
+.direction-selection-screen {
+  padding: 20px;
+  min-height: 100vh;
+  background: var(--tg-theme-bg-color, #fff);
+}
+
+.direction-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.direction-header h2 {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: var(--tg-theme-text-color, #000);
+}
+
+.direction-subtitle {
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, rgba(0, 0, 0, 0.6));
+  margin: 0;
+}
+
+.directions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.direction-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 2px solid var(--tg-theme-hint-color, rgba(0, 0, 0, 0.1));
+  border-radius: 12px;
+  background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.direction-card:hover {
+  border-color: var(--tg-theme-button-color, #3390ec);
+  background: var(--tg-theme-bg-color, #fff);
+}
+
+.direction-card.selected {
+  border-color: var(--tg-theme-button-color, #3390ec);
+  background: var(--tg-theme-bg-color, #fff);
+  box-shadow: 0 2px 8px rgba(51, 144, 236, 0.2);
+}
+
+.direction-radio {
+  margin-top: 2px;
+}
+
+.direction-radio input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.direction-content {
+  flex: 1;
+}
+
+.direction-content h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+  color: var(--tg-theme-text-color, #000);
+}
+
+.direction-description {
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, rgba(0, 0, 0, 0.6));
+  margin: 0;
+  line-height: 1.4;
+}
+
+.direction-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.direction-select-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--tg-theme-button-color, #3390ec);
+  color: var(--tg-theme-button-text-color, #fff);
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.direction-select-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.direction-select-btn:not(:disabled):active {
+  opacity: 0.8;
+}
+
+.direction-skip-btn {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  color: var(--tg-theme-hint-color, rgba(0, 0, 0, 0.6));
+  border: 1px solid var(--tg-theme-hint-color, rgba(0, 0, 0, 0.2));
+  border-radius: 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.direction-skip-btn:active {
+  opacity: 0.7;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--tg-theme-hint-color, rgba(0, 0, 0, 0.6));
+}

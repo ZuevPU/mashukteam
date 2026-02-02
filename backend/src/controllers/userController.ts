@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import { UserService } from '../services/supabase';
+import { DirectionService } from '../services/directionService';
 import { getTelegramIdFromInitData } from '../utils/telegramAuth';
 import { CreateUserDto } from '../types';
+import { requireAuth } from '../middleware/authMiddleware';
 
 /**
  * Контроллер для работы с пользователями
@@ -83,6 +85,9 @@ export async function getUserStatus(req: UserRequest, res: Response) {
         first_name: user.first_name,
         status: user.status,
         is_admin: user.is_admin,
+        user_type: user.user_type,
+        direction_id: user.direction_id,
+        direction_selected_at: user.direction_selected_at,
       },
     });
   } catch (error) {
@@ -178,5 +183,34 @@ export async function registerUser(req: UserRequest, res: Response) {
       error: 'Внутренняя ошибка сервера',
       details: error instanceof Error ? error.message : String(error),
     });
+  }
+}
+
+/**
+ * POST /api/user/direction
+ * Выбор направления пользователем
+ */
+export async function setUserDirection(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Не авторизован' });
+    }
+
+    const { direction_id } = req.body;
+    
+    if (!direction_id) {
+      return res.status(400).json({ error: 'direction_id обязателен' });
+    }
+
+    await DirectionService.setUserDirection(userId, direction_id);
+    
+    return res.json({ 
+      success: true, 
+      message: 'Направление выбрано успешно' 
+    });
+  } catch (error) {
+    console.error('Error setting user direction:', error);
+    return res.status(500).json({ error: 'Ошибка при выборе направления' });
   }
 }

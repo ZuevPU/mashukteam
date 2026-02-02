@@ -8,6 +8,7 @@ import { EventsCard } from '../components/bento/EventsCard';
 import { DiagnosticCard } from '../components/bento/DiagnosticCard';
 import { QuestionsCard } from '../components/bento/QuestionsCard';
 import { AssignmentsCard } from '../components/bento/AssignmentsCard';
+import { ReflectionProgress } from '../components/gamification/ReflectionProgress';
 import { EventsListScreen } from './events/EventsListScreen';
 import { EventSurveyScreen } from './events/EventSurveyScreen';
 import { AdminDashboard } from './admin/AdminDashboard';
@@ -23,9 +24,13 @@ import { AdminAssignmentFormScreen } from './admin/AdminAssignmentFormScreen';
 import { AdminAssignmentSubmissionsScreen } from './admin/AdminAssignmentSubmissionsScreen';
 import { AdminLeaderboardScreen } from './admin/AdminLeaderboardScreen';
 import { AdminTargetedQuestionsScreen } from './admin/AdminTargetedQuestionsScreen';
+import { AdminQuestionsListScreen } from './admin/AdminQuestionsListScreen';
+import { AdminCreateQuestionScreen } from './admin/AdminCreateQuestionScreen';
+import { AdminQuestionAnswersScreen } from './admin/AdminQuestionAnswersScreen';
 import { TargetedQuestionsListScreen } from './TargetedQuestionsListScreen';
 import { AssignmentsListScreen } from './assignments/AssignmentsListScreen';
 import { AssignmentSubmitScreen } from './assignments/AssignmentSubmitScreen';
+import { DirectionSelectionScreen } from './DirectionSelectionScreen';
 import './BentoMenuScreen.css';
 
 type ScreenView = 
@@ -35,6 +40,7 @@ type ScreenView =
   | 'targeted_questions'
   | 'event_survey' 
   | 'assignments_list'
+  | 'direction_selection'
   | 'admin'
   | 'admin_events'
   | 'admin_diagnostics'
@@ -93,10 +99,17 @@ export function BentoMenuScreen() {
           status: (statusResponse.status || 'new') as 'new' | 'registered',
           is_admin: (statusResponse.user as any).is_admin,
           user_type: (statusResponse.user as any).user_type,
+          direction_id: (statusResponse.user as any).direction_id,
+          direction_selected_at: (statusResponse.user as any).direction_selected_at,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
         setUser(userData);
+
+        // Проверка направления: если пользователь зарегистрирован, но не выбрал направление
+        if (userData.status === 'registered' && !userData.direction_id && view === 'menu') {
+          setView('direction_selection');
+        }
 
         // Загрузка статистики (баллы)
         try {
@@ -115,6 +128,19 @@ export function BentoMenuScreen() {
   }, [isReady, initData]);
 
   // === РОУТИНГ ===
+
+  // Выбор направления
+  if (view === 'direction_selection') {
+    return (
+      <DirectionSelectionScreen
+        onSelect={() => {
+          // Перезагружаем данные пользователя
+          window.location.reload();
+        }}
+        onSkip={() => setView('menu')}
+      />
+    );
+  }
 
   // Пользовательская часть
   if (view === 'events_list') {
@@ -291,20 +317,12 @@ export function BentoMenuScreen() {
     size: '1x1',
   });
 
-  // 5. Баллы (упрощенная геймификация)
-  if (stats) {
+  // 5. Прогресс рефлексии
+  if (stats && stats.reflection_level) {
     bentoItems.push({
-      id: 'points',
-      content: (
-        <div className="bento-card points-card">
-          <div className="card-content">
-            <span className="card-icon">⭐</span>
-            <h3 className="card-title">{stats.total_points} баллов</h3>
-            <p className="card-subtitle">Выполняй задания</p>
-          </div>
-        </div>
-      ),
-      size: '1x1',
+      id: 'reflection',
+      content: <ReflectionProgress stats={stats} />,
+      size: '2x1',
     });
   }
 

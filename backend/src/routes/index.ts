@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { verifyAuth } from '../controllers/authController';
-import { getUser, getUserStatus, registerUser } from '../controllers/userController';
+import { getUser, getUserStatus, registerUser, setUserDirection } from '../controllers/userController';
+import { DirectionController } from '../controllers/directionController';
+import { ExportController } from '../controllers/exportController';
 import {
   addPoints,
   getUserPoints,
@@ -45,12 +47,19 @@ import { AssignmentController } from '../controllers/assignmentController';
 // === User Types (public) ===
 router.get('/user-types', AssignmentController.getUserTypes);
 
+// === Directions (public) ===
+router.get('/directions', DirectionController.getAllDirections);
+
+// === User Direction ===
+router.post('/user/direction', requireAuth, setUserDirection);
+
 // === Targeted Questions ===
 router.post('/questions/my', requireAuth, TargetedQuestionController.getMyQuestions);
 router.post('/questions/answer', requireAuth, TargetedQuestionController.submitAnswer);
 
 // === Admin System ===
 router.post('/admin/targeted-questions', requireAuth, requireAdmin, TargetedQuestionController.getAllQuestions);
+router.post('/admin/targeted-answers', requireAuth, requireAdmin, TargetedQuestionController.getAllAnswers);
 router.post('/admin/questions', requireAuth, requireAdmin, TargetedQuestionController.createQuestion);
 router.patch('/admin/users/:id/type', requireAuth, requireAdmin, AdminController.setUserType);
 
@@ -64,6 +73,15 @@ router.post('/admin/events/:id/analytics', requireAuth, requireAdmin, AdminContr
 router.post('/admin/users', requireAuth, requireAdmin, AdminController.getAllUsers);
 router.post('/admin/users/:id', requireAuth, requireAdmin, AdminController.getUserDetails);
 router.patch('/admin/users/:id', requireAuth, requireAdmin, AdminController.updateUser);
+router.patch('/admin/users/:id/direction', requireAuth, requireAdmin, AdminController.setUserDirection);
+
+// === Admin Export ===
+router.post('/admin/export/answers', requireAuth, requireAdmin, ExportController.exportAnswers);
+
+// === Admin Directions ===
+router.post('/admin/directions', requireAuth, requireAdmin, DirectionController.createDirection);
+router.put('/admin/directions/:id', requireAuth, requireAdmin, DirectionController.updateDirection);
+router.delete('/admin/directions/:id', requireAuth, requireAdmin, DirectionController.deleteDirection);
 
 // === Admin Assignments ===
 router.post('/admin/assignments', requireAuth, requireAdmin, AssignmentController.createAssignment);

@@ -23,6 +23,9 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
     audience: editingEvent?.audience || '',
     event_date: editingEvent?.event_date || '',
     event_time: editingEvent?.event_time || '',
+    group_name: editingEvent?.group_name || '',
+    group_order: editingEvent?.group_order || 0,
+    event_order: editingEvent?.event_order || 0,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -134,6 +137,52 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
             onChange={handleChange}
             placeholder="О чем будет мероприятие..."
           />
+        </div>
+
+        <div className="form-group">
+          <label>Группа мероприятия</label>
+          <input 
+            className="form-input"
+            name="group_name"
+            value={formData.group_name}
+            onChange={handleChange}
+            placeholder="Например: День 1, День 2, Блок 1..."
+          />
+          <small style={{fontSize: 11, opacity: 0.7, marginTop: 4, display: 'block'}}>
+            Мероприятия с одинаковым названием группы будут сгруппированы вместе
+          </small>
+        </div>
+
+        <div style={{display: 'flex', gap: 12}}>
+          <div className="form-group" style={{flex: 1}}>
+            <label>Порядок группы</label>
+            <input 
+              type="number"
+              className="form-input"
+              name="group_order"
+              value={formData.group_order}
+              onChange={(e) => setFormData({...formData, group_order: parseInt(e.target.value) || 0})}
+              placeholder="0"
+            />
+            <small style={{fontSize: 11, opacity: 0.7, marginTop: 4, display: 'block'}}>
+              Меньше = выше в списке
+            </small>
+          </div>
+
+          <div className="form-group" style={{flex: 1}}>
+            <label>Порядок в группе</label>
+            <input 
+              type="number"
+              className="form-input"
+              name="event_order"
+              value={formData.event_order}
+              onChange={(e) => setFormData({...formData, event_order: parseInt(e.target.value) || 0})}
+              placeholder="0"
+            />
+            <small style={{fontSize: 11, opacity: 0.7, marginTop: 4, display: 'block'}}>
+              Порядок внутри группы
+            </small>
+          </div>
         </div>
 
         <button type="submit" className="save-btn" disabled={loading}>

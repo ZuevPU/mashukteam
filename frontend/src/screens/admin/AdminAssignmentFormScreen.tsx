@@ -17,6 +17,7 @@ export const AdminAssignmentFormScreen: React.FC<AdminAssignmentFormScreenProps>
   const { initData, showAlert } = useTelegram();
   const [loading, setLoading] = useState(false);
   const [userTypes, setUserTypes] = useState<UserType[]>([]);
+  const [sendNotification, setSendNotification] = useState(true);
   
   const [formData, setFormData] = useState<CreateAssignmentRequest>({
     title: editingAssignment?.title || '',
@@ -65,7 +66,13 @@ export const AdminAssignmentFormScreen: React.FC<AdminAssignmentFormScreenProps>
         await adminApi.updateAssignment(editingAssignment.id, formData, initData);
         showAlert('Обновлено');
       } else {
-        await adminApi.createAssignment(formData, initData);
+        // Передаем sendNotification отдельно
+        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/admin/assignments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initData, ...formData, sendNotification })
+        });
+        if (!response.ok) throw new Error('Ошибка создания');
         showAlert('Создано');
       }
       onSuccess();
@@ -172,6 +179,19 @@ export const AdminAssignmentFormScreen: React.FC<AdminAssignmentFormScreenProps>
               selectedUserIds={formData.target_values || []}
               onChange={(ids) => setFormData(prev => ({ ...prev, target_values: ids }))}
             />
+          </div>
+        )}
+
+        {!editingAssignment && (
+          <div className="form-group">
+            <label className="checkbox-item" style={{display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer'}}>
+              <input
+                type="checkbox"
+                checked={sendNotification}
+                onChange={(e) => setSendNotification(e.target.checked)}
+              />
+              <span>Уведомить пользователей о новом задании</span>
+            </label>
           </div>
         )}
 

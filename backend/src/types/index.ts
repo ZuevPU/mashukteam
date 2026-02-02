@@ -24,8 +24,12 @@ export interface User {
   status: 'new' | 'registered';
   is_admin?: number;
   user_type?: string; // Тип пользователя
+  direction_id?: string; // ID направления
+  direction_selected_at?: string; // Дата выбора направления
   total_points?: number;
   current_level?: number;
+  reflection_level?: number; // Уровень рефлексии (1-5)
+  reflection_points?: number; // Баллы рефлексии
   created_at: string;
   updated_at: string;
 }
@@ -40,6 +44,9 @@ export interface Event {
   event_time?: string;
   status: 'draft' | 'published' | 'completed';
   type: 'event' | 'diagnostic'; // Тип события
+  group_name?: string; // Название группы (например, "День 1")
+  group_order?: number; // Порядок группы для сортировки
+  event_order?: number; // Порядок мероприятия внутри группы
   created_at: string;
   updated_at: string;
 }
@@ -102,6 +109,9 @@ export interface CreateEventDto {
   audience?: string;
   event_date?: string;
   event_time?: string;
+  group_name?: string;
+  group_order?: number;
+  event_order?: number;
 }
 
 export interface CreateQuestionDto {
@@ -207,6 +217,35 @@ export interface UserStats {
   achievements_count: number;
   recent_achievements: Achievement[];
   recent_points_transactions: PointsTransaction[];
+  reflection_level?: number;
+  reflection_points?: number;
+  reflection_to_next_level?: number;
+}
+
+// Действие рефлексии
+export interface ReflectionAction {
+  id: string;
+  user_id: string;
+  action_type: 'event_answer' | 'diagnostic_answer' | 'targeted_answer' | 'assignment_completed';
+  points_awarded: number;
+  created_at: string;
+}
+
+// === Directions (Направления) ===
+
+export interface Direction {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateDirectionDto {
+  name: string;
+  slug: string;
+  description?: string;
 }
 
 // === Assignments (Задания) ===

@@ -19,6 +19,9 @@ export const AdminDiagnosticFormScreen: React.FC<AdminDiagnosticFormScreenProps>
   const [formData, setFormData] = useState({
     title: editingDiagnostic?.title || '',
     description: editingDiagnostic?.description || '',
+    group_name: editingDiagnostic?.group_name || '',
+    group_order: editingDiagnostic?.group_order || 0,
+    event_order: editingDiagnostic?.event_order || 0,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -87,6 +90,46 @@ export const AdminDiagnosticFormScreen: React.FC<AdminDiagnosticFormScreenProps>
             onChange={handleChange}
             placeholder="Краткое описание диагностики..."
           />
+        </div>
+
+        <div className="form-group">
+          <label>Группа диагностики</label>
+          <input 
+            className="form-input"
+            name="group_name"
+            value={formData.group_name}
+            onChange={handleChange}
+            placeholder="Например: День 1, Блок 1..."
+          />
+          <small style={{fontSize: 11, opacity: 0.7, marginTop: 4, display: 'block'}}>
+            Диагностики с одинаковым названием группы будут сгруппированы вместе
+          </small>
+        </div>
+
+        <div style={{display: 'flex', gap: 12}}>
+          <div className="form-group" style={{flex: 1}}>
+            <label>Порядок группы</label>
+            <input 
+              type="number"
+              className="form-input"
+              name="group_order"
+              value={formData.group_order}
+              onChange={(e) => setFormData({...formData, group_order: parseInt(e.target.value) || 0})}
+              placeholder="0"
+            />
+          </div>
+
+          <div className="form-group" style={{flex: 1}}>
+            <label>Порядок в группе</label>
+            <input 
+              type="number"
+              className="form-input"
+              name="event_order"
+              value={formData.event_order}
+              onChange={(e) => setFormData({...formData, event_order: parseInt(e.target.value) || 0})}
+              placeholder="0"
+            />
+          </div>
         </div>
 
         <p style={{fontSize: 13, opacity: 0.7, marginBottom: 16}}>
