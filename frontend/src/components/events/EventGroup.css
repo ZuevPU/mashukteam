@@ -8,22 +8,23 @@
   justify-content: space-between;
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 2px solid var(--tg-theme-hint-color, rgba(0, 0, 0, 0.1));
+  border-bottom: 2px solid var(--color-border, #35A2A8);
 }
 
 .event-group-title {
   font-size: 18px;
   font-weight: 600;
   margin: 0;
-  color: var(--tg-theme-text-color, #000);
+  color: var(--color-text-primary, #2C2B2B);
 }
 
 .event-group-count {
   font-size: 14px;
-  color: var(--tg-theme-hint-color, rgba(0, 0, 0, 0.5));
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  color: var(--color-text-secondary, #35A2A8);
+  background: var(--color-bg-card, #FFFFFF);
   padding: 4px 8px;
   border-radius: 12px;
+  border: 1px solid var(--color-border, #35A2A8);
 }
 
 .event-group-items {
@@ -34,7 +35,7 @@
 
 .event-group-items .event-card {
   margin-left: 12px;
-  border-left: 3px solid var(--tg-theme-button-color, #3390ec);
+  border-left: 3px solid var(--color-primary, #3E529B);
   padding-left: 12px;
 }
 

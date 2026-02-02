@@ -1,7 +1,7 @@
 .admin-dashboard {
   padding: 16px;
-  background: var(--tg-theme-bg-color, #fff);
-  color: var(--tg-theme-text-color, #000);
+  background: var(--color-bg-primary, #F8F8F7);
+  color: var(--color-text-primary, #2C2B2B);
   min-height: 100vh;
 }
 
@@ -12,18 +12,24 @@
 }
 
 .admin-card {
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  background: var(--color-bg-card, #FFFFFF);
   padding: 16px;
   border-radius: 12px;
+  border: 1px solid var(--color-border, #35A2A8);
 }
 
 .admin-btn {
   margin-top: 10px;
-  background: var(--tg-theme-button-color, #3390ec);
-  color: var(--tg-theme-button-text-color, #fff);
+  background: var(--color-primary, #3E529B);
+  color: var(--color-text-on-primary, #FFFFFF);
   border: none;
   padding: 8px 16px;
   border-radius: 8px;
   width: 100%;
   cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-btn:hover {
+  background: var(--color-primary-hover, #2d3d7a);
 }

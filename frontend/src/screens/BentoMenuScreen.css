@@ -1,7 +1,7 @@
 .bento-menu-screen {
   padding: 16px;
-  background: var(--tg-theme-bg-color, #fff);
-  color: var(--tg-theme-text-color, #000);
+  background: var(--color-bg-primary, #F8F8F7);
+  color: var(--color-text-primary, #2C2B2B);
   min-height: 100vh;
 }
 
@@ -61,14 +61,16 @@
 
 /* Карточка баллов */
 .points-card {
-  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-  color: #000;
+  background: var(--color-bg-card, #FFFFFF);
+  color: var(--color-text-primary, #2C2B2B);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
   height: 100%;
+  border-radius: 16px;
+  border: 2px solid var(--color-border, #35A2A8);
 }
 
 .points-card .card-icon {

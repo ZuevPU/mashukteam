@@ -194,23 +194,39 @@ export async function setUserDirection(req: Request, res: Response) {
   try {
     const userId = (req as any).user?.id;
     if (!userId) {
-      return res.status(401).json({ error: 'Не авторизован' });
+      console.error('[setUserDirection] No user ID found in request');
+      return res.status(401).json({ 
+        success: false,
+        error: 'Не авторизован' 
+      });
     }
 
     const { direction_id } = req.body;
     
     if (!direction_id) {
-      return res.status(400).json({ error: 'direction_id обязателен' });
+      console.error('[setUserDirection] No direction_id provided');
+      return res.status(400).json({ 
+        success: false,
+        error: 'direction_id обязателен' 
+      });
     }
+
+    console.log('[setUserDirection] Setting direction for user:', { userId, direction_id });
 
     await DirectionService.setUserDirection(userId, direction_id);
     
-    return res.json({ 
+    console.log('[setUserDirection] Direction set successfully');
+    
+    return res.status(200).json({ 
       success: true, 
-      message: 'Направление выбрано успешно' 
+      message: 'Направление выбрано успешно',
+      direction_id: direction_id
     });
-  } catch (error) {
-    console.error('Error setting user direction:', error);
-    return res.status(500).json({ error: 'Ошибка при выборе направления' });
+  } catch (error: any) {
+    console.error('[setUserDirection] Error setting user direction:', error);
+    return res.status(500).json({ 
+      success: false,
+      error: error.message || 'Ошибка при выборе направления' 
+    });
   }
 }

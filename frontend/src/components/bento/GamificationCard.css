@@ -1,14 +1,15 @@
 .gamification-card {
   padding: 20px;
-  background: var(--tg-theme-bg-color, #ffffff);
+  background: var(--color-bg-card, #FFFFFF);
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--color-border, #35A2A8);
 }
 
 .gamification-card-title {
   font-size: 18px;
   font-weight: 600;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text-primary, #2C2B2B);
   margin: 0 0 16px 0;
 }
 

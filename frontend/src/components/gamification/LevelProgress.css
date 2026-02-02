@@ -1,8 +1,9 @@
 .level-progress {
   padding: 16px;
-  background: var(--tg-theme-bg-color, #ffffff);
+  background: var(--color-bg-card, #FFFFFF);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--color-border, #35A2A8);
 }
 
 .level-header {
@@ -20,13 +21,13 @@
 
 .level-label {
   font-size: 12px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-secondary, #35A2A8);
 }
 
 .level-value {
   font-size: 28px;
   font-weight: 700;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text-primary, #2C2B2B);
 }
 
 .experience-info {
@@ -34,7 +35,7 @@
   align-items: baseline;
   gap: 4px;
   font-size: 16px;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text-primary, #2C2B2B);
 }
 
 .experience-current {
@@ -42,30 +43,31 @@
 }
 
 .experience-separator {
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-secondary, #35A2A8);
 }
 
 .experience-total {
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-secondary, #35A2A8);
 }
 
 .progress-bar-container {
   width: 100%;
   height: 8px;
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  background: var(--color-bg-primary, #F8F8F7);
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 8px;
+  border: 1px solid var(--color-border, #35A2A8);
 }
 
 .progress-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #4CAF50, #45a049);
+  background: var(--color-primary, #3E529B);
   border-radius: 4px;
   transition: width 0.3s ease;
 }
 
 .level-footer {
   font-size: 12px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-secondary, #35A2A8);
 }

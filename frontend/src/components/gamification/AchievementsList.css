@@ -32,5 +32,5 @@
 .achievements-empty {
   text-align: center;
   padding: 40px 20px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-secondary, #35A2A8);
 }

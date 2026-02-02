@@ -2,21 +2,22 @@
   display: flex;
   gap: 12px;
   padding: 12px;
-  background: var(--tg-theme-bg-color, #ffffff);
+  background: var(--color-bg-card, #FFFFFF);
   border-radius: 8px;
-  border: 2px solid var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border: 2px solid var(--color-border, #35A2A8);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .achievement-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(62, 82, 155, 0.2);
+  border-color: var(--color-primary, #3E529B);
 }
 
 .achievement-unlocked {
-  border-color: #4CAF50;
-  background: linear-gradient(135deg, #ffffff 0%, #f1f8f4 100%);
+  border-color: var(--color-accent, #35A2A8);
+  background: var(--color-bg-card, #FFFFFF);
 }
 
 .achievement-locked {
@@ -31,8 +32,9 @@
   align-items: center;
   justify-content: center;
   font-size: 32px;
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  background: var(--color-bg-primary, #F8F8F7);
   border-radius: 8px;
+  border: 1px solid var(--color-border, #35A2A8);
 }
 
 .achievement-icon img {
@@ -50,20 +52,20 @@
 .achievement-name {
   font-size: 16px;
   font-weight: 600;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text-primary, #2C2B2B);
   margin: 0 0 4px 0;
 }
 
 .achievement-description {
   font-size: 14px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-secondary, #35A2A8);
   margin: 0 0 8px 0;
   line-height: 1.4;
 }
 
 .achievement-unlocked-date {
   font-size: 12px;
-  color: #4CAF50;
+  color: var(--color-accent, #35A2A8);
   margin-bottom: 4px;
 }
 
@@ -71,8 +73,9 @@
   display: inline-block;
   font-size: 12px;
   font-weight: 600;
-  color: #FF9800;
-  background: rgba(255, 152, 0, 0.1);
+  color: var(--color-primary, #3E529B);
+  background: rgba(62, 82, 155, 0.1);
   padding: 2px 8px;
   border-radius: 4px;
+  border: 1px solid var(--color-primary, #3E529B);
 }

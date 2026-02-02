@@ -1,8 +1,9 @@
 .stats-card {
   padding: 20px;
-  background: var(--tg-theme-bg-color, #ffffff);
+  background: var(--color-bg-card, #FFFFFF);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--color-border, #35A2A8);
 }
 
 .stats-header {
@@ -27,7 +28,7 @@
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 12px;
   padding-top: 16px;
-  border-top: 1px solid var(--tg-theme-secondary-bg-color, #f0f0f0);
+  border-top: 1px solid var(--color-border, #35A2A8);
 }
 
 .stats-summary-item {
@@ -38,11 +39,11 @@
 
 .stats-summary-label {
   font-size: 12px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-secondary, #35A2A8);
 }
 
 .stats-summary-value {
   font-size: 20px;
   font-weight: 600;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text-primary, #2C2B2B);
 }

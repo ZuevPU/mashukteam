@@ -1,8 +1,9 @@
 .profile-card {
   padding: 20px;
-  background: var(--tg-theme-bg-color, #ffffff);
+  background: var(--color-bg-card, #FFFFFF);
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--color-border, #35A2A8);
 }
 
 .profile-header {
@@ -34,7 +35,7 @@
 .profile-name {
   font-size: 20px;
   font-weight: 600;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text-primary, #2C2B2B);
   margin: 0 0 8px 0;
   word-break: break-word;
 }
@@ -55,18 +56,20 @@
 }
 
 .status-registered {
-  background: #e8f5e9;
-  color: #2e7d32;
+  background: rgba(53, 162, 168, 0.1);
+  color: var(--color-accent, #35A2A8);
+  border: 1px solid var(--color-accent, #35A2A8);
 }
 
 .status-new {
-  background: #fff3e0;
-  color: #e65100;
+  background: rgba(62, 82, 155, 0.1);
+  color: var(--color-primary, #3E529B);
+  border: 1px solid var(--color-primary, #3E529B);
 }
 
 .status-type {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: var(--color-primary, #3E529B);
+  color: var(--color-text-on-primary, #FFFFFF);
 }
 
 .profile-details {
@@ -86,13 +89,13 @@
 
 .profile-detail-label {
   font-size: 14px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-secondary, #35A2A8);
 }
 
 .profile-detail-value {
   font-size: 14px;
   font-weight: 500;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text-primary, #2C2B2B);
   text-align: right;
   word-break: break-word;
 }

@@ -1,14 +1,15 @@
 .points-history {
   padding: 16px;
-  background: var(--tg-theme-bg-color, #ffffff);
+  background: var(--color-bg-card, #FFFFFF);
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--color-border, #35A2A8);
 }
 
 .points-history-title {
   font-size: 18px;
   font-weight: 600;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text-primary, #2C2B2B);
   margin: 0 0 16px 0;
 }
 
@@ -20,17 +21,18 @@
 
 .points-history-item {
   padding: 12px;
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  background: var(--color-bg-card, #FFFFFF);
   border-radius: 8px;
   border-left: 4px solid transparent;
+  border: 1px solid var(--color-border, #35A2A8);
 }
 
 .points-history-item.points-positive {
-  border-left-color: #4CAF50;
+  border-left-color: var(--color-accent, #35A2A8);
 }
 
 .points-history-item.points-negative {
-  border-left-color: #f44336;
+  border-left-color: #df3f40;
 }
 
 .points-history-main {
@@ -62,18 +64,18 @@
 .points-history-reason {
   font-size: 14px;
   font-weight: 500;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text-primary, #2C2B2B);
   margin-bottom: 4px;
   word-break: break-word;
 }
 
 .points-history-date {
   font-size: 12px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-secondary, #35A2A8);
 }
 
 .points-history-empty {
   text-align: center;
   padding: 40px 20px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-secondary, #35A2A8);
 }

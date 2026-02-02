@@ -1,14 +1,15 @@
 .settings-card {
   padding: 20px;
-  background: var(--tg-theme-bg-color, #ffffff);
+  background: var(--color-bg-card, #FFFFFF);
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--color-border, #35A2A8);
 }
 
 .settings-card-title {
   font-size: 18px;
   font-weight: 600;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text-primary, #2C2B2B);
   margin: 0 0 16px 0;
 }
 
@@ -45,11 +46,11 @@
   flex: 1;
   font-size: 14px;
   font-weight: 500;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text-primary, #2C2B2B);
 }
 
 .settings-item-arrow {
   font-size: 20px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-secondary, #35A2A8);
   flex-shrink: 0;
 }

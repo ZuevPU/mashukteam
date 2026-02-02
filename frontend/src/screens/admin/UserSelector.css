@@ -1,8 +1,8 @@
 .user-selector {
-  border: 1px solid var(--tg-theme-hint-color, #ccc);
+  border: 1px solid var(--color-border, #35A2A8);
   border-radius: 8px;
   padding: 8px;
-  background: var(--tg-theme-bg-color, #fff);
+  background: var(--color-bg-card, #FFFFFF);
 }
 
 .search-input {
@@ -29,29 +29,29 @@
 }
 
 .user-item:hover {
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  background: var(--color-bg-primary, #F8F8F7);
 }
 
 .user-item.selected {
-  background: rgba(51, 144, 236, 0.1);
+  background: rgba(62, 82, 155, 0.1);
 }
 
 .user-checkbox {
   width: 20px;
   height: 20px;
-  border: 1px solid var(--tg-theme-hint-color, #999);
+  border: 1px solid var(--color-border, #35A2A8);
   border-radius: 4px;
   margin-right: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--tg-theme-button-color, #3390ec);
+  color: var(--color-primary, #3E529B);
   font-weight: bold;
 }
 
 .user-item.selected .user-checkbox {
-  border-color: var(--tg-theme-button-color, #3390ec);
-  background: white;
+  border-color: var(--color-primary, #3E529B);
+  background: var(--color-bg-card, #FFFFFF);
 }
 
 .user-info-mini {
@@ -66,12 +66,12 @@
 
 .user-login {
   font-size: 12px;
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--color-text-secondary, #35A2A8);
 }
 
 .selector-summary {
   margin-top: 8px;
   font-size: 12px;
-  color: var(--tg-theme-hint-color, #777);
+  color: var(--color-text-secondary, #35A2A8);
   text-align: right;
 }

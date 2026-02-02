@@ -39,23 +39,51 @@ export const DirectionSelectionScreen: React.FC<DirectionSelectionScreenProps> =
   }, []);
 
   const handleSelect = async () => {
-    if (!selectedId || !initData) return;
+    if (!selectedId || !initData) {
+      showAlert('Не выбрано направление или отсутствуют данные авторизации');
+      return;
+    }
 
     try {
+      console.log('[DirectionSelection] Sending direction selection:', { selectedId, hasInitData: !!initData });
+      
       const response = await fetch(buildApiEndpoint('/user/direction'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initData, direction_id: selectedId })
       });
 
-      if (response.ok) {
-        onSelect(selectedId);
-      } else {
-        showAlert('Ошибка сохранения направления');
+      console.log('[DirectionSelection] Response status:', response.status, response.statusText);
+
+      let data;
+      try {
+        data = await response.json();
+        console.log('[DirectionSelection] Response data:', data);
+      } catch (parseError) {
+        console.error('[DirectionSelection] Error parsing response:', parseError);
+        const text = await response.text();
+        console.error('[DirectionSelection] Response text:', text);
+        showAlert('Ошибка обработки ответа сервера');
+        return;
       }
-    } catch (error) {
-      console.error('Error setting direction:', error);
-      showAlert('Ошибка сохранения направления');
+
+      // Проверяем успешный ответ: статус 200-299 И success: true в теле
+      if (response.ok && (response.status >= 200 && response.status < 300)) {
+        if (data.success === true || data.success === undefined) {
+          // Успешное сохранение - даже если success не указан явно, но статус OK
+          console.log('[DirectionSelection] Direction saved successfully');
+          onSelect(selectedId);
+          return;
+        }
+      }
+
+      // Ошибка от сервера
+      const errorMessage = data.error || data.message || 'Ошибка сохранения направления';
+      console.error('[DirectionSelection] Server error:', errorMessage, { status: response.status, data });
+      showAlert(errorMessage);
+    } catch (error: any) {
+      console.error('[DirectionSelection] Network error:', error);
+      showAlert(`Ошибка сохранения направления: ${error.message || 'Проверьте подключение к интернету'}`);
     }
   };
 

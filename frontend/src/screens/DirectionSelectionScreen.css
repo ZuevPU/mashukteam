@@ -1,7 +1,7 @@
 .direction-selection-screen {
   padding: 20px;
   min-height: 100vh;
-  background: var(--tg-theme-bg-color, #fff);
+  background: var(--color-bg-primary, #F8F8F7);
 }
 
 .direction-header {
@@ -13,12 +13,12 @@
   font-size: 24px;
   font-weight: 600;
   margin: 0 0 8px 0;
-  color: var(--tg-theme-text-color, #000);
+  color: var(--color-text-primary, #2C2B2B);
 }
 
 .direction-subtitle {
   font-size: 14px;
-  color: var(--tg-theme-hint-color, rgba(0, 0, 0, 0.6));
+  color: var(--color-text-secondary, #35A2A8);
   margin: 0;
 }
 
@@ -34,22 +34,22 @@
   align-items: flex-start;
   gap: 12px;
   padding: 16px;
-  border: 2px solid var(--tg-theme-hint-color, rgba(0, 0, 0, 0.1));
+  border: 2px solid var(--color-border, #35A2A8);
   border-radius: 12px;
-  background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+  background: var(--color-bg-card, #FFFFFF);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .direction-card:hover {
-  border-color: var(--tg-theme-button-color, #3390ec);
-  background: var(--tg-theme-bg-color, #fff);
+  border-color: var(--color-primary, #3E529B);
+  background: var(--color-bg-primary, #F8F8F7);
 }
 
 .direction-card.selected {
-  border-color: var(--tg-theme-button-color, #3390ec);
-  background: var(--tg-theme-bg-color, #fff);
-  box-shadow: 0 2px 8px rgba(51, 144, 236, 0.2);
+  border-color: var(--color-primary, #3E529B);
+  background: var(--color-bg-card, #FFFFFF);
+  box-shadow: 0 2px 8px rgba(62, 82, 155, 0.2);
 }
 
 .direction-radio {
@@ -70,12 +70,12 @@
   font-size: 18px;
   font-weight: 600;
   margin: 0 0 4px 0;
-  color: var(--tg-theme-text-color, #000);
+  color: var(--color-text-primary, #2C2B2B);
 }
 
 .direction-description {
   font-size: 14px;
-  color: var(--tg-theme-hint-color, rgba(0, 0, 0, 0.6));
+  color: var(--color-text-secondary, #35A2A8);
   margin: 0;
   line-height: 1.4;
 }
@@ -89,14 +89,18 @@
 .direction-select-btn {
   width: 100%;
   padding: 14px;
-  background: var(--tg-theme-button-color, #3390ec);
-  color: var(--tg-theme-button-text-color, #fff);
+  background: var(--color-primary, #3E529B);
+  color: var(--color-text-on-primary, #FFFFFF);
   border: none;
   border-radius: 12px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: all 0.2s;
+}
+
+.direction-select-btn:hover:not(:disabled) {
+  background: var(--color-primary-hover, #2d3d7a);
 }
 
 .direction-select-btn:disabled {
@@ -105,19 +109,23 @@
 }
 
 .direction-select-btn:not(:disabled):active {
-  opacity: 0.8;
+  transform: scale(0.98);
 }
 
 .direction-skip-btn {
   width: 100%;
   padding: 12px;
   background: transparent;
-  color: var(--tg-theme-hint-color, rgba(0, 0, 0, 0.6));
-  border: 1px solid var(--tg-theme-hint-color, rgba(0, 0, 0, 0.2));
+  color: var(--color-text-secondary, #35A2A8);
+  border: 1px solid var(--color-border, #35A2A8);
   border-radius: 12px;
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
+}
+
+.direction-skip-btn:hover {
+  background: rgba(53, 162, 168, 0.1);
 }
 
 .direction-skip-btn:active {
@@ -127,5 +135,5 @@
 .loading {
   text-align: center;
   padding: 40px 20px;
-  color: var(--tg-theme-hint-color, rgba(0, 0, 0, 0.6));
+  color: var(--color-text-secondary, #35A2A8);
 }

@@ -1,14 +1,15 @@
 .tasks-card {
   padding: 20px;
-  background: var(--tg-theme-bg-color, #ffffff);
+  background: var(--color-bg-card, #FFFFFF);
   border-radius: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--color-border, #35A2A8);
 }
 
 .tasks-card-title {
   font-size: 18px;
   font-weight: 600;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text-primary, #2C2B2B);
   margin: 0 0 16px 0;
 }
 
@@ -22,13 +23,15 @@
   display: flex;
   gap: 12px;
   padding: 12px;
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  background: var(--color-bg-primary, #F8F8F7);
   border-radius: 8px;
   transition: all 0.2s ease;
+  border: 1px solid var(--color-border, #35A2A8);
 }
 
 .task-item:hover {
-  background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+  background: rgba(53, 162, 168, 0.1);
+  border-color: var(--color-primary, #3E529B);
 }
 
 .task-item.task-completed {
@@ -59,13 +62,13 @@
 .task-title {
   font-size: 14px;
   font-weight: 500;
-  color: var(--tg-theme-text-color, #000000);
+  color: var(--color-text-primary, #2C2B2B);
   margin-bottom: 4px;
 }
 
 .task-description {
   font-size: 12px;
-  color: var(--tg-theme-hint-color, #999999);
+  color: var(--color-text-secondary, #35A2A8);
   margin-bottom: 4px;
 }
 
@@ -73,9 +76,10 @@
   display: inline-block;
   font-size: 11px;
   font-weight: 600;
-  color: #FF9800;
-  background: rgba(255, 152, 0, 0.1);
+  color: var(--color-primary, #3E529B);
+  background: rgba(62, 82, 155, 0.1);
   padding: 2px 8px;
   border-radius: 4px;
   margin-top: 4px;
+  border: 1px solid var(--color-primary, #3E529B);
 }

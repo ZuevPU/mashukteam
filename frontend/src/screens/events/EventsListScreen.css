@@ -1,7 +1,7 @@
 .events-screen {
   padding: 16px;
-  background: var(--tg-theme-bg-color, #fff);
-  color: var(--tg-theme-text-color, #000);
+  background: var(--color-bg-primary, #F8F8F7);
+  color: var(--color-text-primary, #2C2B2B);
   min-height: 100vh;
 }
 
@@ -15,7 +15,7 @@
   display: flex;
   gap: 8px;
   margin-bottom: 16px;
-  border-bottom: 1px solid var(--tg-theme-hint-color, rgba(0, 0, 0, 0.1));
+  border-bottom: 1px solid var(--color-border, #35A2A8);
 }
 
 .events-tab {
@@ -24,7 +24,7 @@
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  color: var(--tg-theme-hint-color, rgba(0, 0, 0, 0.6));
+  color: var(--color-text-secondary, #35A2A8);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -32,8 +32,8 @@
 }
 
 .events-tab.active {
-  color: var(--tg-theme-button-color, #3390ec);
-  border-bottom-color: var(--tg-theme-button-color, #3390ec);
+  color: var(--color-primary, #3E529B);
+  border-bottom-color: var(--color-primary, #3E529B);
 }
 
 .events-tab:active {
@@ -43,7 +43,7 @@
 .back-button {
   background: none;
   border: none;
-  color: var(--tg-theme-link-color, #3390ec);
+  color: var(--color-primary, #3E529B);
   font-size: 16px;
   cursor: pointer;
   margin-right: 15px;
@@ -56,16 +56,22 @@
 }
 
 .event-card {
-  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+  background: var(--color-bg-card, #FFFFFF);
   border-radius: 12px;
   padding: 16px;
   cursor: pointer;
-  transition: transform 0.1s;
+  transition: all 0.2s;
+  border: 1px solid var(--color-border, #35A2A8);
+}
+
+.event-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(62, 82, 155, 0.2);
 }
 
 .event-card.completed {
   opacity: 0.7;
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  background: var(--color-bg-primary, #F8F8F7);
 }
 
 .card-header {
@@ -77,8 +83,8 @@
 
 .status-label {
   font-size: 10px;
-  background: #999;
-  color: white;
+  background: var(--color-accent, #35A2A8);
+  color: var(--color-text-on-primary, #FFFFFF);
   padding: 2px 6px;
   border-radius: 4px;
   text-transform: uppercase;
@@ -96,7 +102,7 @@
 .event-date, .event-speaker {
   margin: 4px 0;
   font-size: 14px;
-  color: var(--tg-theme-hint-color, #999);
+  color: var(--color-text-secondary, #35A2A8);
 }
 
 .event-description {
