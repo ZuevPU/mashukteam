@@ -83,6 +83,10 @@ export const NotificationsSettingsScreen: React.FC<NotificationsSettingsScreenPr
 
       <div className="settings-content">
         <div className="settings-section">
+          <h4>Уведомления в приложении</h4>
+          <p style={{ marginBottom: '16px', fontSize: '14px', opacity: 0.7 }}>
+            Здесь вы можете настроить, какие уведомления будут приходить вам в Telegram бот.
+          </p>
           <div className="toggle-item">
             <div className="toggle-info">
               <span className="toggle-label">Все уведомления</span>
@@ -102,6 +106,9 @@ export const NotificationsSettingsScreen: React.FC<NotificationsSettingsScreenPr
 
         <div className="settings-section">
           <h4>Типы уведомлений</h4>
+          <p style={{ marginBottom: '16px', fontSize: '13px', opacity: 0.7 }}>
+            Выберите, о каких событиях вы хотите получать уведомления:
+          </p>
           <div className="toggle-item">
             <div className="toggle-info">
               <span className="toggle-label">Мероприятия</span>
@@ -164,6 +171,27 @@ export const NotificationsSettingsScreen: React.FC<NotificationsSettingsScreenPr
               />
               <span className="toggle-slider"></span>
             </label>
+          </div>
+        </div>
+
+        <div className="settings-section">
+          <h4>Информация об уведомлениях</h4>
+          <div style={{ fontSize: '13px', lineHeight: '1.6', opacity: 0.8 }}>
+            <p style={{ marginBottom: '8px' }}>
+              <strong>Мероприятия:</strong> Анонсы новых мероприятий с прямой ссылкой на событие
+            </p>
+            <p style={{ marginBottom: '8px' }}>
+              <strong>Вопросы:</strong> Персональные вопросы от администраторов с ссылкой на ответ
+            </p>
+            <p style={{ marginBottom: '8px' }}>
+              <strong>Задания:</strong> Новые задания и результаты проверки выполненных заданий
+            </p>
+            <p style={{ marginBottom: '8px' }}>
+              <strong>Диагностика:</strong> Анонсы новых диагностик с прямой ссылкой на прохождение
+            </p>
+            <p style={{ marginTop: '12px', fontSize: '12px', opacity: 0.7 }}>
+              Все уведомления содержат прямую ссылку для быстрого перехода к соответствующему разделу приложения.
+            </p>
           </div>
         </div>
       </div>

@@ -263,3 +263,70 @@ export async function setUserDirection(req: Request, res: Response) {
     });
   }
 }
+
+/**
+ * PATCH /api/user/profile
+ * Обновление профиля пользователя (имя, фамилия, отчество)
+ */
+export async function updateProfile(req: Request, res: Response) {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) {
+      logger.warn('updateProfile: No user ID found in request');
+      return res.status(401).json({ 
+        success: false,
+        error: 'Не авторизован' 
+      });
+    }
+
+    const { first_name, last_name, middle_name } = req.body;
+    
+    const updates: Partial<CreateUserDto> = {};
+    if (first_name !== undefined) {
+      if (!first_name || first_name.trim() === '') {
+        return res.status(400).json({ 
+          success: false,
+          error: 'Имя не может быть пустым' 
+        });
+      }
+      updates.first_name = first_name.trim();
+    }
+    if (last_name !== undefined) {
+      if (!last_name || last_name.trim() === '') {
+        return res.status(400).json({ 
+          success: false,
+          error: 'Фамилия не может быть пустой' 
+        });
+      }
+      updates.last_name = last_name.trim();
+    }
+    if (middle_name !== undefined) {
+      updates.middle_name = middle_name === '' ? null : middle_name.trim();
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Нет данных для обновления' 
+      });
+    }
+
+    logger.info('Updating user profile', { userId, updates });
+
+    const user = await UserService.updateUserById(userId, updates);
+    
+    logger.info('Profile updated successfully', { userId });
+    
+    return res.json({ 
+      success: true, 
+      user,
+      message: 'Профиль обновлен успешно'
+    });
+  } catch (error: any) {
+    logger.error('Error updating profile', error instanceof Error ? error : new Error(String(error)));
+    return res.status(500).json({ 
+      success: false,
+      error: error.message || 'Ошибка обновления профиля' 
+    });
+  }
+}

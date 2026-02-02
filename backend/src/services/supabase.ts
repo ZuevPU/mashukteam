@@ -186,6 +186,25 @@ export class UserService {
 
     return data as User;
   }
+
+  /**
+   * Обновление данных пользователя по ID
+   */
+  static async updateUserById(userId: string, updates: Partial<CreateUserDto>): Promise<User> {
+    const { data, error } = await supabase
+      .from('users')
+      .update(updates)
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      logger.error('Error updating user by id', error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    }
+
+    return data as User;
+  }
   
   /**
    * Редактирование пользователя администратором

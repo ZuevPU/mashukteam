@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { verifyAuth } from '../controllers/authController';
-import { getUser, getUserStatus, registerUser, setUserDirection } from '../controllers/userController';
+import { getUser, getUserStatus, registerUser, setUserDirection, updateProfile } from '../controllers/userController';
 import { DirectionController } from '../controllers/directionController';
 import { ExportController } from '../controllers/exportController';
 import {
@@ -54,6 +54,9 @@ router.get('/directions', DirectionController.getAllDirections);
 
 // === User Direction ===
 router.post('/user/direction', requireAuth, setUserDirection);
+
+// === User Profile ===
+router.patch('/user/profile', requireAuth, updateProfile);
 
 // === User Preferences ===
 router.post('/user/preferences', requireAuth, UserPreferencesController.getPreferences);

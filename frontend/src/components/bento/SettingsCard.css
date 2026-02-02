@@ -24,7 +24,8 @@
   align-items: center;
   gap: 12px;
   padding: 12px;
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  background: #3E529B;
+  color: #FFFFFF;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -34,7 +35,8 @@
 }
 
 .settings-item:hover {
-  background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+  background: #2d3d7a;
+  opacity: 0.9;
 }
 
 .settings-item-icon {
@@ -46,11 +48,11 @@
   flex: 1;
   font-size: 14px;
   font-weight: 500;
-  color: var(--color-text-primary, #2C2B2B);
+  color: #FFFFFF;
 }
 
 .settings-item-arrow {
   font-size: 20px;
-  color: var(--color-text-secondary, #35A2A8);
+  color: #FFFFFF;
   flex-shrink: 0;
 }

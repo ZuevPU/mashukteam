@@ -398,6 +398,10 @@ export function BentoMenuScreen() {
         onBack={() => setView('menu')}
         onNotificationsClick={() => setView('settings_notifications')}
         onThemeClick={() => setView('settings_theme')}
+        onUserUpdate={(updatedUser) => {
+          // Обновляем состояние пользователя
+          setUser(updatedUser);
+        }}
       />
     ) : null;
   }

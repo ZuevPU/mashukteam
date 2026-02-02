@@ -331,6 +331,18 @@ export class AchievementService {
         try {
           const unlockedAchievement = await this.unlockAchievement(userId, achievement.id);
           unlocked.push(unlockedAchievement);
+          
+          // Отправляем уведомление о разблокировке достижения
+          try {
+            const user = await UserService.getUserById(userId);
+            if (user?.telegram_id) {
+              const { notifyAchievementUnlocked } = await import('../utils/telegramBot');
+              await notifyAchievementUnlocked(userId, user.telegram_id, achievement.name, achievement.id);
+            }
+          } catch (notifError) {
+            logger.error('Error sending achievement notification', notifError instanceof Error ? notifError : new Error(String(notifError)));
+            // Не прерываем выполнение при ошибке уведомления
+          }
         } catch (error) {
           console.error(`Error unlocking achievement ${achievement.id}:`, error);
         }

@@ -108,8 +108,32 @@ export async function sendMessageToUser(
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      logger.error('Telegram send message error', new Error(`Failed to send message to ${telegramId}: ${errorText}`));
+      let errorData: any = {};
+      try {
+        const errorText = await response.text();
+        errorData = JSON.parse(errorText);
+      } catch (parseError) {
+        // Если не удалось распарсить JSON, используем текст ошибки
+        errorData = { description: 'Unknown error' };
+      }
+      
+      const errorCode = response.status;
+      const errorDescription = errorData.description || errorData.error_code || 'Unknown error';
+      
+      // Обработка специфичных ошибок Telegram API
+      if (errorCode === 403) {
+        logger.warn('User blocked the bot', { telegramId, errorDescription });
+        return false; // Пользователь заблокировал бота
+      } else if (errorCode === 400) {
+        logger.warn('Invalid chat_id or request', { telegramId, errorDescription });
+        return false; // Невалидный chat_id
+      } else if (errorCode === 429) {
+        logger.warn('Rate limit exceeded', { telegramId });
+        // Можно добавить retry logic здесь
+        return false;
+      }
+      
+      logger.error('Telegram send message error', new Error(`Failed to send message to ${telegramId}: ${errorDescription}`));
       return false;
     }
     
@@ -275,6 +299,28 @@ export async function notifyAssignmentResult(
   }
   
   await sendMessageToUser(telegramId, text, true);
+}
+
+/**
+ * Отправка уведомления о разблокировке достижения
+ */
+export async function notifyAchievementUnlocked(
+  userId: string,
+  telegramId: number,
+  achievementName: string,
+  achievementId: string
+): Promise<boolean> {
+  // Проверяем настройки пользователя (достижения можно считать как общие уведомления)
+  const shouldSend = await shouldSendNotification(userId, 'questions'); // Используем questions как общий тип
+  if (!shouldSend) {
+    logger.debug('Achievement notification skipped due to user preferences', { userId });
+    return false;
+  }
+  
+  const text = `🏆 <b>Новое достижение!</b>\n\n${achievementName}\n\nПоздравляем!`;
+  const deepLink = buildAppLink('question', achievementId); // Используем question как тип для deep link
+  
+  return await sendMessageToUser(telegramId, text, true, deepLink);
 }
 
 /**

@@ -143,6 +143,20 @@ export async function verifyAuth(initData: string) {
 }
 
 /**
+ * Обновление профиля пользователя
+ */
+export async function updateProfile(initData: string, updates: { first_name?: string; last_name?: string; middle_name?: string | null }) {
+  return fetchApi<{
+    success: boolean;
+    user: User;
+    message?: string;
+  }>('/user/profile', {
+    method: 'PATCH',
+    body: JSON.stringify({ initData, ...updates }),
+  });
+}
+
+/**
  * Получение статуса пользователя
  */
 export async function getUserStatus(initData: string) {

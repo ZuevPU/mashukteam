@@ -114,7 +114,17 @@ export const AdminDiagnosticFormScreen: React.FC<AdminDiagnosticFormScreenProps>
               className="form-input"
               name="group_order"
               value={formData.group_order}
-              onChange={(e) => setFormData({...formData, group_order: parseInt(e.target.value) || 0})}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === '') {
+                  setFormData({...formData, group_order: 0});
+                } else {
+                  const numValue = parseInt(value, 10);
+                  if (!isNaN(numValue)) {
+                    setFormData({...formData, group_order: numValue});
+                  }
+                }
+              }}
               placeholder="0"
             />
           </div>
@@ -126,7 +136,17 @@ export const AdminDiagnosticFormScreen: React.FC<AdminDiagnosticFormScreenProps>
               className="form-input"
               name="event_order"
               value={formData.event_order}
-              onChange={(e) => setFormData({...formData, event_order: parseInt(e.target.value) || 0})}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === '') {
+                  setFormData({...formData, event_order: 0});
+                } else {
+                  const numValue = parseInt(value, 10);
+                  if (!isNaN(numValue)) {
+                    setFormData({...formData, event_order: numValue});
+                  }
+                }
+              }}
               placeholder="0"
             />
           </div>

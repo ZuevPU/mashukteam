@@ -54,7 +54,8 @@
   gap: 12px;
   width: 100%;
   padding: 12px;
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  background: #3E529B;
+  color: #FFFFFF;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -68,7 +69,8 @@
 }
 
 .settings-action-btn:hover {
-  background: var(--tg-theme-secondary-bg-color, #e0e0e0);
+  background: #2d3d7a;
+  opacity: 0.9;
 }
 
 .settings-action-icon {
@@ -80,11 +82,31 @@
   flex: 1;
   font-size: 14px;
   font-weight: 500;
-  color: var(--color-text-primary, #2C2B2B);
+  color: #FFFFFF;
 }
 
 .settings-action-arrow {
   font-size: 20px;
-  color: var(--color-text-secondary, #35A2A8);
+  color: #FFFFFF;
   flex-shrink: 0;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--color-border, #35A2A8);
+  border-radius: 8px;
+  font-size: 14px;
+  background: var(--color-bg-card, #FFFFFF);
+  color: var(--color-text-primary, #2C2B2B);
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #3E529B;
 }
