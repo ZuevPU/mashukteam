@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Direction } from '../types';
 import { useTelegram } from '../hooks/useTelegram';
+import { buildApiEndpoint } from '../utils/apiUrl';
 import './DirectionSelectionScreen.css';
 
 interface DirectionSelectionScreenProps {
@@ -20,7 +21,7 @@ export const DirectionSelectionScreen: React.FC<DirectionSelectionScreenProps> =
   useEffect(() => {
     const loadDirections = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/directions`);
+        const response = await fetch(buildApiEndpoint('/directions'));
         if (response.ok) {
           const data = await response.json();
           if (data.directions) {

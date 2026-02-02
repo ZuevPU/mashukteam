@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User, Direction } from '../../types';
+import { buildApiEndpoint } from '../../utils/apiUrl';
 import './ProfileCard.css';
 
 interface ProfileCardProps {
@@ -17,7 +18,7 @@ export function ProfileCard({ user, className = '' }: ProfileCardProps) {
     if (user.direction_id) {
       const loadDirection = async () => {
         try {
-          const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/directions`);
+          const response = await fetch(buildApiEndpoint('/directions'));
           if (response.ok) {
             const data = await response.json();
             const found = data.directions?.find((d: Direction) => d.id === user.direction_id);

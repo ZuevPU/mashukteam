@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTelegram } from '../../hooks/useTelegram';
+import { buildApiEndpoint } from '../../utils/apiUrl';
 import './AdminScreens.css';
 
 interface AdminDashboardProps {
@@ -23,7 +24,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/admin/export/answers`, {
+      const response = await fetch(buildApiEndpoint('/admin/export/answers'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

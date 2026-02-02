@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { User, UserType, AssignmentSubmission, Direction } from '../../types';
 import { adminApi } from '../../services/adminApi';
 import { useTelegram } from '../../hooks/useTelegram';
+import { buildApiEndpoint } from '../../utils/apiUrl';
 import './AdminScreens.css';
 
 interface TargetedAnswerWithQuestion {
@@ -41,7 +42,7 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
       const [userData, typesData, directionsResponse] = await Promise.all([
         adminApi.getUserDetails(userId, initData),
         adminApi.getUserTypes(),
-        fetch(`${import.meta.env.VITE_API_URL || ''}/api/directions`).then(r => r.json())
+        fetch(buildApiEndpoint('/directions')).then(r => r.json())
       ]);
       setUser(userData as UserWithDetails);
       setUserTypes(typesData);
@@ -74,7 +75,7 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
   const handleSaveDirection = async () => {
     if (!initData) return;
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/admin/users/${userId}/direction`, {
+      const response = await fetch(buildApiEndpoint(`/admin/users/${userId}/direction`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ initData, direction_id: selectedDirection || null })
