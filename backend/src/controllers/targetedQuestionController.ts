@@ -5,6 +5,7 @@ import { AchievementService } from '../services/gamification';
 import { notifyTargetedQuestionToUsers } from '../utils/telegramBot';
 import { UserService } from '../services/supabase';
 import { logger } from '../utils/logger';
+import { CreateTargetedQuestionDto } from '../types';
 
 export class TargetedQuestionController {
   /**
@@ -77,7 +78,25 @@ export class TargetedQuestionController {
   static async createQuestion(req: Request, res: Response) {
     try {
       const { initData, sendNotification, ...data } = req.body;
-      const question = await TargetedQuestionService.createQuestion(data);
+      
+      // Валидация обязательных полей
+      if (!data.text || !data.type || !data.target_audience) {
+        return res.status(400).json({ error: 'Необходимы поля: text, type, target_audience' });
+      }
+
+      // Очистка данных от лишних полей
+      const cleanData: CreateTargetedQuestionDto = {
+        text: data.text,
+        type: data.type,
+        target_audience: data.target_audience,
+        options: data.options,
+        char_limit: data.char_limit,
+        target_values: data.target_values,
+        reflection_points: data.reflection_points,
+        status: data.status,
+      };
+
+      const question = await TargetedQuestionService.createQuestion(cleanData);
       
       // Отправка уведомлений, если запрошено
       if (sendNotification && question.status === 'published') {

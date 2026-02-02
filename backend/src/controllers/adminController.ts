@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
 import { EventService } from '../services/eventService';
-import { UserService } from '../services/supabase';
+import { UserService, supabase } from '../services/supabase';
 import { TargetedQuestionService } from '../services/targetedQuestionService';
 import { AssignmentService } from '../services/assignmentService';
 import { DirectionService } from '../services/directionService';
 import { notifyNewEvent, notifyNewDiagnostic } from '../utils/telegramBot';
 import { logger } from '../utils/logger';
+import { Question, CreateQuestionDto } from '../types';
 
 export class AdminController {
   /**
@@ -162,6 +163,133 @@ export class AdminController {
   /**
    * Получение аналитики мероприятия
    */
+  /**
+   * Добавление вопроса к диагностике
+   */
+  static async addQuestionToDiagnostic(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { initData, ...questionData } = req.body;
+
+      // Проверяем, что это диагностика
+      const event = await EventService.getEventById(id);
+      if (!event) {
+        return res.status(404).json({ error: 'Мероприятие не найдено' });
+      }
+      if (event.type !== 'diagnostic') {
+        return res.status(400).json({ error: 'Вопросы можно добавлять только к диагностике' });
+      }
+
+      // Получаем максимальный order_index для этого события
+      const { data: existingQuestions } = await supabase
+        .from('questions')
+        .select('order_index')
+        .eq('event_id', id)
+        .order('order_index', { ascending: false })
+        .limit(1);
+
+      const maxOrder = existingQuestions && existingQuestions.length > 0 
+        ? (existingQuestions[0] as any).order_index || 0 
+        : 0;
+
+      // Создаем вопрос
+      const { data: question, error } = await supabase
+        .from('questions')
+        .insert({
+          event_id: id,
+          text: questionData.text,
+          type: questionData.type,
+          options: questionData.options ? JSON.stringify(questionData.options) : null,
+          char_limit: questionData.char_limit || null,
+          order_index: maxOrder + 1,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        logger.error('Error adding question to diagnostic', error instanceof Error ? error : new Error(String(error)));
+        return res.status(500).json({ error: 'Ошибка при добавлении вопроса' });
+      }
+
+      // Преобразуем options из JSON строки в массив
+      const questionWithOptions = {
+        ...question,
+        options: question.options ? JSON.parse(question.options) : null,
+      } as Question;
+
+      return res.status(201).json({ success: true, question: questionWithOptions });
+    } catch (error) {
+      logger.error('Add question to diagnostic error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ error: 'Ошибка при добавлении вопроса' });
+    }
+  }
+
+  /**
+   * Получение аналитики диагностики (вопросы и ответы)
+   */
+  static async getDiagnosticAnalytics(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+
+      // Проверяем, что это диагностика
+      const event = await EventService.getEventById(id);
+      if (!event) {
+        return res.status(404).json({ error: 'Мероприятие не найдено' });
+      }
+      if (event.type !== 'diagnostic') {
+        return res.status(400).json({ error: 'Аналитика доступна только для диагностики' });
+      }
+
+      // Получаем вопросы
+      const { data: questionsData, error: questionsError } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('event_id', id)
+        .order('order_index', { ascending: true });
+
+      if (questionsError) {
+        logger.error('Error getting questions', questionsError instanceof Error ? questionsError : new Error(String(questionsError)));
+        return res.status(500).json({ error: 'Ошибка при получении вопросов' });
+      }
+
+      // Преобразуем questions
+      const questions = (questionsData || []).map((q: any) => ({
+        ...q,
+        options: q.options ? JSON.parse(q.options) : null,
+      })) as Question[];
+
+      // Получаем ответы
+      const { data: answersData, error: answersError } = await supabase
+        .from('answers')
+        .select(`
+          *,
+          user:users(id, first_name, last_name, telegram_username),
+          question:questions(id, text, type, options)
+        `)
+        .eq('event_id', id)
+        .order('created_at', { ascending: false });
+
+      if (answersError) {
+        logger.error('Error getting answers', answersError instanceof Error ? answersError : new Error(String(answersError)));
+        return res.status(500).json({ error: 'Ошибка при получении ответов' });
+      }
+
+      // Преобразуем answers
+      const answers = (answersData || []).map((a: any) => ({
+        ...a,
+        question: a.question ? {
+          ...a.question,
+          options: a.question.options ? JSON.parse(a.question.options) : null,
+        } : null,
+      }));
+
+      return res.json({ success: true, questions, answers });
+    } catch (error) {
+      logger.error('Get diagnostic analytics error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ error: 'Ошибка при получении аналитики' });
+    }
+  }
+
   /**
    * Назначение направления пользователю
    */

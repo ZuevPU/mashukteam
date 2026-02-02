@@ -6,9 +6,35 @@ export class TargetedQuestionService {
    * Создание вопроса
    */
   static async createQuestion(data: CreateTargetedQuestionDto): Promise<TargetedQuestion> {
+    // Подготавливаем данные для вставки
+    const insertData: any = {
+      text: data.text,
+      type: data.type,
+      target_audience: data.target_audience,
+      char_limit: data.char_limit || null,
+      reflection_points: data.reflection_points || 1,
+      status: data.status || 'published',
+    };
+
+    // Обработка options: для рандомайзера null, для других типов - массив или null
+    if (data.type === 'randomizer') {
+      insertData.options = null;
+    } else if (data.options && data.options.length > 0) {
+      insertData.options = data.options.filter((o: string) => o.trim());
+    } else {
+      insertData.options = null;
+    }
+
+    // Обработка target_values: пустой массив -> null
+    if (data.target_values && data.target_values.length > 0) {
+      insertData.target_values = data.target_values;
+    } else {
+      insertData.target_values = null;
+    }
+
     const { data: question, error } = await supabase
       .from('targeted_questions')
-      .insert(data)
+      .insert(insertData)
       .select()
       .single();
 
@@ -213,9 +239,39 @@ export class TargetedQuestionService {
    * Обновление вопроса
    */
   static async updateQuestion(id: string, data: Partial<CreateTargetedQuestionDto>): Promise<TargetedQuestion> {
+    // Подготавливаем данные для обновления
+    const updateData: any = {};
+
+    if (data.text !== undefined) updateData.text = data.text;
+    if (data.type !== undefined) updateData.type = data.type;
+    if (data.target_audience !== undefined) updateData.target_audience = data.target_audience;
+    if (data.char_limit !== undefined) updateData.char_limit = data.char_limit || null;
+    if (data.reflection_points !== undefined) updateData.reflection_points = data.reflection_points;
+    if (data.status !== undefined) updateData.status = data.status;
+
+    // Обработка options: для рандомайзера null, для других типов - массив или null
+    if (data.options !== undefined) {
+      if (data.type === 'randomizer' || (data.type === undefined && data.options.length === 0)) {
+        updateData.options = null;
+      } else if (data.options.length > 0) {
+        updateData.options = data.options.filter((o: string) => o.trim());
+      } else {
+        updateData.options = null;
+      }
+    }
+
+    // Обработка target_values: пустой массив -> null
+    if (data.target_values !== undefined) {
+      if (data.target_values.length > 0) {
+        updateData.target_values = data.target_values;
+      } else {
+        updateData.target_values = null;
+      }
+    }
+
     const { data: question, error } = await supabase
       .from('targeted_questions')
-      .update(data)
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
