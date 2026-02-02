@@ -11,11 +11,23 @@ interface EventsListScreenProps {
   typeFilter?: 'event' | 'diagnostic'; // Новый проп
 }
 
+interface EventNote {
+  id: string;
+  event_id: string;
+  note_text: string;
+  event: {
+    id: string;
+    title: string;
+    event_date?: string;
+  };
+}
+
 export const EventsListScreen: React.FC<EventsListScreenProps> = ({ 
   onEventClick, onBack, typeFilter = 'event' 
 }) => {
   const { initData } = useTelegram();
   const [events, setEvents] = useState<Event[]>([]);
+  const [eventNotes, setEventNotes] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'history'>('upcoming');
 
@@ -23,7 +35,17 @@ export const EventsListScreen: React.FC<EventsListScreenProps> = ({
     const loadEvents = async () => {
       if (!initData) return;
       try {
-        const data = await eventApi.getEvents(initData);
+        const [data, notesData] = await Promise.all([
+          eventApi.getEvents(initData),
+          eventApi.getUserEventNotes(initData).catch(() => [])
+        ]);
+        
+        // Создаем карту заметок по event_id
+        const notesMap = new Map<string, string>();
+        notesData.forEach((note: EventNote) => {
+          notesMap.set(note.event_id, note.note_text);
+        });
+        setEventNotes(notesMap);
         
         // Фильтрация по типу
         const filteredByType = data.filter(e => {
@@ -156,6 +178,7 @@ export const EventsListScreen: React.FC<EventsListScreenProps> = ({
                 groupName={groupName}
                 events={groupEvents}
                 onEventClick={onEventClick}
+                eventNotes={eventNotes}
               />
             ))}
 
@@ -163,26 +186,43 @@ export const EventsListScreen: React.FC<EventsListScreenProps> = ({
             {groupedEvents.ungrouped.length > 0 && (
               <div className="event-group">
                 <div className="event-group-items">
-                  {groupedEvents.ungrouped.map((event) => (
-                    <div 
-                      key={event.id} 
-                      className={`event-card ${event.status}`} 
-                      onClick={() => onEventClick(event.id)}
-                    >
-                      <div className="card-header">
-                        <h3>{event.title}</h3>
-                        {event.status === 'completed' && <span className="status-label">Прошло</span>}
+                  {groupedEvents.ungrouped.map((event) => {
+                    const note = eventNotes.get(event.id);
+                    return (
+                      <div key={event.id}>
+                        <div 
+                          className={`event-card ${event.status}`} 
+                          onClick={() => onEventClick(event.id)}
+                        >
+                          <div className="card-header">
+                            <h3>{event.title}</h3>
+                            {event.status === 'completed' && <span className="status-label">Прошло</span>}
+                          </div>
+                          
+                          {event.event_date && (
+                            <p className="event-date">
+                              📅 {new Date(event.event_date).toLocaleDateString()} {event.event_time}
+                            </p>
+                          )}
+                          {event.speaker && <p className="event-speaker">🎤 {event.speaker}</p>}
+                          {event.description && <p className="event-description">{event.description}</p>}
+                        </div>
+                        {note && (
+                          <div style={{
+                            marginTop: '8px',
+                            padding: '8px 12px',
+                            background: '#f0f7ff',
+                            border: '1px solid #b3d9ff',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            color: '#0066cc'
+                          }}>
+                            <strong>📝 Моя заметка:</strong> {note.length > 50 ? note.substring(0, 50) + '...' : note}
+                          </div>
+                        )}
                       </div>
-                      
-                      {event.event_date && (
-                        <p className="event-date">
-                          📅 {new Date(event.event_date).toLocaleDateString()} {event.event_time}
-                        </p>
-                      )}
-                      {event.speaker && <p className="event-speaker">🎤 {event.speaker}</p>}
-                      {event.description && <p className="event-description">{event.description}</p>}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

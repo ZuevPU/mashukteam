@@ -120,9 +120,16 @@ export class AdminController {
       // Выполненные задания
       const submissions = await AssignmentService.getUserSubmissions(id);
 
+      // Заметки пользователя по мероприятиям
+      const { data: eventNotes } = await supabase
+        .from('event_notes')
+        .select('*, event:events(id, title, event_date)')
+        .eq('user_id', id)
+        .order('updated_at', { ascending: false });
+
       return res.json({ 
         success: true, 
-        user: { ...user, targetedAnswers, submissions } 
+        user: { ...user, targetedAnswers, submissions, eventNotes: eventNotes || [] } 
       });
     } catch (error) {
       logger.error('Get user details error', error instanceof Error ? error : new Error(String(error)));

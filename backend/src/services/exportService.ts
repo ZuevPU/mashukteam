@@ -780,7 +780,8 @@ export class ExportService {
       allSubmissions,
       allTargetedAnswers,
       allPointsTransactions,
-      allReflectionHistory
+      allReflectionHistory,
+      allEventNotes
     ] = await Promise.all([
       // Достижения всех пользователей
       supabase
@@ -880,7 +881,13 @@ export class ExportService {
         .from('reflection_actions')
         .select('user_id, action_type, points_awarded, created_at')
         .in('user_id', userIds)
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: false }),
+      // Заметки пользователей по мероприятиям
+      supabase
+        .from('event_notes')
+        .select('user_id, event_id, note_text, created_at, updated_at, event:events!inner(id, title, event_date)')
+        .in('user_id', userIds)
+        .order('updated_at', { ascending: false })
     ]);
 
     // Группируем данные по user_id для быстрого доступа
@@ -966,6 +973,21 @@ export class ExportService {
       }
     });
 
+    // Создаем карту заметок по пользователям
+    const eventNotesMap = new Map<string, any[]>();
+    ((allEventNotes as any).data || []).forEach((note: any) => {
+      const userId = note.user_id;
+      if (!eventNotesMap.has(userId)) {
+        eventNotesMap.set(userId, []);
+      }
+      // Преобразуем event из массива в объект, если нужно
+      const eventData = Array.isArray(note.event) ? note.event[0] : note.event;
+      eventNotesMap.get(userId)!.push({
+        ...note,
+        event: eventData
+      });
+    });
+
     // Формируем данные для экспорта
     const usersData = users.map((user: any) => {
       const userId = user.id;
@@ -987,6 +1009,7 @@ export class ExportService {
       const assignmentAnswersText = this.formatAssignmentAnswers(userSubmissions);
       const recentPoints = pointsMap.get(userId) || [];
       const reflectionHistory = reflectionMap.get(userId) || [];
+      const userEventNotes = eventNotesMap.get(userId) || [];
 
       const recentPointsText = recentPoints.map((p: any) => 
         `${new Date(p.created_at).toLocaleDateString('ru-RU')}: ${p.points} (${p.reason || ''})`
@@ -994,6 +1017,10 @@ export class ExportService {
 
       const reflectionHistoryText = reflectionHistory.map((r: any) => 
         `${new Date(r.created_at).toLocaleDateString('ru-RU')}: ${r.action_type} (+${r.points_awarded})`
+      ).join('; ');
+
+      const eventNotesText = userEventNotes.map((note: any) => 
+        `${note.event?.title || 'Мероприятие'} (${note.event?.event_date ? new Date(note.event.event_date).toLocaleDateString('ru-RU') : 'без даты'}): ${note.note_text}`
       ).join('; ');
 
       return {
@@ -1026,7 +1053,8 @@ export class ExportService {
         'Ответы на диагностики': diagnosticAnswersText,
         'Ответы на мероприятия': eventAnswersText,
         'Ответы на персональные вопросы': targetedAnswersText,
-        'Ответы на задания': assignmentAnswersText
+        'Ответы на задания': assignmentAnswersText,
+        'Заметки по мероприятиям': eventNotesText
       };
     });
 

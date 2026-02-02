@@ -48,11 +48,10 @@ export class EventController {
       const userId = req.user.id;
       const { note_text } = req.body;
 
-      if (!note_text || typeof note_text !== 'string') {
-        return res.status(400).json({ error: 'Текст заметки обязателен' });
-      }
+      // Разрешаем пустую строку для очистки заметки
+      const noteText = note_text === undefined || note_text === null ? '' : String(note_text);
 
-      const note = await EventService.saveEventNote(userId, id, note_text);
+      const note = await EventService.saveEventNote(userId, id, noteText);
       return res.json({ success: true, note });
     } catch (error) {
       logger.error('Save event note error', error instanceof Error ? error : new Error(String(error)));
@@ -73,6 +72,20 @@ export class EventController {
     } catch (error) {
       logger.error('Get event note error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при получении заметки' });
+    }
+  }
+
+  /**
+   * Получение всех заметок пользователя по мероприятиям
+   */
+  static async getUserEventNotes(req: Request, res: Response) {
+    try {
+      const userId = req.user.id;
+      const notes = await EventService.getUserEventNotes(userId);
+      return res.json({ success: true, notes });
+    } catch (error) {
+      logger.error('Get user event notes error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ error: 'Ошибка при получении заметок' });
     }
   }
 }

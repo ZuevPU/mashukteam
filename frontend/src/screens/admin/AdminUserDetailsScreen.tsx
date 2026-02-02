@@ -16,10 +16,24 @@ interface TargetedAnswerWithQuestion {
   };
 }
 
+interface EventNote {
+  id: string;
+  note_text: string;
+  event_id: string;
+  created_at: string;
+  updated_at: string;
+  event?: {
+    id: string;
+    title: string;
+    event_date?: string;
+  };
+}
+
 interface UserWithDetails extends User {
   answers: any[];
   targetedAnswers?: TargetedAnswerWithQuestion[];
   submissions?: AssignmentSubmission[];
+  eventNotes?: EventNote[];
 }
 
 interface AdminUserDetailsScreenProps {
@@ -35,7 +49,7 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
   const [selectedDirection, setSelectedDirection] = useState('');
   
   // Фильтры и поиск
-  const [answerTypeFilter, setAnswerTypeFilter] = useState<'all' | 'events' | 'diagnostics' | 'questions' | 'assignments'>('all');
+  const [answerTypeFilter, setAnswerTypeFilter] = useState<'all' | 'events' | 'diagnostics' | 'questions' | 'assignments' | 'notes'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -145,6 +159,7 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
   const allEventAnswers = allAnswers.filter((a: any) => a.events?.type !== 'diagnostic');
   const allTargetedAnswers = user.targetedAnswers || [];
   const allSubmissions = user.submissions || [];
+  const allEventNotes = user.eventNotes || [];
 
   // Применяем фильтры
   const diagnosticAnswers = filterAnswers(allDiagnosticAnswers, 'diagnostics');
@@ -200,7 +215,7 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
           <select
             value={answerTypeFilter}
             onChange={(e) => {
-              setAnswerTypeFilter(e.target.value as any);
+              setAnswerTypeFilter(e.target.value as 'all' | 'events' | 'diagnostics' | 'questions' | 'assignments' | 'notes');
               setCurrentPage(1);
             }}
           >
@@ -209,6 +224,7 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
             <option value="diagnostics">Диагностики</option>
             <option value="questions">Вопросы</option>
             <option value="assignments">Задания</option>
+            <option value="notes">Заметки</option>
           </select>
         </div>
         <div className="form-group">
@@ -378,6 +394,57 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
                   className="create-btn"
                   style={{padding: '8px 16px', fontSize: '14px'}}
                 >
+                  →
+                </button>
+              </div>
+            )}
+          </>
+        );
+      })()}
+
+      {/* Заметки по мероприятиям */}
+      {(() => {
+        const filteredNotes = answerTypeFilter === 'all' || answerTypeFilter === 'notes' 
+          ? (searchQuery ? allEventNotes.filter((note: EventNote) => 
+              note.note_text.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              note.event?.title?.toLowerCase().includes(searchQuery.toLowerCase())
+            ) : allEventNotes)
+          : [];
+        const paginated = paginate(filteredNotes);
+        const totalPages = getTotalPages(filteredNotes);
+        
+        return (
+          <>
+            <h3 style={{marginBottom: 12}}>📝 Заметки по мероприятиям ({filteredNotes.length})</h3>
+            <div className="admin-list" style={{marginBottom: 24}}>
+              {paginated.length > 0 ? (
+                paginated.map((note: EventNote) => (
+                  <div key={note.id} className="admin-item-card block">
+                    <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: 8}}>
+                      <span style={{fontWeight: 600}}>{note.event?.title || 'Мероприятие'}</span>
+                      {note.event?.event_date && (
+                        <span style={{fontSize: 12, opacity: 0.6}}>
+                          {new Date(note.event.event_date).toLocaleDateString('ru-RU')}
+                        </span>
+                      )}
+                    </div>
+                    <p className="answer-box">{note.note_text}</p>
+                    <p style={{fontSize: 11, marginTop: 8, opacity: 0.6}}>
+                      Обновлено: {new Date(note.updated_at).toLocaleString('ru-RU')}
+                    </p>
+                  </div>
+                ))
+              ) : filteredNotes.length === 0 ? (
+                <p className="no-data">Нет заметок</p>
+              ) : null}
+            </div>
+            {totalPages > 1 && (
+              <div style={{display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 24}}>
+                <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
+                  ←
+                </button>
+                <span>Страница {currentPage} из {totalPages}</span>
+                <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
                   →
                 </button>
               </div>

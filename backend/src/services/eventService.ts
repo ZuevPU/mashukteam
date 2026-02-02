@@ -119,12 +119,29 @@ export class EventService {
    * Сохранение или обновление заметки пользователя по мероприятию
    */
   static async saveEventNote(userId: string, eventId: string, noteText: string): Promise<{ id: string; note_text: string }> {
+    // Если заметка пустая, удаляем её
+    if (!noteText || noteText.trim() === '') {
+      const { error: deleteError } = await supabase
+        .from('event_notes')
+        .delete()
+        .eq('user_id', userId)
+        .eq('event_id', eventId);
+      
+      if (deleteError) {
+        console.error('Error deleting empty event note:', deleteError);
+        throw deleteError;
+      }
+      
+      // Возвращаем null для пустой заметки
+      return { id: '', note_text: '' };
+    }
+
     const { data, error } = await supabase
       .from('event_notes')
       .upsert({
         user_id: userId,
         event_id: eventId,
-        note_text: noteText,
+        note_text: noteText.trim(),
         updated_at: new Date().toISOString()
       }, {
         onConflict: 'user_id,event_id'
@@ -158,6 +175,30 @@ export class EventService {
     }
 
     return data as { id: string; note_text: string };
+  }
+
+  /**
+   * Получение всех заметок пользователя по мероприятиям
+   */
+  static async getUserEventNotes(userId: string): Promise<Array<{ id: string; event_id: string; note_text: string; event: { id: string; title: string; event_date?: string } }>> {
+    const { data, error } = await supabase
+      .from('event_notes')
+      .select('id, event_id, note_text, event:events!inner(id, title, event_date)')
+      .eq('user_id', userId)
+      .order('updated_at', { ascending: false });
+
+    if (error) {
+      console.error('Error getting user event notes:', error);
+      throw error;
+    }
+
+    // Преобразуем данные, так как event может быть массивом из-за join
+    return (data || []).map((note: any) => ({
+      id: note.id,
+      event_id: note.event_id,
+      note_text: note.note_text,
+      event: Array.isArray(note.event) ? note.event[0] : note.event
+    })) as Array<{ id: string; event_id: string; note_text: string; event: { id: string; title: string; event_date?: string } }>;
   }
 
 }

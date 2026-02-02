@@ -71,7 +71,19 @@ export function useTelegram() {
 
   const showAlert = (message: string) => {
     if (webApp) {
-      webApp.showAlert(message);
+      try {
+        // Проверяем, не открыт ли уже popup
+        // Если popup уже открыт, используем обычный alert
+        webApp.showAlert(message);
+      } catch (error: any) {
+        // Если ошибка "Popup is already opened", используем обычный alert
+        if (error?.message?.includes('Popup') || error?.message?.includes('popup')) {
+          console.warn('Popup уже открыт, используем alert');
+          alert(message);
+        } else {
+          throw error;
+        }
+      }
     } else {
       alert(message);
     }

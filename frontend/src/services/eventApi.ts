@@ -55,10 +55,32 @@ export const eventApi = {
     eventId: string,
     initData: string
   ): Promise<{ id: string; note_text: string } | null> => {
+    try {
+      const response = await fetchApi<{
+        success: boolean;
+        note: { id: string; note_text: string } | null;
+      }>(`/events/${eventId}/note/get`, {
+        method: 'POST',
+        body: JSON.stringify({ initData }),
+      });
+      return response.note;
+    } catch (error: any) {
+      // Если заметка не найдена, возвращаем null вместо ошибки
+      if (error?.message?.includes('404') || error?.message?.includes('не найдено')) {
+        return null;
+      }
+      throw error;
+    }
+  },
+
+  /**
+   * Получение всех заметок пользователя по мероприятиям
+   */
+  getUserEventNotes: async (initData: string): Promise<Array<{ id: string; event_id: string; note_text: string; event: { id: string; title: string; event_date?: string } }>> => {
     const response = await fetchApiWithAuth<{
       success: boolean;
-      note: { id: string; note_text: string } | null;
-    }>(`/events/${eventId}/note`, initData);
-    return response.note;
+      notes: Array<{ id: string; event_id: string; note_text: string; event: { id: string; title: string; event_date?: string } }>;
+    }>('/events/notes/my', initData);
+    return response.notes;
   },
 };

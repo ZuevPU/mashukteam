@@ -39,7 +39,8 @@ router.post('/gamification/level/up', gamificationRateLimiter, levelUp);
 router.post('/events/list', requireAuth, EventController.getEvents); // POST because we send initData
 router.post('/events/:id/details', requireAuth, EventController.getEventDetails);
 router.post('/events/:id/note', requireAuth, EventController.saveEventNote);
-router.get('/events/:id/note', requireAuth, EventController.getEventNote);
+router.post('/events/:id/note/get', requireAuth, EventController.getEventNote); // POST because we send initData
+router.post('/events/notes/my', requireAuth, EventController.getUserEventNotes); // POST because we send initData
 
 import { TargetedQuestionController } from '../controllers/targetedQuestionController';
 import { RandomizerController } from '../controllers/randomizerController';
@@ -92,7 +93,12 @@ router.post('/notifications/read-all', requireAuth, NotificationController.markA
 // === Admin System ===
 router.post('/admin/targeted-questions', requireAuth, requireAdmin, TargetedQuestionController.getAllQuestions);
 router.post('/admin/targeted-answers', requireAuth, requireAdmin, TargetedQuestionController.getAllAnswers);
-router.post('/admin/questions', requireAuth, requireAdmin, TargetedQuestionController.createQuestion);
+router.post('/admin/questions', (req, res, next) => {
+  // #region agent log
+  try{const fs=require('fs');const path=require('path');const logPath=path.join(process.cwd(),'.cursor','debug.log');const logEntry={id:`log_${Date.now()}_${Math.random().toString(36).substr(2,9)}`,timestamp:Date.now(),location:'routes/index.ts:95',message:'route handler entry',data:{path:req.path,method:req.method,bodyKeys:Object.keys(req.body)},sessionId:'debug-session',runId:'run1',hypothesisId:'D'};fs.appendFileSync(logPath,JSON.stringify(logEntry)+'\n');}catch(e){}
+  // #endregion
+  next();
+}, requireAuth, requireAdmin, TargetedQuestionController.createQuestion);
 router.put('/admin/questions/:id', requireAuth, requireAdmin, TargetedQuestionController.updateQuestion);
 router.delete('/admin/questions/:id', requireAuth, requireAdmin, TargetedQuestionController.deleteQuestion);
 router.patch('/admin/users/:id/direction', requireAuth, requireAdmin, AdminController.setUserDirection);

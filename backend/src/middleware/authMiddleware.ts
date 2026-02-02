@@ -17,25 +17,40 @@ declare global {
  */
 export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const initData = req.body.initData || req.headers['x-telegram-init-data'];
+    const initData = req.body?.initData || req.headers['x-telegram-init-data'] || (req.headers['x-telegram-init-data'] as string);
 
     if (!initData) {
+      // #region agent log
+      try{const fs=require('fs');const path=require('path');const logPath=path.join(process.cwd(),'.cursor','debug.log');const logEntry={id:`log_${Date.now()}_${Math.random().toString(36).substr(2,9)}`,timestamp:Date.now(),location:'authMiddleware.ts:23',message:'no initData',data:{path:req.path},sessionId:'debug-session',runId:'run1',hypothesisId:'C'};fs.appendFileSync(logPath,JSON.stringify(logEntry)+'\n');}catch(e){}
+      // #endregion
       return res.status(401).json({ error: 'Требуется авторизация (initData)' });
     }
 
     const telegramId = getTelegramIdFromInitData(initData);
     if (!telegramId) {
+      // #region agent log
+      try{const fs=require('fs');const path=require('path');const logPath=path.join(process.cwd(),'.cursor','debug.log');const logEntry={id:`log_${Date.now()}_${Math.random().toString(36).substr(2,9)}`,timestamp:Date.now(),location:'authMiddleware.ts:28',message:'invalid initData',data:{path:req.path},sessionId:'debug-session',runId:'run1',hypothesisId:'C'};fs.appendFileSync(logPath,JSON.stringify(logEntry)+'\n');}catch(e){}
+      // #endregion
       return res.status(401).json({ error: 'Невалидные данные авторизации' });
     }
 
     const user = await UserService.getUserByTelegramId(telegramId);
     if (!user) {
+      // #region agent log
+      try{const fs=require('fs');const path=require('path');const logPath=path.join(process.cwd(),'.cursor','debug.log');const logEntry={id:`log_${Date.now()}_${Math.random().toString(36).substr(2,9)}`,timestamp:Date.now(),location:'authMiddleware.ts:33',message:'user not found',data:{telegramId},sessionId:'debug-session',runId:'run1',hypothesisId:'C'};fs.appendFileSync(logPath,JSON.stringify(logEntry)+'\n');}catch(e){}
+      // #endregion
       return res.status(403).json({ error: 'Пользователь не найден' });
     }
 
     req.user = user;
+    // #region agent log
+    try{const fs=require('fs');const path=require('path');const logPath=path.join(process.cwd(),'.cursor','debug.log');const logEntry={id:`log_${Date.now()}_${Math.random().toString(36).substr(2,9)}`,timestamp:Date.now(),location:'authMiddleware.ts:37',message:'auth success',data:{userId:user.id,isAdmin:user.is_admin,path:req.path},sessionId:'debug-session',runId:'run1',hypothesisId:'C'};fs.appendFileSync(logPath,JSON.stringify(logEntry)+'\n');}catch(e){}
+    // #endregion
     next();
   } catch (error) {
+    // #region agent log
+    try{const fs=require('fs');const path=require('path');const logPath=path.join(process.cwd(),'.cursor','debug.log');const logEntry={id:`log_${Date.now()}_${Math.random().toString(36).substr(2,9)}`,timestamp:Date.now(),location:'authMiddleware.ts:40',message:'auth error',data:{errorMessage:error instanceof Error ? error.message : String(error),path:req.path},sessionId:'debug-session',runId:'run1',hypothesisId:'C'};fs.appendFileSync(logPath,JSON.stringify(logEntry)+'\n');}catch(e){}
+    // #endregion
     logger.error('Auth error', error instanceof Error ? error : new Error(String(error)));
     return res.status(500).json({ error: 'Ошибка авторизации' });
   }
