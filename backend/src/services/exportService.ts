@@ -634,6 +634,106 @@ export class ExportService {
   }
 
   /**
+   * Форматирование ответов на диагностики для экспорта
+   */
+  private static formatDiagnosticAnswers(answers: any[]): string {
+    if (!answers || answers.length === 0) return '';
+    
+    // Фильтруем только диагностики
+    const diagnosticAnswers = answers.filter((a: any) => a.event?.type === 'diagnostic');
+    if (diagnosticAnswers.length === 0) return '';
+    
+    return diagnosticAnswers.map((answer: any) => {
+      const event = answer.event;
+      const question = answer.question;
+      const formattedAnswer = this.formatAnswerData(answer.answer_data);
+      const dateStr = this.formatDate(answer.created_at);
+      
+      return `Диагностика: ${event?.title || 'Неизвестно'}\n` +
+             `Группа: ${event?.group_name || ''}\n` +
+             `Вопрос: ${question?.text || ''}\n` +
+             `Тип вопроса: ${question?.type || ''}\n` +
+             `Ответ: ${formattedAnswer}\n` +
+             `Дата: ${dateStr}`;
+    }).join('\n\n---\n\n');
+  }
+
+  /**
+   * Форматирование ответов на мероприятия для экспорта
+   */
+  private static formatEventAnswers(answers: any[]): string {
+    if (!answers || answers.length === 0) return '';
+    
+    // Фильтруем только мероприятия (не диагностики)
+    const eventAnswers = answers.filter((a: any) => a.event?.type === 'event');
+    if (eventAnswers.length === 0) return '';
+    
+    return eventAnswers.map((answer: any) => {
+      const event = answer.event;
+      const question = answer.question;
+      const formattedAnswer = this.formatAnswerData(answer.answer_data);
+      const dateStr = this.formatDate(answer.created_at);
+      
+      return `Мероприятие: ${event?.title || 'Неизвестно'}\n` +
+             `Группа: ${event?.group_name || ''}\n` +
+             `Вопрос: ${question?.text || ''}\n` +
+             `Тип вопроса: ${question?.type || ''}\n` +
+             `Ответ: ${formattedAnswer}\n` +
+             `Дата: ${dateStr}`;
+    }).join('\n\n---\n\n');
+  }
+
+  /**
+   * Форматирование ответов на персональные вопросы для экспорта
+   */
+  private static formatTargetedAnswers(answers: any[]): string {
+    if (!answers || answers.length === 0) return '';
+    
+    return answers.map((answer: any) => {
+      const question = answer.question;
+      const formattedAnswer = this.formatAnswerData(answer.answer_data);
+      const dateStr = this.formatDate(answer.created_at);
+      
+      return `Вопрос: ${question?.text || ''}\n` +
+             `Тип вопроса: ${question?.type || ''}\n` +
+             `Ответ: ${formattedAnswer}\n` +
+             `Дата: ${dateStr}`;
+    }).join('\n\n---\n\n');
+  }
+
+  /**
+   * Форматирование ответов на задания для экспорта
+   */
+  private static formatAssignmentAnswers(submissions: any[]): string {
+    if (!submissions || submissions.length === 0) return '';
+    
+    return submissions.map((sub: any) => {
+      const assignment = sub.assignment;
+      const statusLabel = this.getStatusLabel(sub.status);
+      const dateStr = this.formatDate(sub.created_at);
+      const updatedStr = sub.updated_at ? this.formatDate(sub.updated_at) : '';
+      
+      let result = `Задание: ${assignment?.title || 'Неизвестно'}\n` +
+                   `Формат ответа: ${assignment?.answer_format || ''}\n` +
+                   `Ответ: ${sub.content || ''}\n` +
+                   `Статус: ${statusLabel}\n` +
+                   `Награда: ${assignment?.reward || 0} баллов\n`;
+      
+      if (sub.admin_comment) {
+        result += `Комментарий админа: ${sub.admin_comment}\n`;
+      }
+      
+      result += `Дата отправки: ${dateStr}`;
+      
+      if (updatedStr && updatedStr !== dateStr) {
+        result += `\nДата обновления: ${updatedStr}`;
+      }
+      
+      return result;
+    }).join('\n\n---\n\n');
+  }
+
+  /**
    * Экспорт пользователей с полной информацией
    */
   static async exportUsersFull(): Promise<Buffer> {
@@ -659,7 +759,7 @@ export class ExportService {
     const [
       allAchievements,
       allUserLevels,
-      allAnswers,
+      allEventAnswers,
       allSubmissions,
       allTargetedAnswers,
       allPointsTransactions,
@@ -675,21 +775,47 @@ export class ExportService {
         .from('user_levels')
         .select('user_id, level, experience_points')
         .in('user_id', userIds),
-      // Ответы на мероприятия (для подсчета)
+      // Ответы на мероприятия/диагностики с детальной информацией
       supabase
         .from('answers')
-        .select('user_id')
-        .in('user_id', userIds),
-      // Выполненные задания (для подсчета и статусов)
+        .select(`
+          user_id,
+          event_id,
+          question_id,
+          answer_data,
+          created_at,
+          question:questions(text, type, order_index),
+          event:events(title, type, group_name)
+        `)
+        .in('user_id', userIds)
+        .order('created_at', { ascending: false }),
+      // Выполненные задания с детальной информацией
       supabase
         .from('assignment_submissions')
-        .select('user_id, status')
-        .in('user_id', userIds),
-      // Ответы на персональные вопросы (для подсчета)
+        .select(`
+          user_id,
+          assignment_id,
+          content,
+          status,
+          admin_comment,
+          created_at,
+          updated_at,
+          assignment:assignments(title, answer_format, reward)
+        `)
+        .in('user_id', userIds)
+        .order('created_at', { ascending: false }),
+      // Ответы на персональные вопросы с детальной информацией
       supabase
         .from('targeted_answers')
-        .select('user_id')
-        .in('user_id', userIds),
+        .select(`
+          user_id,
+          question_id,
+          answer_data,
+          created_at,
+          question:targeted_questions(text, type)
+        `)
+        .in('user_id', userIds)
+        .order('created_at', { ascending: false }),
       // Транзакции баллов (для последних 5)
       supabase
         .from('points_transactions')
@@ -721,27 +847,45 @@ export class ExportService {
       levelsMap.set(ul.user_id, { level: ul.level, experience_points: ul.experience_points });
     });
 
+    // Группируем детальные ответы на мероприятия/диагностики по пользователям
+    const eventAnswersMap = new Map<string, any[]>();
     const answersCountMap = new Map<string, number>();
-    (allAnswers.data || []).forEach((a: any) => {
-      answersCountMap.set(a.user_id, (answersCountMap.get(a.user_id) || 0) + 1);
+    (allEventAnswers.data || []).forEach((a: any) => {
+      const userId = a.user_id;
+      if (!eventAnswersMap.has(userId)) {
+        eventAnswersMap.set(userId, []);
+      }
+      eventAnswersMap.get(userId)!.push(a);
+      answersCountMap.set(userId, (answersCountMap.get(userId) || 0) + 1);
     });
 
-    const submissionsMap = new Map<string, { approved: number; pending: number; rejected: number; total: number }>();
+    // Группируем детальные ответы на задания по пользователям
+    const submissionsDetailsMap = new Map<string, any[]>();
+    const submissionsStatsMap = new Map<string, { approved: number; pending: number; rejected: number; total: number }>();
     (allSubmissions.data || []).forEach((s: any) => {
       const userId = s.user_id;
-      if (!submissionsMap.has(userId)) {
-        submissionsMap.set(userId, { approved: 0, pending: 0, rejected: 0, total: 0 });
+      if (!submissionsDetailsMap.has(userId)) {
+        submissionsDetailsMap.set(userId, []);
+        submissionsStatsMap.set(userId, { approved: 0, pending: 0, rejected: 0, total: 0 });
       }
-      const stats = submissionsMap.get(userId)!;
+      submissionsDetailsMap.get(userId)!.push(s);
+      const stats = submissionsStatsMap.get(userId)!;
       stats.total++;
       if (s.status === 'approved') stats.approved++;
       else if (s.status === 'pending') stats.pending++;
       else if (s.status === 'rejected') stats.rejected++;
     });
 
+    // Группируем детальные ответы на персональные вопросы по пользователям
+    const targetedAnswersDetailsMap = new Map<string, any[]>();
     const targetedAnswersCountMap = new Map<string, number>();
     (allTargetedAnswers.data || []).forEach((a: any) => {
-      targetedAnswersCountMap.set(a.user_id, (targetedAnswersCountMap.get(a.user_id) || 0) + 1);
+      const userId = a.user_id;
+      if (!targetedAnswersDetailsMap.has(userId)) {
+        targetedAnswersDetailsMap.set(userId, []);
+      }
+      targetedAnswersDetailsMap.get(userId)!.push(a);
+      targetedAnswersCountMap.set(userId, (targetedAnswersCountMap.get(userId) || 0) + 1);
     });
 
     // Группируем транзакции и рефлексию по пользователям (берем только последние)
@@ -775,8 +919,19 @@ export class ExportService {
       const achievementsList = (achievementsMap.get(userId) || []).join(', ');
       const userLevel = levelsMap.get(userId);
       const eventsCount = answersCountMap.get(userId) || 0;
-      const submissionStats = submissionsMap.get(userId) || { approved: 0, pending: 0, rejected: 0, total: 0 };
+      const submissionStats = submissionsStatsMap.get(userId) || { approved: 0, pending: 0, rejected: 0, total: 0 };
       const targetedAnswersCount = targetedAnswersCountMap.get(userId) || 0;
+      
+      // Получаем детальные ответы пользователя
+      const userEventAnswers = eventAnswersMap.get(userId) || [];
+      const userTargetedAnswers = targetedAnswersDetailsMap.get(userId) || [];
+      const userSubmissions = submissionsDetailsMap.get(userId) || [];
+      
+      // Форматируем детальные ответы
+      const diagnosticAnswersText = this.formatDiagnosticAnswers(userEventAnswers);
+      const eventAnswersText = this.formatEventAnswers(userEventAnswers);
+      const targetedAnswersText = this.formatTargetedAnswers(userTargetedAnswers);
+      const assignmentAnswersText = this.formatAssignmentAnswers(userSubmissions);
       const recentPoints = pointsMap.get(userId) || [];
       const reflectionHistory = reflectionMap.get(userId) || [];
 
@@ -816,7 +971,11 @@ export class ExportService {
         'Последние транзакции баллов': recentPointsText,
         'История рефлексии': reflectionHistoryText,
         'Администратор': user.is_admin === 1 ? 'Да' : 'Нет',
-        'Дата обновления': new Date(user.updated_at).toLocaleString('ru-RU')
+        'Дата обновления': new Date(user.updated_at).toLocaleString('ru-RU'),
+        'Ответы на диагностики': diagnosticAnswersText,
+        'Ответы на мероприятия': eventAnswersText,
+        'Ответы на персональные вопросы': targetedAnswersText,
+        'Ответы на задания': assignmentAnswersText
       };
     });
 
