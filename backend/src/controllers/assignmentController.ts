@@ -26,7 +26,7 @@ export class AssignmentController {
       
       // Отправка уведомлений, если задание опубликовано и запрошено
       if (sendNotification && assignment.status === 'published') {
-        notifyNewAssignment(assignment.title, assignment.reward).catch(console.error);
+        notifyNewAssignment(assignment.title, assignment.reward, assignment.id).catch(console.error);
       }
       
       return res.status(201).json({ success: true, assignment });
@@ -39,8 +39,19 @@ export class AssignmentController {
   static async updateAssignment(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { initData, ...data } = req.body;
+      const { initData, sendNotification, ...data } = req.body;
+      
+      // Получаем текущее состояние задания для проверки изменения статуса
+      const currentAssignment = await AssignmentService.getAssignmentById(id);
+      const wasPublished = currentAssignment?.status === 'published';
+      
       const assignment = await AssignmentService.updateAssignment(id, data);
+      
+      // Отправка уведомления, если статус изменился на published
+      if (data.status === 'published' && !wasPublished && sendNotification) {
+        notifyNewAssignment(assignment.title, assignment.reward, assignment.id).catch(console.error);
+      }
+      
       return res.json({ success: true, assignment });
     } catch (error) {
       console.error('Update assignment error:', error);

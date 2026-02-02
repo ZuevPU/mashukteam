@@ -157,6 +157,38 @@ export const adminApi = {
   },
 
   /**
+   * Обновление таргетированного вопроса
+   */
+  updateTargetedQuestion: async (
+    id: string,
+    data: Partial<CreateTargetedQuestionRequest & { status: string }>,
+    initData: string
+  ): Promise<TargetedQuestion> => {
+    const response = await fetchApi<{ success: boolean; question: TargetedQuestion }>(
+      `/admin/questions/${id}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ initData, ...data }),
+      }
+    );
+    return response.question;
+  },
+
+  /**
+   * Удаление таргетированного вопроса
+   */
+  deleteTargetedQuestion: async (id: string, initData: string): Promise<boolean> => {
+    const response = await fetchApi<{ success: boolean }>(
+      `/admin/questions/${id}`,
+      {
+        method: 'DELETE',
+        body: JSON.stringify({ initData }),
+      }
+    );
+    return response.success;
+  },
+
+  /**
    * Получение ВСЕХ событий (для админки)
    */
   getAllEvents: async (initData: string): Promise<Event[]> => {

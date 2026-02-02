@@ -4,7 +4,7 @@ import { UserService } from '../services/supabase';
 import { TargetedQuestionService } from '../services/targetedQuestionService';
 import { AssignmentService } from '../services/assignmentService';
 import { DirectionService } from '../services/directionService';
-import { broadcastMessage } from '../utils/telegramBot';
+import { notifyNewEvent, notifyNewDiagnostic } from '../utils/telegramBot';
 
 export class AdminController {
   /**
@@ -17,11 +17,13 @@ export class AdminController {
       
       const event = await EventService.createEvent(eventData);
 
-      // Отправка уведомления
-      if (process.env.NODE_ENV === 'production' || process.env.ENABLE_NOTIFICATIONS === 'true') {
-        const message = `📢 <b>Анонс нового мероприятия: ${event.title}!</b>\n\nЗаходи в приложение, чтобы узнать подробности!`;
-        // Запускаем асинхронно, не блокируя ответ
-        broadcastMessage(message).catch(console.error);
+      // Отправка уведомления только если мероприятие опубликовано
+      if (event.status === 'published' && (process.env.NODE_ENV === 'production' || process.env.ENABLE_NOTIFICATIONS === 'true')) {
+        if (event.type === 'diagnostic') {
+          notifyNewDiagnostic(event.title, event.id).catch(console.error);
+        } else {
+          notifyNewEvent(event.title, event.id).catch(console.error);
+        }
       }
 
       return res.status(201).json({ success: true, event });
@@ -40,7 +42,21 @@ export class AdminController {
       // Извлекаем initData и оставляем только данные для обновления
       const { initData, ...updates } = req.body;
       
+      // Получаем текущее состояние мероприятия для проверки изменения статуса
+      const currentEvent = await EventService.getEventById(id);
+      const wasPublished = currentEvent?.status === 'published';
+      
       const event = await EventService.updateEvent(id, updates);
+      
+      // Отправка уведомления, если статус изменился на published
+      if (updates.status === 'published' && !wasPublished && (process.env.NODE_ENV === 'production' || process.env.ENABLE_NOTIFICATIONS === 'true')) {
+        if (event.type === 'diagnostic') {
+          notifyNewDiagnostic(event.title, event.id).catch(console.error);
+        } else {
+          notifyNewEvent(event.title, event.id).catch(console.error);
+        }
+      }
+      
       return res.json({ success: true, event });
     } catch (error) {
       console.error('Update event error:', error);

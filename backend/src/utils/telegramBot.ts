@@ -4,18 +4,32 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const MINI_APP_URL = 't.me/mashukteam_bot/mashuk_team';
 
 /**
+ * Формирование ссылки на мини-апп с параметрами
+ */
+function buildAppLink(type: 'event' | 'question' | 'assignment' | 'diagnostic', id: string): string {
+  return `https://${MINI_APP_URL}?start=${type}_${id}`;
+}
+
+/**
  * Отправка сообщения пользователю через Telegram Bot API
  */
-export async function sendMessageToUser(telegramId: number, text: string, includeAppLink: boolean = true) {
+export async function sendMessageToUser(
+  telegramId: number, 
+  text: string, 
+  includeAppLink: boolean = true,
+  deepLink?: string
+) {
   if (!BOT_TOKEN) {
     console.warn('TELEGRAM_BOT_TOKEN не установлен, уведомление не отправлено');
     return;
   }
 
   // Добавляем ссылку на мини-апп
-  const messageText = includeAppLink 
-    ? `${text}\n\n👉 <a href="https://${MINI_APP_URL}">Открыть приложение</a>`
-    : text;
+  let messageText = text;
+  if (includeAppLink) {
+    const link = deepLink || `https://${MINI_APP_URL}`;
+    messageText = `${text}\n\n👉 <a href="${link}">Открыть в приложении</a>`;
+  }
 
   try {
     const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -42,12 +56,12 @@ export async function sendMessageToUser(telegramId: number, text: string, includ
 /**
  * Рассылка уведомления всем пользователям
  */
-export async function broadcastMessage(text: string) {
+export async function broadcastMessage(text: string, deepLink?: string) {
   try {
     const users = await UserService.getAllUsers();
     
     for (const user of users) {
-      await sendMessageToUser(user.telegram_id, text, true);
+      await sendMessageToUser(user.telegram_id, text, true, deepLink);
       await new Promise(resolve => setTimeout(resolve, 50));
     }
     
@@ -60,9 +74,10 @@ export async function broadcastMessage(text: string) {
 /**
  * Отправка уведомления о новом задании
  */
-export async function notifyNewAssignment(title: string, reward: number) {
-  const text = `📋 <b>Новое задание!</b>\n\n${title}\n\n🎁 Награда: ${reward} баллов`;
-  await broadcastMessage(text);
+export async function notifyNewAssignment(title: string, reward: number, assignmentId: string) {
+  const text = `📋 <b>Анонс нового задания</b>\n\n${title}\n\n🎁 Награда: ${reward} баллов`;
+  const deepLink = buildAppLink('assignment', assignmentId);
+  await broadcastMessage(text, deepLink);
 }
 
 /**
@@ -95,10 +110,12 @@ export async function notifyAssignmentResult(
  */
 export async function notifyNewTargetedQuestion(
   telegramId: number,
-  questionText: string
+  questionText: string,
+  questionId: string
 ) {
-  const text = `❓ <b>Новый персональный вопрос</b>\n\n${questionText}`;
-  await sendMessageToUser(telegramId, text, true);
+  const text = `❓ <b>Анонс нового вопроса</b>\n\n${questionText}`;
+  const deepLink = buildAppLink('question', questionId);
+  await sendMessageToUser(telegramId, text, true, deepLink);
 }
 
 /**
@@ -106,14 +123,15 @@ export async function notifyNewTargetedQuestion(
  */
 export async function notifyTargetedQuestionToUsers(
   userIds: string[],
-  questionText: string
+  questionText: string,
+  questionId: string
 ) {
   try {
     const users = await UserService.getAllUsers();
     const targetUsers = users.filter(u => userIds.includes(u.id));
     
     for (const user of targetUsers) {
-      await notifyNewTargetedQuestion(user.telegram_id, questionText);
+      await notifyNewTargetedQuestion(user.telegram_id, questionText, questionId);
       await new Promise(resolve => setTimeout(resolve, 50));
     }
     
@@ -132,4 +150,28 @@ export async function notifyDirectionAssigned(
 ) {
   const text = `🎯 <b>Вам назначено направление</b>\n\n${directionName}`;
   await sendMessageToUser(telegramId, text, true);
+}
+
+/**
+ * Отправка уведомления о новом мероприятии
+ */
+export async function notifyNewEvent(
+  eventTitle: string,
+  eventId: string
+) {
+  const text = `📅 <b>Анонс нового мероприятия</b>\n\n${eventTitle}`;
+  const deepLink = buildAppLink('event', eventId);
+  await broadcastMessage(text, deepLink);
+}
+
+/**
+ * Отправка уведомления о новой диагностике
+ */
+export async function notifyNewDiagnostic(
+  diagnosticTitle: string,
+  diagnosticId: string
+) {
+  const text = `🩺 <b>Анонс новой диагностики</b>\n\n${diagnosticTitle}`;
+  const deepLink = buildAppLink('diagnostic', diagnosticId);
+  await broadcastMessage(text, deepLink);
 }

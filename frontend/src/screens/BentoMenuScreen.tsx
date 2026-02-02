@@ -74,6 +74,69 @@ export function BentoMenuScreen() {
   const [selectedAssignment, setSelectedAssignment] = useState<any>(undefined);
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
   const [selectedDiagnostic, setSelectedDiagnostic] = useState<Event | undefined>(undefined);
+  const [editingQuestion, setEditingQuestion] = useState<any>(undefined);
+
+  // Обработка deep links из Telegram (start параметр)
+  useEffect(() => {
+    if (!isReady || !initData) return;
+
+    // Получаем start параметр из URL или из Telegram WebApp
+    const getStartParam = (): string | null => {
+      // Проверяем URL параметры
+      const urlParams = new URLSearchParams(window.location.search);
+      const startFromUrl = urlParams.get('start');
+      if (startFromUrl) return startFromUrl;
+
+      // Проверяем Telegram WebApp start_param
+      if (window.Telegram?.WebApp?.initDataUnsafe?.start_param) {
+        return window.Telegram.WebApp.initDataUnsafe.start_param;
+      }
+
+      return null;
+    };
+
+    const startParam = getStartParam();
+    if (startParam) {
+      console.log('[Deep Link] Start param:', startParam);
+      
+      // Формат: event_<id>, question_<id>, assignment_<id>, diagnostic_<id>
+      const [type, id] = startParam.split('_');
+      
+      if (type === 'event' && id) {
+        setSelectedEventId(id);
+        setView('events_list');
+        // После загрузки данных откроется опрос
+        setTimeout(() => {
+          setSelectedEventId(id);
+          setView('event_survey');
+        }, 100);
+      } else if (type === 'question' && id) {
+        setView('targeted_questions');
+      } else if (type === 'assignment' && id) {
+        // Загружаем задание и открываем форму отправки
+        import('../services/assignmentApi').then(({ assignmentApi }) => {
+          assignmentApi.getAssignmentById(id, initData).then((assignment) => {
+            if (assignment) {
+              setSelectedAssignment(assignment);
+              setView('assignment_submit' as any);
+            } else {
+              setView('assignments_list');
+            }
+          }).catch(() => {
+            setView('assignments_list');
+          });
+        });
+      } else if (type === 'diagnostic' && id) {
+        setSelectedEventId(id);
+        setView('diagnostic_list');
+        // После загрузки данных откроется опрос
+        setTimeout(() => {
+          setSelectedEventId(id);
+          setView('event_survey');
+        }, 100);
+      }
+    }
+  }, [isReady, initData]);
 
   // Загрузка данных
   useEffect(() => {
@@ -285,12 +348,25 @@ export function BentoMenuScreen() {
     />;
   }
   if (view === 'admin_questions_list') {
-    return <AdminQuestionsListScreen onBack={() => setView('admin_targeted_questions')} />;
+    return <AdminQuestionsListScreen 
+      onBack={() => setView('admin_targeted_questions')}
+      onEdit={(question) => {
+        setEditingQuestion(question);
+        setView('admin_create_question');
+      }}
+    />;
   }
   if (view === 'admin_create_question') {
     return <AdminCreateQuestionScreen 
-      onBack={() => setView('admin_targeted_questions')} 
-      onSuccess={() => setView('admin_questions_list')} 
+      onBack={() => {
+        setEditingQuestion(undefined);
+        setView('admin_targeted_questions');
+      }} 
+      onSuccess={() => {
+        setEditingQuestion(undefined);
+        setView('admin_questions_list');
+      }}
+      editingQuestion={editingQuestion}
     />;
   }
   if (view === 'admin_review_answers') {

@@ -63,16 +63,16 @@ export class TargetedQuestionController {
             // Всем пользователям
             const users = await UserService.getAllUsers();
             const userIds = users.map(u => u.id);
-            notifyTargetedQuestionToUsers(userIds, question.text).catch(console.error);
+            notifyTargetedQuestionToUsers(userIds, question.text, question.id).catch(console.error);
           } else if (data.target_audience === 'by_type' && data.target_values) {
             // По типу пользователя
             const users = await UserService.getAllUsers();
             const targetUsers = users.filter(u => data.target_values.includes(u.user_type));
             const userIds = targetUsers.map(u => u.id);
-            notifyTargetedQuestionToUsers(userIds, question.text).catch(console.error);
+            notifyTargetedQuestionToUsers(userIds, question.text, question.id).catch(console.error);
           } else if (data.target_audience === 'individual' && data.target_values) {
             // Конкретным пользователям
-            notifyTargetedQuestionToUsers(data.target_values, question.text).catch(console.error);
+            notifyTargetedQuestionToUsers(data.target_values, question.text, question.id).catch(console.error);
           }
         } catch (notifError) {
           console.error('Error sending notifications:', notifError);
@@ -110,6 +110,61 @@ export class TargetedQuestionController {
     } catch (error) {
       console.error('Get all answers error:', error);
       return res.status(500).json({ error: 'Ошибка при получении ответов' });
+    }
+  }
+
+  /**
+   * Обновление вопроса (Админ)
+   */
+  static async updateQuestion(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { initData, sendNotification, ...data } = req.body;
+      
+      // Получаем текущее состояние вопроса для проверки изменения статуса
+      const currentQuestion = await TargetedQuestionService.getQuestionById(id);
+      const wasPublished = currentQuestion?.status === 'published';
+      
+      const question = await TargetedQuestionService.updateQuestion(id, data);
+      
+      // Отправка уведомлений, если статус изменился на published
+      if (data.status === 'published' && !wasPublished && sendNotification) {
+        try {
+          if (question.target_audience === 'all') {
+            const users = await UserService.getAllUsers();
+            const userIds = users.map(u => u.id);
+            notifyTargetedQuestionToUsers(userIds, question.text, question.id).catch(console.error);
+          } else if (question.target_audience === 'by_type' && question.target_values) {
+            const users = await UserService.getAllUsers();
+            const targetUsers = users.filter(u => question.target_values.includes(u.user_type));
+            const userIds = targetUsers.map(u => u.id);
+            notifyTargetedQuestionToUsers(userIds, question.text, question.id).catch(console.error);
+          } else if (question.target_audience === 'individual' && question.target_values) {
+            notifyTargetedQuestionToUsers(question.target_values, question.text, question.id).catch(console.error);
+          }
+        } catch (notifError) {
+          console.error('Error sending notifications:', notifError);
+        }
+      }
+      
+      return res.json({ success: true, question });
+    } catch (error) {
+      console.error('Update targeted question error:', error);
+      return res.status(500).json({ error: 'Ошибка при обновлении вопроса' });
+    }
+  }
+
+  /**
+   * Удаление вопроса (Админ)
+   */
+  static async deleteQuestion(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      await TargetedQuestionService.deleteQuestion(id);
+      return res.json({ success: true, message: 'Вопрос удален' });
+    } catch (error) {
+      console.error('Delete targeted question error:', error);
+      return res.status(500).json({ error: 'Ошибка при удалении вопроса' });
     }
   }
 }

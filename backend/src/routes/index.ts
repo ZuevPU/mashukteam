@@ -61,6 +61,8 @@ router.post('/questions/answer', requireAuth, TargetedQuestionController.submitA
 router.post('/admin/targeted-questions', requireAuth, requireAdmin, TargetedQuestionController.getAllQuestions);
 router.post('/admin/targeted-answers', requireAuth, requireAdmin, TargetedQuestionController.getAllAnswers);
 router.post('/admin/questions', requireAuth, requireAdmin, TargetedQuestionController.createQuestion);
+router.put('/admin/questions/:id', requireAuth, requireAdmin, TargetedQuestionController.updateQuestion);
+router.delete('/admin/questions/:id', requireAuth, requireAdmin, TargetedQuestionController.deleteQuestion);
 router.patch('/admin/users/:id/type', requireAuth, requireAdmin, AdminController.setUserType);
 
 router.post('/admin/events', requireAuth, requireAdmin, AdminController.createEvent);

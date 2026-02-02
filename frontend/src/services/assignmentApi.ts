@@ -33,5 +33,18 @@ export const assignmentApi = {
       { method: 'POST', body: JSON.stringify({ initData }) }
     );
     return response.submissions;
+  },
+
+  /**
+   * Получение задания по ID
+   */
+  getAssignmentById: async (assignmentId: string, initData: string): Promise<Assignment | null> => {
+    try {
+      const assignments = await assignmentApi.getMyAssignments(initData);
+      return assignments.find(a => a.id === assignmentId) || null;
+    } catch (error) {
+      console.error('Error getting assignment by ID:', error);
+      return null;
+    }
   }
 };

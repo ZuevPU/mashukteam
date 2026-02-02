@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CreateTargetedQuestionRequest, QuestionType, UserType } from '../../types';
+import { CreateTargetedQuestionRequest, QuestionType, UserType, TargetedQuestion } from '../../types';
 import { adminApi } from '../../services/adminApi';
 import { useTelegram } from '../../hooks/useTelegram';
 import { UserSelector } from './UserSelector';
@@ -8,21 +8,22 @@ import './AdminScreens.css';
 interface AdminCreateQuestionScreenProps {
   onBack: () => void;
   onSuccess: () => void;
+  editingQuestion?: TargetedQuestion;
 }
 
-export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps> = ({ onBack, onSuccess }) => {
+export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps> = ({ onBack, onSuccess, editingQuestion }) => {
   const { initData, showAlert } = useTelegram();
   const [loading, setLoading] = useState(false);
   const [userTypes, setUserTypes] = useState<UserType[]>([]);
   const [sendNotification, setSendNotification] = useState(true);
   
   const [question, setQuestion] = useState<CreateTargetedQuestionRequest>({
-    text: '',
-    type: 'text',
-    options: ['', ''],
-    char_limit: 1000,
-    target_audience: 'all',
-    target_values: []
+    text: editingQuestion?.text || '',
+    type: editingQuestion?.type || 'text',
+    options: editingQuestion?.options || ['', ''],
+    char_limit: editingQuestion?.char_limit || 1000,
+    target_audience: editingQuestion?.target_audience || 'all',
+    target_values: editingQuestion?.target_values || []
   });
 
   useEffect(() => {
@@ -94,16 +95,20 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
       const dataToSend = {
         ...question,
         options: question.options?.filter(o => o.trim()),
-        status: 'published',
         sendNotification
       };
       
-      await adminApi.createTargetedQuestion(dataToSend, initData);
-      showAlert('Вопрос создан!');
+      if (editingQuestion) {
+        await adminApi.updateTargetedQuestion(editingQuestion.id, dataToSend, initData);
+        showAlert('Вопрос обновлен!');
+      } else {
+        await adminApi.createTargetedQuestion({ ...dataToSend, status: 'published' }, initData);
+        showAlert('Вопрос создан!');
+      }
       onSuccess();
     } catch (error) {
       console.error('Error:', error);
-      showAlert('Ошибка создания');
+      showAlert(editingQuestion ? 'Ошибка обновления' : 'Ошибка создания');
     } finally {
       setLoading(false);
     }
@@ -230,7 +235,7 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
         </div>
 
         <button type="submit" className="save-btn" disabled={loading}>
-          {loading ? 'Создание...' : '✓ Создать и отправить'}
+          {loading ? (editingQuestion ? 'Обновление...' : 'Создание...') : (editingQuestion ? '✓ Сохранить изменения' : '✓ Создать и отправить')}
         </button>
       </form>
     </div>

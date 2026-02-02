@@ -89,6 +89,25 @@ export class TargetedQuestionService {
   }
 
   /**
+   * Получение вопроса по ID
+   */
+  static async getQuestionById(id: string): Promise<TargetedQuestion | null> {
+    const { data, error } = await supabase
+      .from('targeted_questions')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') return null;
+      console.error('Error getting targeted question:', error);
+      throw error;
+    }
+
+    return data as TargetedQuestion;
+  }
+
+  /**
    * Получение всех вопросов (для админа)
    */
   static async getAllQuestions(): Promise<TargetedQuestion[]> {
@@ -155,5 +174,39 @@ export class TargetedQuestionService {
     }
 
     return data || [];
+  }
+
+  /**
+   * Обновление вопроса
+   */
+  static async updateQuestion(id: string, data: Partial<CreateTargetedQuestionDto>): Promise<TargetedQuestion> {
+    const { data: question, error } = await supabase
+      .from('targeted_questions')
+      .update(data)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating targeted question:', error);
+      throw error;
+    }
+
+    return question as TargetedQuestion;
+  }
+
+  /**
+   * Удаление вопроса
+   */
+  static async deleteQuestion(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('targeted_questions')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting targeted question:', error);
+      throw error;
+    }
   }
 }
