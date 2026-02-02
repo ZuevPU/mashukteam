@@ -54,7 +54,10 @@ type ScreenView =
   | 'admin_assignment_form'
   | 'admin_assignment_submissions'
   | 'admin_leaderboard'
-  | 'admin_targeted_questions';
+  | 'admin_targeted_questions'
+  | 'admin_questions_list'
+  | 'admin_create_question'
+  | 'admin_review_answers';
 
 export function BentoMenuScreen() {
   const { initData, isReady, showAlert } = useTelegram();
@@ -274,7 +277,24 @@ export function BentoMenuScreen() {
     return <AdminLeaderboardScreen onBack={() => setView('admin_assignments')} />;
   }
   if (view === 'admin_targeted_questions') {
-    return <AdminTargetedQuestionsScreen onBack={() => setView('admin')} />;
+    return <AdminTargetedQuestionsScreen 
+      onBack={() => setView('admin')}
+      onCreateQuestion={() => setView('admin_create_question')}
+      onViewQuestions={() => setView('admin_questions_list')}
+      onReviewAnswers={() => setView('admin_review_answers')}
+    />;
+  }
+  if (view === 'admin_questions_list') {
+    return <AdminQuestionsListScreen onBack={() => setView('admin_targeted_questions')} />;
+  }
+  if (view === 'admin_create_question') {
+    return <AdminCreateQuestionScreen 
+      onBack={() => setView('admin_targeted_questions')} 
+      onSuccess={() => setView('admin_questions_list')} 
+    />;
+  }
+  if (view === 'admin_review_answers') {
+    return <AdminQuestionAnswersScreen onBack={() => setView('admin_targeted_questions')} />;
   }
 
   // === ГЛАВНОЕ МЕНЮ (BENTO) ===

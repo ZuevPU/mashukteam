@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { AssignmentService } from '../services/assignmentService';
 import { UserService } from '../services/supabase';
+import { ReflectionService } from '../services/reflectionService';
 import { notifyAssignmentResult, notifyNewAssignment } from '../utils/telegramBot';
 
 export class AssignmentController {
@@ -101,7 +102,7 @@ export class AssignmentController {
       // Получаем конкретный submission с user и assignment
       const { data: subData } = await require('../services/supabase').supabase
         .from('assignment_submissions')
-        .select('*, user:users(telegram_id), assignment:assignments(title, reward)')
+        .select('*, user:users(id, telegram_id), assignment:assignments(title, reward)')
         .eq('id', id)
         .single();
       
