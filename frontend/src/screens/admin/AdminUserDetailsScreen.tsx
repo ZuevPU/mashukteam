@@ -35,6 +35,12 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState('');
   const [selectedDirection, setSelectedDirection] = useState('');
+  
+  // Фильтры и поиск
+  const [answerTypeFilter, setAnswerTypeFilter] = useState<'all' | 'events' | 'diagnostics' | 'questions' | 'assignments'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const loadDetails = async () => {
     if (!initData) return;
@@ -97,6 +103,54 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
     return String(data);
   };
 
+  // Фильтрация и поиск ответов
+  const filterAnswers = (answers: any[], type: 'events' | 'diagnostics') => {
+    if (answerTypeFilter === 'all' || answerTypeFilter === type) {
+      if (!searchQuery) return answers;
+      const query = searchQuery.toLowerCase();
+      return answers.filter((answer: any) => {
+        const answerText = formatAnswer(answer.answer_data).toLowerCase();
+        const questionText = (answer.question?.text || answer.questions?.text || '').toLowerCase();
+        const eventTitle = (answer.event?.title || answer.events?.title || '').toLowerCase();
+        return answerText.includes(query) || questionText.includes(query) || eventTitle.includes(query);
+      });
+    }
+    return [];
+  };
+
+  const filterTargetedAnswers = (answers: TargetedAnswerWithQuestion[]) => {
+    if (answerTypeFilter === 'all' || answerTypeFilter === 'questions') {
+      if (!searchQuery) return answers;
+      const query = searchQuery.toLowerCase();
+      return answers.filter((answer) => {
+        const answerText = formatAnswer(answer.answer_data).toLowerCase();
+        const questionText = (answer.question?.text || '').toLowerCase();
+        return answerText.includes(query) || questionText.includes(query);
+      });
+    }
+    return [];
+  };
+
+  const filterSubmissions = (submissions: AssignmentSubmission[]) => {
+    if (answerTypeFilter === 'all' || answerTypeFilter === 'assignments') {
+      if (!searchQuery) return submissions;
+      const query = searchQuery.toLowerCase();
+      return submissions.filter((sub) => {
+        const content = (sub.content || '').toLowerCase();
+        return content.includes(query);
+      });
+    }
+    return [];
+  };
+
+  // Пагинация
+  const paginate = <T,>(items: T[]) => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return items.slice(startIndex, startIndex + itemsPerPage);
+  };
+
+  const getTotalPages = (items: any[]) => Math.ceil(items.length / itemsPerPage);
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved': return <span className="status-badge published">✓ Принято</span>;
@@ -109,10 +163,18 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
   if (loading) return <div className="loading">Загрузка...</div>;
   if (!user) return <div className="error">Пользователь не найден</div>;
 
-  const diagnosticAnswers = user.answers?.filter((a: any) => a.events?.type === 'diagnostic') || [];
-  const eventAnswers = user.answers?.filter((a: any) => a.events?.type !== 'diagnostic') || [];
-  const targetedAnswers = user.targetedAnswers || [];
-  const submissions = user.submissions || [];
+  // Получаем все ответы
+  const allAnswers = user.answers || [];
+  const allDiagnosticAnswers = allAnswers.filter((a: any) => a.events?.type === 'diagnostic');
+  const allEventAnswers = allAnswers.filter((a: any) => a.events?.type !== 'diagnostic');
+  const allTargetedAnswers = user.targetedAnswers || [];
+  const allSubmissions = user.submissions || [];
+
+  // Применяем фильтры
+  const diagnosticAnswers = filterAnswers(allDiagnosticAnswers, 'diagnostics');
+  const eventAnswers = filterAnswers(allEventAnswers, 'events');
+  const targetedAnswers = filterTargetedAnswers(allTargetedAnswers);
+  const submissions = filterSubmissions(allSubmissions);
 
   return (
     <div className="admin-screen">
@@ -178,11 +240,50 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
         </div>
       </div>
 
+      {/* Фильтры и поиск */}
+      <div className="settings-section" style={{marginBottom: 24}}>
+        <h4 style={{marginBottom: 12}}>Фильтры и поиск</h4>
+        <div className="form-group">
+          <label>Тип ответов:</label>
+          <select
+            value={answerTypeFilter}
+            onChange={(e) => {
+              setAnswerTypeFilter(e.target.value as any);
+              setCurrentPage(1);
+            }}
+          >
+            <option value="all">Все</option>
+            <option value="events">Мероприятия</option>
+            <option value="diagnostics">Диагностики</option>
+            <option value="questions">Вопросы</option>
+            <option value="assignments">Задания</option>
+          </select>
+        </div>
+        <div className="form-group">
+          <label>Поиск:</label>
+          <input
+            type="text"
+            placeholder="Поиск по тексту ответа..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
+          />
+        </div>
+      </div>
+
       {/* Выполненные задания */}
-      <h3 style={{marginBottom: 12}}>📋 Задания ({submissions.length})</h3>
-      <div className="admin-list" style={{marginBottom: 24}}>
-        {submissions.length > 0 ? (
-          submissions.map((sub: any) => (
+      {(() => {
+        const paginated = paginate(submissions);
+        const totalPages = getTotalPages(submissions);
+        
+        return (
+          <>
+            <h3 style={{marginBottom: 12}}>📋 Задания ({submissions.length})</h3>
+            <div className="admin-list" style={{marginBottom: 24}}>
+              {paginated.length > 0 ? (
+                paginated.map((sub: any) => (
             <div key={sub.id} className="admin-item-card block">
               <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: 8}}>
                 <span style={{fontWeight: 600}}>{sub.assignment?.title || 'Задание'}</span>
@@ -201,16 +302,48 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
               )}
             </div>
           ))
-        ) : (
-          <p className="no-data">Нет выполненных заданий</p>
-        )}
-      </div>
+                )) : (
+                  <p className="no-data">Нет выполненных заданий</p>
+                )}
+            </div>
+            {totalPages > 1 && (
+              <div style={{display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: 24}}>
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="create-btn"
+                  style={{padding: '8px 16px', fontSize: '14px'}}
+                >
+                  ←
+                </button>
+                <span style={{padding: '8px 16px', display: 'flex', alignItems: 'center'}}>
+                  Страница {currentPage} из {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="create-btn"
+                  style={{padding: '8px 16px', fontSize: '14px'}}
+                >
+                  →
+                </button>
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* Ответы на персональные вопросы */}
-      <h3 style={{marginBottom: 12}}>❓ Персональные вопросы ({targetedAnswers.length})</h3>
-      <div className="admin-list" style={{marginBottom: 24}}>
-        {targetedAnswers.length > 0 ? (
-          targetedAnswers.map((answer: TargetedAnswerWithQuestion) => (
+      {(() => {
+        const paginated = paginate(targetedAnswers);
+        const totalPages = getTotalPages(targetedAnswers);
+        
+        return (
+          <>
+            <h3 style={{marginBottom: 12}}>❓ Персональные вопросы ({targetedAnswers.length})</h3>
+            <div className="admin-list" style={{marginBottom: 24}}>
+              {paginated.length > 0 ? (
+                paginated.map((answer: TargetedAnswerWithQuestion) => (
             <div key={answer.id} className="admin-item-card block" style={{background: 'rgba(255, 149, 0, 0.1)'}}>
               <h4 style={{marginBottom: 8}}>{answer.question?.text || 'Вопрос'}</h4>
               <p className="answer-box">{formatAnswer(answer.answer_data)}</p>
@@ -219,16 +352,50 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
               </p>
             </div>
           ))
-        ) : (
-          <p className="no-data">Нет ответов</p>
-        )}
-      </div>
+                ))
+              ) : (
+                <p className="no-data">Нет ответов</p>
+              )}
+            </div>
+            {totalPages > 1 && (
+              <div style={{display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: 24}}>
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="create-btn"
+                  style={{padding: '8px 16px', fontSize: '14px'}}
+                >
+                  ←
+                </button>
+                <span style={{padding: '8px 16px', display: 'flex', alignItems: 'center'}}>
+                  Страница {currentPage} из {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="create-btn"
+                  style={{padding: '8px 16px', fontSize: '14px'}}
+                >
+                  →
+                </button>
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* Ответы на диагностику */}
-      <h3 style={{marginBottom: 12}}>🩺 Диагностика ({diagnosticAnswers.length})</h3>
-      <div className="admin-list" style={{marginBottom: 24}}>
-        {diagnosticAnswers.length > 0 ? (
-          diagnosticAnswers.map((answer: any) => (
+      {(() => {
+        const filtered = filterAnswers(diagnosticAnswers, 'diagnostics');
+        const paginated = paginate(filtered);
+        const totalPages = getTotalPages(filtered);
+        
+        return (
+          <>
+            <h3 style={{marginBottom: 12}}>🩺 Диагностика ({filtered.length})</h3>
+            <div className="admin-list" style={{marginBottom: 24}}>
+              {paginated.length > 0 ? (
+                paginated.map((answer: any) => (
             <div key={answer.id} className="admin-item-card block" style={{background: 'rgba(52, 199, 89, 0.1)'}}>
               <p style={{fontSize: 12, opacity: 0.7, marginBottom: 4}}>
                 {answer.events?.title}
@@ -237,16 +404,50 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
               <p className="answer-box">{formatAnswer(answer.answer_data)}</p>
             </div>
           ))
-        ) : (
-          <p className="no-data">Диагностика не пройдена</p>
-        )}
-      </div>
+                ))
+              ) : (
+                <p className="no-data">Диагностика не пройдена</p>
+              )}
+            </div>
+            {totalPages > 1 && (
+              <div style={{display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: 24}}>
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="create-btn"
+                  style={{padding: '8px 16px', fontSize: '14px'}}
+                >
+                  ←
+                </button>
+                <span style={{padding: '8px 16px', display: 'flex', alignItems: 'center'}}>
+                  Страница {currentPage} из {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="create-btn"
+                  style={{padding: '8px 16px', fontSize: '14px'}}
+                >
+                  →
+                </button>
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* Ответы на мероприятия */}
-      <h3 style={{marginBottom: 12}}>📅 Мероприятия ({eventAnswers.length})</h3>
-      <div className="admin-list">
-        {eventAnswers.length > 0 ? (
-          eventAnswers.map((answer: any) => (
+      {(() => {
+        const filtered = filterAnswers(eventAnswers, 'events');
+        const paginated = paginate(filtered);
+        const totalPages = getTotalPages(filtered);
+        
+        return (
+          <>
+            <h3 style={{marginBottom: 12}}>📅 Мероприятия ({filtered.length})</h3>
+            <div className="admin-list" style={{marginBottom: 24}}>
+              {paginated.length > 0 ? (
+                paginated.map((answer: any) => (
             <div key={answer.id} className="admin-item-card block">
               <p style={{fontSize: 12, opacity: 0.7, marginBottom: 4}}>
                 {new Date(answer.created_at).toLocaleDateString()} • {answer.events?.title}
@@ -255,10 +456,36 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
               <p className="answer-box">{formatAnswer(answer.answer_data)}</p>
             </div>
           ))
-        ) : (
-          <p className="no-data">Нет ответов</p>
-        )}
-      </div>
+                )) : (
+                  <p className="no-data">Нет ответов</p>
+                )}
+            </div>
+            {totalPages > 1 && (
+              <div style={{display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: 24}}>
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="create-btn"
+                  style={{padding: '8px 16px', fontSize: '14px'}}
+                >
+                  ←
+                </button>
+                <span style={{padding: '8px 16px', display: 'flex', alignItems: 'center'}}>
+                  Страница {currentPage} из {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="create-btn"
+                  style={{padding: '8px 16px', fontSize: '14px'}}
+                >
+                  →
+                </button>
+              </div>
+            )}
+          </>
+        );
+      })()}
     </div>
   );
 };

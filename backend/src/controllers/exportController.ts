@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { ExportService } from '../services/exportService';
 import { logger } from '../utils/logger';
+import { ExportFilters } from '../types';
 
 export class ExportController {
   /**
@@ -124,17 +125,34 @@ export class ExportController {
    */
   static async exportUsers(req: Request, res: Response) {
     try {
-      console.log('[ExportController] Starting export users...');
-      const excelBuffer = await ExportService.exportUsersFull();
+      logger.info('Starting export users');
+      
+      // Получаем фильтры из body запроса
+      const filters: ExportFilters = {
+        dateFrom: req.body.dateFrom,
+        dateTo: req.body.dateTo,
+        directionId: req.body.directionId,
+        userType: req.body.userType,
+        eventId: req.body.eventId,
+      };
+      
+      // Удаляем undefined значения
+      Object.keys(filters).forEach(key => {
+        if (filters[key as keyof ExportFilters] === undefined) {
+          delete filters[key as keyof ExportFilters];
+        }
+      });
+      
+      const excelBuffer = await ExportService.exportUsersFull(Object.keys(filters).length > 0 ? filters : undefined);
       
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', 'attachment; filename=users_export.xlsx');
       res.setHeader('Content-Length', excelBuffer.length);
       
-      console.log('[ExportController] Export users completed successfully');
+      logger.info('Export users completed successfully', { size: excelBuffer.length, filters });
       return res.send(excelBuffer);
     } catch (error: any) {
-      console.error('[ExportController] Export users error:', error);
+      logger.error('Export users error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ 
         error: 'Ошибка при экспорте пользователей',
         message: error.message || 'Неизвестная ошибка'

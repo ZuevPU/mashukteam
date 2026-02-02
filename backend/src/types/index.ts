@@ -82,6 +82,28 @@ export interface CreateTargetedQuestionDto {
 
 export type QuestionType = 'single' | 'multiple' | 'scale' | 'text';
 
+export interface UserPreferences {
+  id: string;
+  user_id: string;
+  theme: 'light' | 'dark' | 'auto';
+  notifications_enabled: boolean;
+  notification_events: boolean;
+  notification_questions: boolean;
+  notification_assignments: boolean;
+  notification_diagnostics: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UpdateUserPreferencesDto {
+  theme?: 'light' | 'dark' | 'auto';
+  notifications_enabled?: boolean;
+  notification_events?: boolean;
+  notification_questions?: boolean;
+  notification_assignments?: boolean;
+  notification_diagnostics?: boolean;
+}
+
 export interface Question {
   id: string;
   event_id: string;
@@ -246,6 +268,14 @@ export interface CreateDirectionDto {
   name: string;
   slug: string;
   description?: string;
+}
+
+export interface ExportFilters {
+  dateFrom?: string;
+  dateTo?: string;
+  directionId?: string;
+  userType?: string;
+  eventId?: string;
 }
 
 // === Assignments (Задания) ===

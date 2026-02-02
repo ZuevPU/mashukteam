@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { logger } from '../utils/logger';
+import { ExportFilters } from '../types';
 // Используем динамический импорт для xlsx
 let XLSX: any;
 try {
@@ -736,15 +737,30 @@ export class ExportService {
   /**
    * Экспорт пользователей с полной информацией
    */
-  static async exportUsersFull(): Promise<Buffer> {
-    // Получаем всех пользователей
-    const { data: users } = await supabase
+  static async exportUsersFull(filters?: ExportFilters): Promise<Buffer> {
+    // Строим запрос с фильтрами
+    let usersQuery = supabase
       .from('users')
       .select(`
         *,
         direction:directions(name, slug)
-      `)
-      .order('created_at', { ascending: false });
+      `);
+
+    // Применяем фильтры
+    if (filters?.directionId) {
+      usersQuery = usersQuery.eq('direction_id', filters.directionId);
+    }
+    if (filters?.userType) {
+      usersQuery = usersQuery.eq('user_type', filters.userType);
+    }
+    if (filters?.dateFrom) {
+      usersQuery = usersQuery.gte('created_at', filters.dateFrom);
+    }
+    if (filters?.dateTo) {
+      usersQuery = usersQuery.lte('created_at', filters.dateTo);
+    }
+
+    const { data: users } = await usersQuery.order('created_at', { ascending: false });
 
     if (!users || users.length === 0) {
       const workbook = XLSX.utils.book_new();
@@ -756,6 +772,7 @@ export class ExportService {
     const userIds = users.map(u => u.id);
 
     // Оптимизация: получаем все данные одним батчем для всех пользователей
+    // Применяем фильтры к запросам
     const [
       allAchievements,
       allUserLevels,
@@ -776,46 +793,82 @@ export class ExportService {
         .select('user_id, level, experience_points')
         .in('user_id', userIds),
       // Ответы на мероприятия/диагностики с детальной информацией
-      supabase
-        .from('answers')
-        .select(`
-          user_id,
-          event_id,
-          question_id,
-          answer_data,
-          created_at,
-          question:questions(text, type, order_index),
-          event:events(title, type, group_name)
-        `)
-        .in('user_id', userIds)
-        .order('created_at', { ascending: false }),
+      (() => {
+        let answersQuery = supabase
+          .from('answers')
+          .select(`
+            user_id,
+            event_id,
+            question_id,
+            answer_data,
+            created_at,
+            question:questions(text, type, order_index),
+            event:events(title, type, group_name)
+          `)
+          .in('user_id', userIds);
+        
+        // Применяем фильтры к ответам
+        if (filters?.dateFrom) {
+          answersQuery = answersQuery.gte('created_at', filters.dateFrom);
+        }
+        if (filters?.dateTo) {
+          answersQuery = answersQuery.lte('created_at', filters.dateTo);
+        }
+        if (filters?.eventId) {
+          answersQuery = answersQuery.eq('event_id', filters.eventId);
+        }
+        
+        return answersQuery.order('created_at', { ascending: false });
+      })(),
       // Выполненные задания с детальной информацией
-      supabase
-        .from('assignment_submissions')
-        .select(`
-          user_id,
-          assignment_id,
-          content,
-          status,
-          admin_comment,
-          created_at,
-          updated_at,
-          assignment:assignments(title, answer_format, reward)
-        `)
-        .in('user_id', userIds)
-        .order('created_at', { ascending: false }),
+      (() => {
+        let submissionsQuery = supabase
+          .from('assignment_submissions')
+          .select(`
+            user_id,
+            assignment_id,
+            content,
+            status,
+            admin_comment,
+            created_at,
+            updated_at,
+            assignment:assignments(title, answer_format, reward)
+          `)
+          .in('user_id', userIds);
+        
+        // Применяем фильтры к заданиям
+        if (filters?.dateFrom) {
+          submissionsQuery = submissionsQuery.gte('created_at', filters.dateFrom);
+        }
+        if (filters?.dateTo) {
+          submissionsQuery = submissionsQuery.lte('created_at', filters.dateTo);
+        }
+        
+        return submissionsQuery.order('created_at', { ascending: false });
+      })(),
       // Ответы на персональные вопросы с детальной информацией
-      supabase
-        .from('targeted_answers')
-        .select(`
-          user_id,
-          question_id,
-          answer_data,
-          created_at,
-          question:targeted_questions(text, type)
-        `)
-        .in('user_id', userIds)
-        .order('created_at', { ascending: false }),
+      (() => {
+        let targetedAnswersQuery = supabase
+          .from('targeted_answers')
+          .select(`
+            user_id,
+            question_id,
+            answer_data,
+            created_at,
+            question:targeted_questions(text, type)
+          `)
+          .in('user_id', userIds);
+        
+        // Применяем фильтры к персональным вопросам
+        if (filters?.dateFrom) {
+          targetedAnswersQuery = targetedAnswersQuery.gte('created_at', filters.dateFrom);
+        }
+        if (filters?.dateTo) {
+          targetedAnswersQuery = targetedAnswersQuery.lte('created_at', filters.dateTo);
+        }
+        
+        return targetedAnswersQuery.order('created_at', { ascending: false });
+      })(),
       // Транзакции баллов (для последних 5)
       supabase
         .from('points_transactions')

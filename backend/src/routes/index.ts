@@ -43,6 +43,8 @@ router.post('/user/my-answers', requireAuth, EventController.getMyAnswers);
 
 import { TargetedQuestionController } from '../controllers/targetedQuestionController';
 import { AssignmentController } from '../controllers/assignmentController';
+import { UserPreferencesController } from '../controllers/userPreferencesController';
+import { AnalyticsController } from '../controllers/analyticsController';
 
 // === User Types (public) ===
 router.get('/user-types', AssignmentController.getUserTypes);
@@ -52,6 +54,10 @@ router.get('/directions', DirectionController.getAllDirections);
 
 // === User Direction ===
 router.post('/user/direction', requireAuth, setUserDirection);
+
+// === User Preferences ===
+router.post('/user/preferences', requireAuth, UserPreferencesController.getPreferences);
+router.patch('/user/preferences', requireAuth, UserPreferencesController.updatePreferences);
 
 // === Targeted Questions ===
 router.post('/questions/my', requireAuth, TargetedQuestionController.getMyQuestions);
@@ -105,5 +111,11 @@ router.post('/admin/leaderboard', requireAuth, requireAdmin, AssignmentControlle
 router.post('/assignments/my', requireAuth, AssignmentController.getMyAssignments);
 router.post('/assignments/:id/submit', requireAuth, AssignmentController.submitAssignment);
 router.post('/assignments/submissions', requireAuth, AssignmentController.getMySubmissions);
+
+// === Admin Analytics ===
+router.post('/admin/analytics/user-activity', requireAuth, requireAdmin, AnalyticsController.getUserActivity);
+router.post('/admin/analytics/directions', requireAuth, requireAdmin, AnalyticsController.getDirectionStats);
+router.post('/admin/analytics/events', requireAuth, requireAdmin, AnalyticsController.getEventStats);
+router.post('/admin/analytics/questions', requireAuth, requireAdmin, AnalyticsController.getQuestionStats);
 
 export default router;

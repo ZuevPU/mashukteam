@@ -10,10 +10,12 @@ interface AdminDashboardProps {
   onManageAssignments: () => void;
   onManageQuestions: () => void;
   onManageUsers: () => void;
+  onExportClick?: () => void;
+  onAnalyticsClick?: () => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ 
-  onBack, onManageEvents, onManageDiagnostics, onManageAssignments, onManageQuestions, onManageUsers 
+  onBack, onManageEvents, onManageDiagnostics, onManageAssignments, onManageQuestions, onManageUsers, onExportClick, onAnalyticsClick
 }) => {
   const { initData, showAlert } = useTelegram();
   const [exporting, setExporting] = useState<string | null>(null);
@@ -119,6 +121,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
           <span>→</span>
         </div>
+
+        {onExportClick && (
+          <div className="admin-item-card" onClick={onExportClick} style={{cursor: 'pointer'}}>
+            <div className="item-info">
+              <h4>📊 Экспорт с фильтрами</h4>
+              <p>Экспорт данных с применением фильтров</p>
+            </div>
+            <span>→</span>
+          </div>
+        )}
+
+        {onAnalyticsClick && (
+          <div className="admin-item-card" onClick={onAnalyticsClick} style={{cursor: 'pointer'}}>
+            <div className="item-info">
+              <h4>📈 Аналитика</h4>
+              <p>Статистика и аналитика по пользователям и активности</p>
+            </div>
+            <span>→</span>
+          </div>
+        )}
       </div>
 
       <div className="admin-section-divider">

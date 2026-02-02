@@ -1,6 +1,4 @@
-// Типы для Frontend
-
-export type QuestionType = 'single' | 'multiple' | 'scale' | 'text';
+// Типы для работы с Telegram Mini App
 
 export interface User {
   id: string;
@@ -21,6 +19,28 @@ export interface User {
   updated_at: string;
 }
 
+export interface UserPreferences {
+  id: string;
+  user_id: string;
+  theme: 'light' | 'dark' | 'auto';
+  notifications_enabled: boolean;
+  notification_events: boolean;
+  notification_questions: boolean;
+  notification_assignments: boolean;
+  notification_diagnostics: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UpdateUserPreferencesDto {
+  theme?: 'light' | 'dark' | 'auto';
+  notifications_enabled?: boolean;
+  notification_events?: boolean;
+  notification_questions?: boolean;
+  notification_assignments?: boolean;
+  notification_diagnostics?: boolean;
+}
+
 export interface Event {
   id: string;
   title: string;
@@ -30,32 +50,12 @@ export interface Event {
   event_date?: string;
   event_time?: string;
   status: 'draft' | 'published' | 'completed';
-  type: 'event' | 'diagnostic';
+  type: 'event' | 'diagnostic'; // Тип события
   group_name?: string; // Название группы (например, "День 1")
   group_order?: number; // Порядок группы для сортировки
   event_order?: number; // Порядок мероприятия внутри группы
   created_at: string;
-}
-
-export interface Question {
-  id: string;
-  event_id: string;
-  text: string;
-  type: QuestionType;
-  options?: string[];
-  char_limit?: number;
-  order_index?: number;
-}
-
-export interface Answer {
-  id: string;
-  user_id: string;
-  event_id: string;
-  question_id: string;
-  answer_data: any;
-  created_at: string;
-  questions?: Question;
-  events?: Event;
+  updated_at: string;
 }
 
 export interface TargetedQuestion {
@@ -78,125 +78,44 @@ export interface TargetedAnswer {
   created_at: string;
 }
 
-// DTOs
-
-export interface RegistrationData {
-  first_name: string;
-  last_name: string;
-  middle_name?: string;
-  motivation: string;
-}
-
-export interface CreateEventRequest {
-  title: string;
-  speaker?: string;
-  description?: string;
-  audience?: string;
-  event_date?: string;
-  event_time?: string;
-  type?: 'event' | 'diagnostic';
-  status?: 'draft' | 'published' | 'completed';
-  group_name?: string;
-  group_order?: number;
-  event_order?: number;
-}
-
-export interface CreateQuestionRequest {
-  text: string;
-  type: QuestionType;
-  options?: string[];
-  char_limit?: number;
-}
-
-export interface CreateTargetedQuestionRequest {
+export interface CreateTargetedQuestionDto {
   text: string;
   type: QuestionType;
   options?: string[];
   char_limit?: number;
   target_audience: 'all' | 'by_type' | 'individual';
   target_values?: string[];
-  status?: 'draft' | 'published' | 'archived';
 }
 
-// Gamification Types
+export type QuestionType = 'single' | 'multiple' | 'scale' | 'text';
 
-export interface PointsTransaction {
+export interface Question {
+  id: string;
+  event_id: string;
+  text: string;
+  type: QuestionType;
+  options?: string[]; // JSON array of strings
+  char_limit?: number;
+  created_at: string;
+  order_index?: number;
+}
+
+export interface Answer {
   id: string;
   user_id: string;
-  points: number;
-  reason: string | null;
+  event_id: string;
+  question_id: string;
+  answer_data: any;
   created_at: string;
 }
-
-export interface Achievement {
-  id: string;
-  name: string;
-  description: string | null;
-  icon_url: string | null;
-  points_reward: number;
-  created_at: string;
-  unlocked_at?: string;
-}
-
-export interface UserAchievement {
-  id: string;
-  user_id: string;
-  achievement_id: string;
-  unlocked_at: string;
-  achievement?: Achievement;
-}
-
-export interface UserStats {
-  user_id: string;
-  total_points: number;
-  current_level: number;
-  experience_points: number;
-  experience_to_next_level: number;
-  achievements_count: number;
-  recent_achievements: Achievement[];
-  recent_points_transactions: PointsTransaction[];
-  reflection_level?: number;
-  reflection_points?: number;
-  reflection_to_next_level?: number;
-}
-
-export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  user?: Partial<User>;
-}
-
-// === Directions (Направления) ===
-
-export interface Direction {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-// === Assignments (Задания) ===
-
-export interface UserType {
-  id: number;
-  name: string;
-  slug: string;
-}
-
-export type AssignmentFormat = 'text' | 'number' | 'link';
-export type AssignmentTargetType = 'all' | 'user_type' | 'individual';
-export type SubmissionStatus = 'pending' | 'approved' | 'rejected';
 
 export interface Assignment {
   id: string;
   title: string;
   description?: string;
-  answer_format: AssignmentFormat;
+  answer_format: 'text' | 'number' | 'link';
   reward: number;
-  target_type: AssignmentTargetType;
+  target_type: 'all' | 'user_type' | 'individual';
   target_values?: string[];
   status: 'draft' | 'published';
   created_at: string;
@@ -207,19 +126,36 @@ export interface AssignmentSubmission {
   user_id: string;
   assignment_id: string;
   content: string;
-  status: SubmissionStatus;
+  status: 'pending' | 'approved' | 'rejected';
   admin_comment?: string;
   created_at: string;
   updated_at: string;
-  user?: User;
-  assignment?: Assignment;
 }
 
-export interface CreateAssignmentRequest {
-  title: string;
+export interface UserType {
+  id: number;
+  name: string;
+  slug: string;
+  created_at: string;
+}
+
+export interface Direction {
+  id: string;
+  name: string;
+  slug: string;
   description?: string;
-  answer_format: AssignmentFormat;
-  reward: number;
-  target_type: AssignmentTargetType;
-  target_values?: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserStats {
+  user_id: string;
+  total_points: number;
+  current_level: number;
+  experience_points: number;
+  experience_to_next_level: number;
+  achievements_count: number;
+  reflection_level?: number;
+  reflection_points?: number;
+  reflection_to_next_level?: number;
 }

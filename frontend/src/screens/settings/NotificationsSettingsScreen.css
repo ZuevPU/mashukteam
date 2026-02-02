@@ -1,0 +1,115 @@
+.notifications-settings-screen {
+  padding: 16px;
+  background: var(--color-bg-primary, #F8F8F7);
+  color: var(--color-text-primary, #2C2B2B);
+  min-height: 100vh;
+  padding-bottom: 40px;
+}
+
+.settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.settings-section {
+  background: var(--color-bg-card, #FFFFFF);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid var(--color-border, #35A2A8);
+}
+
+.settings-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary, #2C2B2B);
+}
+
+.toggle-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-border, #35A2A8);
+}
+
+.toggle-item:last-child {
+  border-bottom: none;
+}
+
+.toggle-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.toggle-label {
+  font-weight: 500;
+  font-size: 16px;
+  color: var(--color-text-primary, #2C2B2B);
+}
+
+.toggle-description {
+  font-size: 12px;
+  color: var(--color-text-secondary, #666);
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.3s;
+  border-radius: 28px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: var(--color-primary, #3E529B);
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(22px);
+}
+
+input:disabled + .toggle-slider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--color-text-primary, #2C2B2B);
+}

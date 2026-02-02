@@ -27,10 +27,16 @@ import { AdminTargetedQuestionsScreen } from './admin/AdminTargetedQuestionsScre
 import { AdminQuestionsListScreen } from './admin/AdminQuestionsListScreen';
 import { AdminCreateQuestionScreen } from './admin/AdminCreateQuestionScreen';
 import { AdminQuestionAnswersScreen } from './admin/AdminQuestionAnswersScreen';
+import { AdminExportScreen } from './admin/AdminExportScreen';
+import { AdminAnalyticsScreen } from './admin/AdminAnalyticsScreen';
 import { TargetedQuestionsListScreen } from './TargetedQuestionsListScreen';
 import { AssignmentsListScreen } from './assignments/AssignmentsListScreen';
 import { AssignmentSubmitScreen } from './assignments/AssignmentSubmitScreen';
 import { DirectionSelectionScreen } from './DirectionSelectionScreen';
+import { SettingsScreen } from './settings/SettingsScreen';
+import { NotificationsSettingsScreen } from './settings/NotificationsSettingsScreen';
+import { ThemeSettingsScreen } from './settings/ThemeSettingsScreen';
+import { SettingsCard } from '../components/bento/SettingsCard';
 import './BentoMenuScreen.css';
 
 type ScreenView = 
@@ -57,7 +63,12 @@ type ScreenView =
   | 'admin_targeted_questions'
   | 'admin_questions_list'
   | 'admin_create_question'
-  | 'admin_review_answers';
+  | 'admin_review_answers'
+  | 'admin_export'
+  | 'admin_analytics'
+  | 'settings'
+  | 'settings_notifications'
+  | 'settings_theme';
 
 export function BentoMenuScreen() {
   const { initData, isReady, showAlert } = useTelegram();
@@ -246,7 +257,9 @@ export function BentoMenuScreen() {
 
   // Админская часть
   if (view === 'admin') {
-    return <AdminDashboard 
+    return <AdminDashboard
+      onExportClick={() => setView('admin_export')}
+      onAnalyticsClick={() => setView('admin_analytics')}
       onBack={() => setView('menu')} 
       onManageEvents={() => setView('admin_events')}
       onManageDiagnostics={() => setView('admin_diagnostics')}
@@ -373,6 +386,27 @@ export function BentoMenuScreen() {
   if (view === 'admin_review_answers') {
     return <AdminQuestionAnswersScreen onBack={() => setView('admin_targeted_questions')} />;
   }
+  if (view === 'admin_export') {
+    return <AdminExportScreen onBack={() => setView('admin')} />;
+  }
+
+  // === НАСТРОЙКИ ===
+  if (view === 'settings') {
+    return user ? (
+      <SettingsScreen
+        user={user}
+        onBack={() => setView('menu')}
+        onNotificationsClick={() => setView('settings_notifications')}
+        onThemeClick={() => setView('settings_theme')}
+      />
+    ) : null;
+  }
+  if (view === 'settings_notifications') {
+    return <NotificationsSettingsScreen onBack={() => setView('settings')} />;
+  }
+  if (view === 'settings_theme') {
+    return <ThemeSettingsScreen onBack={() => setView('settings')} />;
+  }
 
   // === ГЛАВНОЕ МЕНЮ (BENTO) ===
 
@@ -422,6 +456,19 @@ export function BentoMenuScreen() {
       size: '2x1',
     });
   }
+
+  // 6. Настройки
+  bentoItems.push({
+    id: 'settings',
+    content: (
+      <SettingsCard
+        onGeneralClick={() => setView('settings')}
+        onNotificationsClick={() => setView('settings_notifications')}
+        onThemeClick={() => setView('settings_theme')}
+      />
+    ),
+    size: '1x1',
+  });
 
   // Кнопка админки (внизу)
   if (user?.is_admin === 1) {
