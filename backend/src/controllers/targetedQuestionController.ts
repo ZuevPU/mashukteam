@@ -79,8 +79,15 @@ export class TargetedQuestionController {
     try {
       const { initData, sendNotification, ...data } = req.body;
       
+      // #region agent log
+      try{const fs=require('fs');const path=require('path');const logPath=path.join(process.cwd(),'.cursor','debug.log');const logEntry={id:`log_${Date.now()}_${Math.random().toString(36).substr(2,9)}`,timestamp:Date.now(),location:'targetedQuestionController.ts:78',message:'createQuestion entry',data:{type:data.type,hasOptions:!!data.options,optionsLength:data.options?.length,targetAudience:data.target_audience,hasTargetValues:!!data.target_values,targetValuesLength:data.target_values?.length,reflectionPoints:data.reflection_points,status:data.status},sessionId:'debug-session',runId:'run1',hypothesisId:'A'};fs.appendFileSync(logPath,JSON.stringify(logEntry)+'\n');}catch(e){}
+      // #endregion
+      
       // Валидация обязательных полей
       if (!data.text || !data.type || !data.target_audience) {
+        // #region agent log
+        try{const fs=require('fs');const path=require('path');const logPath=path.join(process.cwd(),'.cursor','debug.log');const logEntry={id:`log_${Date.now()}_${Math.random().toString(36).substr(2,9)}`,timestamp:Date.now(),location:'targetedQuestionController.ts:84',message:'validation failed',data:{hasText:!!data.text,hasType:!!data.type,hasTargetAudience:!!data.target_audience},sessionId:'debug-session',runId:'run1',hypothesisId:'B'};fs.appendFileSync(logPath,JSON.stringify(logEntry)+'\n');}catch(e){}
+        // #endregion
         return res.status(400).json({ error: 'Необходимы поля: text, type, target_audience' });
       }
 
@@ -95,6 +102,10 @@ export class TargetedQuestionController {
         reflection_points: data.reflection_points,
         status: data.status,
       };
+
+      // #region agent log
+      try{const fs=require('fs');const path=require('path');const logPath=path.join(process.cwd(),'.cursor','debug.log');const logEntry={id:`log_${Date.now()}_${Math.random().toString(36).substr(2,9)}`,timestamp:Date.now(),location:'targetedQuestionController.ts:99',message:'before service call',data:{cleanDataType:cleanData.type,cleanDataOptions:cleanData.options,cleanDataTargetValues:cleanData.target_values,cleanDataReflectionPoints:cleanData.reflection_points,cleanDataStatus:cleanData.status},sessionId:'debug-session',runId:'run1',hypothesisId:'A'};fs.appendFileSync(logPath,JSON.stringify(logEntry)+'\n');}catch(e){}
+      // #endregion
 
       const question = await TargetedQuestionService.createQuestion(cleanData);
       
@@ -126,8 +137,14 @@ export class TargetedQuestionController {
         }
       }
       
+      // #region agent log
+      try{const fs=require('fs');const path=require('path');const logPath=path.join(process.cwd(),'.cursor','debug.log');const logEntry={id:`log_${Date.now()}_${Math.random().toString(36).substr(2,9)}`,timestamp:Date.now(),location:'targetedQuestionController.ts:110',message:'createQuestion success',data:{questionId:question?.id,questionType:question?.type},sessionId:'debug-session',runId:'run1',hypothesisId:'A'};fs.appendFileSync(logPath,JSON.stringify(logEntry)+'\n');}catch(e){}
+      // #endregion
       return res.status(201).json({ success: true, question });
     } catch (error) {
+      // #region agent log
+      try{const fs=require('fs');const path=require('path');const logPath=path.join(process.cwd(),'.cursor','debug.log');const logEntry={id:`log_${Date.now()}_${Math.random().toString(36).substr(2,9)}`,timestamp:Date.now(),location:'targetedQuestionController.ts:113',message:'createQuestion error',data:{errorMessage:error instanceof Error ? error.message : String(error),errorStack:error instanceof Error ? error.stack : undefined},sessionId:'debug-session',runId:'run1',hypothesisId:'A'};fs.appendFileSync(logPath,JSON.stringify(logEntry)+'\n');}catch(e){}
+      // #endregion
       logger.error('Create targeted question error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при создании вопроса' });
     }

@@ -1,11 +1,16 @@
 import { supabase } from './supabase';
 import { TargetedQuestion, CreateTargetedQuestionDto, TargetedAnswer } from '../types';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export class TargetedQuestionService {
   /**
    * Создание вопроса
    */
   static async createQuestion(data: CreateTargetedQuestionDto): Promise<TargetedQuestion> {
+    // #region agent log
+    try{const logPath=path.join(process.cwd(),'.cursor','debug.log');const logEntry={id:`log_${Date.now()}_${Math.random().toString(36).substr(2,9)}`,timestamp:Date.now(),location:'targetedQuestionService.ts:8',message:'createQuestion entry',data:{type:data.type,hasOptions:!!data.options,optionsLength:data.options?.length,targetAudience:data.target_audience,hasTargetValues:!!data.target_values,targetValuesLength:data.target_values?.length,reflectionPoints:data.reflection_points},sessionId:'debug-session',runId:'run1',hypothesisId:'A'};fs.appendFileSync(logPath,JSON.stringify(logEntry)+'\n');}catch(e){}
+    // #endregion
     // Подготавливаем данные для вставки
     const insertData: any = {
       text: data.text,
@@ -32,6 +37,10 @@ export class TargetedQuestionService {
       insertData.target_values = null;
     }
 
+    // #region agent log
+    try{const logPath=path.join(process.cwd(),'.cursor','debug.log');const logEntry={id:`log_${Date.now()}_${Math.random().toString(36).substr(2,9)}`,timestamp:Date.now(),location:'targetedQuestionService.ts:35',message:'before insert',data:{insertDataType:insertData.type,insertDataOptions:insertData.options,insertDataTargetValues:insertData.target_values,insertDataReflectionPoints:insertData.reflection_points,insertDataStatus:insertData.status},sessionId:'debug-session',runId:'run1',hypothesisId:'A'};fs.appendFileSync(logPath,JSON.stringify(logEntry)+'\n');}catch(e){}
+    // #endregion
+
     const { data: question, error } = await supabase
       .from('targeted_questions')
       .insert(insertData)
@@ -39,9 +48,16 @@ export class TargetedQuestionService {
       .single();
 
     if (error) {
+      // #region agent log
+      try{const logPath=path.join(process.cwd(),'.cursor','debug.log');const logEntry={id:`log_${Date.now()}_${Math.random().toString(36).substr(2,9)}`,timestamp:Date.now(),location:'targetedQuestionService.ts:42',message:'insert error',data:{errorCode:error.code,errorMessage:error.message,errorDetails:error.details,errorHint:error.hint,insertDataType:insertData.type},sessionId:'debug-session',runId:'run1',hypothesisId:'A'};fs.appendFileSync(logPath,JSON.stringify(logEntry)+'\n');}catch(e){}
+      // #endregion
       console.error('Error creating targeted question:', error);
       throw error;
     }
+
+    // #region agent log
+    try{const logPath=path.join(process.cwd(),'.cursor','debug.log');const logEntry={id:`log_${Date.now()}_${Math.random().toString(36).substr(2,9)}`,timestamp:Date.now(),location:'targetedQuestionService.ts:46',message:'createQuestion success',data:{questionId:question?.id,questionType:question?.type},sessionId:'debug-session',runId:'run1',hypothesisId:'A'};fs.appendFileSync(logPath,JSON.stringify(logEntry)+'\n');}catch(e){}
+    // #endregion
 
     return question as TargetedQuestion;
   }

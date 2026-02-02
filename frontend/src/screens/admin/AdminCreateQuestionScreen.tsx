@@ -150,6 +150,9 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
         await adminApi.updateTargetedQuestion(editingQuestion.id, dataToSend, initData);
         showAlert('Вопрос обновлен!');
       } else {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/6ee1941a-785a-4be3-ad48-7432e5d314b9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AdminCreateQuestionScreen.tsx:153',message:'before createTargetedQuestion',data:{type:dataToSend.type,hasOptions:!!dataToSend.options,optionsLength:dataToSend.options?.length,targetAudience:dataToSend.target_audience,hasTargetValues:!!dataToSend.target_values,targetValuesLength:dataToSend.target_values?.length,reflectionPoints:dataToSend.reflection_points,status:'published'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
         const createdQuestion = await adminApi.createTargetedQuestion({ 
           ...dataToSend, 
           status: 'published', 
