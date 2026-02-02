@@ -1,5 +1,6 @@
 import { UserService } from '../services/supabase';
 import { UserPreferencesService, UserPreferences } from '../services/userPreferencesService';
+import { NotificationService } from '../services/notificationService';
 import { logger } from './logger';
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -79,7 +80,10 @@ export async function sendMessageToUser(
   telegramId: number, 
   text: string, 
   includeAppLink: boolean = true,
-  deepLink?: string
+  deepLink?: string,
+  userId?: string,
+  notificationType?: 'event' | 'question' | 'assignment' | 'diagnostic' | 'achievement' | 'randomizer' | 'assignment_result',
+  notificationTitle?: string
 ) {
   if (!BOT_TOKEN) {
     logger.warn('TELEGRAM_BOT_TOKEN не установлен, уведомление не отправлено');
@@ -138,6 +142,23 @@ export async function sendMessageToUser(
     }
     
     logger.debug('Telegram message sent successfully', { telegramId });
+    
+    // Сохраняем уведомление в БД, если передан userId
+    if (userId && notificationType && notificationTitle) {
+      try {
+        await NotificationService.createNotification(
+          userId,
+          notificationType,
+          notificationTitle,
+          text,
+          deepLink
+        );
+      } catch (notifError) {
+        logger.error('Error saving notification to DB', notifError instanceof Error ? notifError : new Error(String(notifError)));
+        // Не прерываем выполнение, если ошибка сохранения уведомления
+      }
+    }
+    
     return true;
   } catch (error) {
     logger.error('Error sending telegram message', error instanceof Error ? error : new Error(String(error)));
@@ -149,7 +170,7 @@ export async function sendMessageToUser(
  * Параллельная отправка уведомлений с ограничением concurrency
  */
 async function sendNotificationsBatch(
-  notifications: Array<{ telegramId: number; text: string; deepLink?: string }>,
+  notifications: Array<{ telegramId: number; text: string; deepLink?: string; userId?: string; type?: 'event' | 'question' | 'assignment' | 'diagnostic' | 'achievement' | 'randomizer' | 'assignment_result'; title?: string }>,
   concurrency: number = 10
 ): Promise<{ success: number; failed: number }> {
   const results = { success: 0, failed: 0 };
@@ -157,7 +178,7 @@ async function sendNotificationsBatch(
   for (let i = 0; i < notifications.length; i += concurrency) {
     const batch = notifications.slice(i, i + concurrency);
     const promises = batch.map(notif => 
-      sendMessageToUser(notif.telegramId, notif.text, true, notif.deepLink)
+      sendMessageToUser(notif.telegramId, notif.text, true, notif.deepLink, notif.userId, notif.type, notif.title)
         .then((success) => { 
           if (success) {
             results.success++; 
@@ -320,7 +341,15 @@ export async function notifyAchievementUnlocked(
   const text = `🏆 <b>Новое достижение!</b>\n\n${achievementName}\n\nПоздравляем!`;
   const deepLink = buildAppLink('question', achievementId); // Используем question как тип для deep link
   
-  return await sendMessageToUser(telegramId, text, true, deepLink);
+  return await sendMessageToUser(
+    telegramId, 
+    text, 
+    true, 
+    deepLink, 
+    userId, 
+    'achievement',
+    'Новое достижение'
+  );
 }
 
 /**
@@ -341,7 +370,15 @@ export async function notifyRandomizerDistribution(
   
   const text = `🎲 <b>Подведены итоги распределения!</b>\n\nТема: ${randomizerTopic}\n\nВаш стол: <b>№${tableNumber}</b>\n\nУдачи!`;
   
-  return await sendMessageToUser(telegramId, text, true);
+  return await sendMessageToUser(
+    telegramId, 
+    text, 
+    true, 
+    undefined, 
+    userId, 
+    'randomizer',
+    'Распределение по столам'
+  );
 }
 
 /**
@@ -380,7 +417,10 @@ export async function notifyTargetedQuestionToUsers(
         notifications.push({
           telegramId: user.telegram_id,
           text,
-          deepLink
+          deepLink,
+          userId: user.id,
+          type: 'question' as const,
+          title: 'Анонс нового вопроса'
         });
       }
     }
@@ -420,7 +460,7 @@ export async function notifyNewEvent(
 ) {
   const text = `📅 <b>Анонс нового мероприятия</b>\n\n${eventTitle}`;
   const deepLink = buildAppLink('event', eventId);
-  await broadcastMessage(text, deepLink);
+  await broadcastMessage(text, deepLink, 'events');
 }
 
 /**

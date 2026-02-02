@@ -280,7 +280,7 @@ export const AdminAnalyticsScreen: React.FC<AdminAnalyticsScreenProps> = ({ onBa
                     const totalUsers = directionStats.reduce((sum, s) => sum + s.userCount, 0);
                     const userPercent = totalUsers > 0 ? (stat.userCount / totalUsers) * 100 : 0;
                     return (
-                      <div key={stat.directionId} className="admin-item-card block" style={{ marginBottom: '12px' }}>
+                      <div key={stat.directionCode} className="admin-item-card block" style={{ marginBottom: '12px' }}>
                         <h4 style={{ marginBottom: '12px' }}>{stat.directionName}</h4>
                         <div className="analytics-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))' }}>
                           <MetricCard

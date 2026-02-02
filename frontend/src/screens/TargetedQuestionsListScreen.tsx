@@ -12,7 +12,8 @@ interface TargetedQuestionsListScreenProps {
 
 export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenProps> = ({ onBack }) => {
   const { initData, showAlert } = useTelegram();
-  const [questions, setQuestions] = useState<TargetedQuestion[]>([]);
+  const [activeQuestions, setActiveQuestions] = useState<TargetedQuestion[]>([]);
+  const [answeredQuestions, setAnsweredQuestions] = useState<TargetedQuestion[]>([]);
   const [answers, setAnswers] = useState<TargetedAnswer[]>([]);
   const [randomizers, setRandomizers] = useState<Record<string, string>>({}); // question_id -> randomizer_id
   const [loading, setLoading] = useState(true);
@@ -27,15 +28,18 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
       try {
         const response = await fetchApiWithAuth<{ 
           success: boolean; 
-          questions: TargetedQuestion[]; 
+          activeQuestions: TargetedQuestion[]; 
+          answeredQuestions: TargetedQuestion[];
           answers: TargetedAnswer[] 
         }>('/questions/my', initData);
         
-        setQuestions(response.questions || []);
+        setActiveQuestions(response.activeQuestions || []);
+        setAnsweredQuestions(response.answeredQuestions || []);
         setAnswers(response.answers || []);
         
         // Загружаем данные рандомайзеров для вопросов типа randomizer
-        const randomizerQuestions = (response.questions || []).filter(q => q.type === 'randomizer');
+        const allQuestions = [...(response.activeQuestions || []), ...(response.answeredQuestions || [])];
+        const randomizerQuestions = allQuestions.filter(q => q.type === 'randomizer');
         const randomizerMap: Record<string, string> = {};
         
         for (const q of randomizerQuestions) {
@@ -86,6 +90,12 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
         }
       );
       setAnswers(prev => [...prev, response.answer]);
+      // Удаляем вопрос из активных и добавляем в архивные
+      const answeredQuestion = activeQuestions.find(q => q.id === questionId);
+      if (answeredQuestion) {
+        setActiveQuestions(prev => prev.filter(q => q.id !== questionId));
+        setAnsweredQuestions(prev => [...prev, answeredQuestion]);
+      }
       showAlert('Ответ отправлен!');
     } catch (error) {
       console.error('Error submitting answer:', error);
@@ -227,10 +237,10 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
         </>
       )}
 
-      {/* Отвеченные вопросы */}
+      {/* Архив ответов */}
       {answeredQuestions.length > 0 && (
         <>
-          <h4 className="section-title" style={{marginTop: 24}}>Мои ответы ({answeredQuestions.length})</h4>
+          <h4 className="section-title" style={{marginTop: 24}}>Мои ответы / Архив ({answeredQuestions.length})</h4>
           <div className="questions-list">
             {answeredQuestions.map((q) => {
               const answer = answers.find(a => a.question_id === q.id);
@@ -241,6 +251,9 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
                     <span className="check-icon">✓</span>
                     <span>{formatAnswer(answer?.answer_data)}</span>
                   </div>
+                  <p className="answer-date" style={{fontSize: 12, opacity: 0.6, marginTop: 8}}>
+                    {answer?.created_at ? new Date(answer.created_at).toLocaleDateString('ru-RU') : ''}
+                  </p>
                 </div>
               );
             })}
@@ -248,10 +261,10 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
         </>
       )}
 
-      {questions.length === 0 && (
+      {activeQuestions.length === 0 && answeredQuestions.length === 0 && (
         <div className="empty-state">
           <span className="empty-icon">📭</span>
-          <p>У вас пока нет персональных вопросов</p>
+          <p>У вас пока нет вопросов</p>
         </div>
       )}
     </div>

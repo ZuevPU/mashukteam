@@ -149,4 +149,60 @@ export const randomizerApi = {
     );
     return response.distributions;
   },
+
+  /**
+   * Создание предпросмотра распределения (админ)
+   */
+  createPreview: async (initData: string, randomizerId: string): Promise<RandomizerDistribution[]> => {
+    const response = await fetchApi<{ success: boolean; distributions: RandomizerDistribution[] }>(
+      '/admin/randomizer/preview',
+      {
+        method: 'POST',
+        body: JSON.stringify({ initData, randomizer_id: randomizerId }),
+      }
+    );
+    return response.distributions;
+  },
+
+  /**
+   * Получение предпросмотра распределения (админ)
+   */
+  getPreview: async (initData: string, randomizerId: string): Promise<RandomizerDistribution[]> => {
+    const response = await fetchApi<{ success: boolean; distributions: RandomizerDistribution[] }>(
+      `/admin/randomizer/${randomizerId}/preview`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ initData }),
+      }
+    );
+    return response.distributions;
+  },
+
+  /**
+   * Изменение стола участника в предпросмотре (админ)
+   */
+  updateDistribution: async (initData: string, randomizerId: string, userId: string, tableNumber: number): Promise<RandomizerDistribution> => {
+    const response = await fetchApi<{ success: boolean; distribution: RandomizerDistribution }>(
+      `/admin/randomizer/${randomizerId}/distribution`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({ initData, user_id: userId, table_number: tableNumber }),
+      }
+    );
+    return response.distribution;
+  },
+
+  /**
+   * Публикация финального распределения (админ)
+   */
+  publishDistribution: async (initData: string, randomizerId: string): Promise<RandomizerDistribution[]> => {
+    const response = await fetchApi<{ success: boolean; distributions: RandomizerDistribution[] }>(
+      `/admin/randomizer/${randomizerId}/publish`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ initData }),
+      }
+    );
+    return response.distributions;
+  },
 };

@@ -4,22 +4,30 @@ import { ReflectionAction } from '../types';
 export class ReflectionService {
   /**
    * Начисление баллов рефлексии за действие
+   * Для targeted_answer используется только additionalPoints (reflection_points из вопроса)
+   * Для остальных типов действий - фиксированные значения (но они больше не используются)
    */
   static async addReflectionPoints(
     userId: string,
     actionType: 'event_answer' | 'diagnostic_answer' | 'targeted_answer' | 'assignment_completed',
     additionalPoints: number = 0
   ): Promise<void> {
-    // Определяем количество баллов в зависимости от типа действия
-    const pointsMap: Record<string, number> = {
-      'event_answer': 2,
-      'diagnostic_answer': 3,
-      'targeted_answer': 1,
-      'assignment_completed': 5
-    };
-
-    const basePoints = pointsMap[actionType] || 0;
-    const points = basePoints + additionalPoints;
+    // Для targeted_answer используем только additionalPoints (reflection_points из вопроса)
+    // Для остальных типов - фиксированные значения (но они больше не используются в новой логике)
+    let points: number;
+    if (actionType === 'targeted_answer') {
+      points = additionalPoints > 0 ? additionalPoints : 1; // По умолчанию 1, если не указано
+    } else {
+      // Старая логика (больше не используется, но оставляем для обратной совместимости)
+      const pointsMap: Record<string, number> = {
+        'event_answer': 2,
+        'diagnostic_answer': 3,
+        'assignment_completed': 5
+      };
+      const basePoints = pointsMap[actionType] || 0;
+      points = basePoints + additionalPoints;
+    }
+    
     if (points === 0) return;
 
     // Получаем текущие баллы пользователя

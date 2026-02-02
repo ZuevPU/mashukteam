@@ -10,11 +10,10 @@ export interface User {
   motivation: string;
   status: 'new' | 'registered';
   is_admin?: number;
-  user_type?: string; // Тип пользователя
-  direction_id?: string; // ID направления
-  direction_selected_at?: string; // Дата выбора направления
+  direction?: string; // Направление пользователя
   total_points?: number;
   current_level?: number;
+  stars_count?: number; // Количество собранных звездочек за выполненные задания
   created_at: string;
   updated_at: string;
 }
@@ -64,7 +63,7 @@ export interface TargetedQuestion {
   type: QuestionType;
   options?: string[];
   char_limit?: number;
-  target_audience: 'all' | 'by_type' | 'individual';
+  target_audience: 'all' | 'by_direction' | 'individual';
   target_values?: string[];
   status: 'draft' | 'published' | 'archived';
   created_at: string;
@@ -95,6 +94,14 @@ export interface RandomizerDistribution {
   user_id: string;
   table_number: number;
   distributed_at: string;
+  preview_mode?: boolean;
+  user?: {
+    id: string;
+    first_name: string;
+    last_name?: string;
+    middle_name?: string;
+    telegram_username?: string;
+  };
 }
 
 export interface TargetedAnswer {
@@ -110,8 +117,9 @@ export interface CreateTargetedQuestionDto {
   type: QuestionType;
   options?: string[];
   char_limit?: number;
-  target_audience: 'all' | 'by_type' | 'individual';
+  target_audience: 'all' | 'by_direction' | 'individual';
   target_values?: string[];
+  reflection_points?: number;
 }
 
 export type QuestionType = 'single' | 'multiple' | 'scale' | 'text' | 'randomizer';
@@ -142,7 +150,7 @@ export interface Assignment {
   description?: string;
   answer_format: 'text' | 'number' | 'link';
   reward: number;
-  target_type: 'all' | 'user_type' | 'individual';
+  target_type: 'all' | 'direction' | 'individual';
   target_values?: string[];
   status: 'draft' | 'published';
   created_at: string;
@@ -159,10 +167,10 @@ export interface AssignmentSubmission {
   updated_at: string;
 }
 
-export interface UserType {
+export interface Direction {
   id: number;
   name: string;
-  slug: string;
+  code: string;
   created_at: string;
 }
 
@@ -219,7 +227,7 @@ export interface CreateAssignmentRequest {
   description?: string;
   answer_format: 'text' | 'number' | 'link';
   reward: number;
-  target_type: 'all' | 'user_type' | 'individual';
+  target_type: 'all' | 'direction' | 'individual';
   target_values?: string[];
 }
 
@@ -243,12 +251,12 @@ export interface CreateQuestionRequest {
   char_limit?: number;
 }
 
-export interface CreateTargetedQuestionRequest {
+export interface CreateTargetedQuestionRequest extends CreateTargetedQuestionDto {
   text: string;
   type: QuestionType;
   options?: string[];
   char_limit?: number;
-  target_audience: 'all' | 'by_type' | 'individual';
+  target_audience: 'all' | 'by_direction' | 'individual';
   target_values?: string[];
   status?: 'draft' | 'published' | 'archived';
 }

@@ -131,8 +131,7 @@ export class ExportController {
       const filters: ExportFilters = {
         dateFrom: req.body.dateFrom,
         dateTo: req.body.dateTo,
-        directionId: req.body.directionId,
-        userType: req.body.userType,
+        direction: req.body.direction,
         eventId: req.body.eventId,
       };
       

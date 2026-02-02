@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTelegram } from '../../hooks/useTelegram';
 import { buildApiEndpoint } from '../../utils/apiUrl';
-import { Direction, UserType, Event } from '../../types';
+import { Direction, Event } from '../../types';
 import './AdminScreens.css';
 
 interface AdminExportScreenProps {
@@ -11,8 +11,7 @@ interface AdminExportScreenProps {
 interface ExportFilters {
   dateFrom?: string;
   dateTo?: string;
-  directionId?: string;
-  userType?: string;
+  direction?: string;
   eventId?: string;
 }
 
@@ -21,14 +20,12 @@ export const AdminExportScreen: React.FC<AdminExportScreenProps> = ({ onBack }) 
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState<string | null>(null);
   const [directions, setDirections] = useState<Direction[]>([]);
-  const [userTypes, setUserTypes] = useState<UserType[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   
   const [filters, setFilters] = useState<ExportFilters>({
     dateFrom: '',
     dateTo: '',
-    directionId: '',
-    userType: '',
+    direction: '',
     eventId: '',
   });
 
@@ -38,9 +35,8 @@ export const AdminExportScreen: React.FC<AdminExportScreenProps> = ({ onBack }) 
 
   const loadData = async () => {
     try {
-      const [directionsRes, userTypesRes, eventsRes] = await Promise.all([
+      const [directionsRes, eventsRes] = await Promise.all([
         fetch(buildApiEndpoint('/directions')).then(r => r.json()),
-        fetch(buildApiEndpoint('/user-types')).then(r => r.json()),
         fetch(buildApiEndpoint('/events/list'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -49,7 +45,6 @@ export const AdminExportScreen: React.FC<AdminExportScreenProps> = ({ onBack }) 
       ]);
 
       setDirections(directionsRes.directions || []);
-      setUserTypes(userTypesRes.user_types || []);
       setEvents(eventsRes.events || []);
     } catch (error) {
       console.error('Error loading data:', error);
@@ -74,8 +69,7 @@ export const AdminExportScreen: React.FC<AdminExportScreenProps> = ({ onBack }) 
       const filtersToSend: any = {};
       if (filters.dateFrom) filtersToSend.dateFrom = filters.dateFrom;
       if (filters.dateTo) filtersToSend.dateTo = filters.dateTo;
-      if (filters.directionId) filtersToSend.directionId = filters.directionId;
-      if (filters.userType) filtersToSend.userType = filters.userType;
+      if (filters.direction) filtersToSend.direction = filters.direction;
       if (filters.eventId) filtersToSend.eventId = filters.eventId;
 
       const response = await fetch(buildApiEndpoint(endpoint), {
@@ -110,14 +104,13 @@ export const AdminExportScreen: React.FC<AdminExportScreenProps> = ({ onBack }) 
     }
   };
 
-  const hasActiveFilters = filters.dateFrom || filters.dateTo || filters.directionId || filters.userType || filters.eventId;
+  const hasActiveFilters = filters.dateFrom || filters.dateTo || filters.direction || filters.eventId;
 
   const clearFilters = () => {
     setFilters({
       dateFrom: '',
       dateTo: '',
-      directionId: '',
-      userType: '',
+      direction: '',
       eventId: '',
     });
   };
@@ -154,28 +147,13 @@ export const AdminExportScreen: React.FC<AdminExportScreenProps> = ({ onBack }) 
           <div className="form-group">
             <label>Направление:</label>
             <select
-              value={filters.directionId}
-              onChange={(e) => setFilters({ ...filters, directionId: e.target.value })}
+              value={filters.direction}
+              onChange={(e) => setFilters({ ...filters, direction: e.target.value })}
             >
               <option value="">Все направления</option>
               {directions.map((dir) => (
-                <option key={dir.id} value={dir.id}>
+                <option key={dir.id} value={dir.slug}>
                   {dir.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label>Тип пользователя:</label>
-            <select
-              value={filters.userType}
-              onChange={(e) => setFilters({ ...filters, userType: e.target.value })}
-            >
-              <option value="">Все типы</option>
-              {userTypes.map((type) => (
-                <option key={type.id} value={type.slug}>
-                  {type.name}
                 </option>
               ))}
             </select>
@@ -209,8 +187,7 @@ export const AdminExportScreen: React.FC<AdminExportScreenProps> = ({ onBack }) 
             <ul style={{ margin: 0, paddingLeft: '20px' }}>
               {filters.dateFrom && <li>Дата от: {new Date(filters.dateFrom).toLocaleDateString('ru-RU')}</li>}
               {filters.dateTo && <li>Дата до: {new Date(filters.dateTo).toLocaleDateString('ru-RU')}</li>}
-              {filters.directionId && <li>Направление: {directions.find(d => d.id === filters.directionId)?.name}</li>}
-              {filters.userType && <li>Тип: {userTypes.find(t => t.slug === filters.userType)?.name}</li>}
+              {filters.direction && <li>Направление: {directions.find(d => d.slug === filters.direction)?.name}</li>}
               {filters.eventId && <li>Мероприятие: {events.find(e => e.id === filters.eventId)?.title}</li>}
             </ul>
           </div>

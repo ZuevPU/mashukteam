@@ -8,17 +8,22 @@ import { logger } from '../utils/logger';
 
 export class TargetedQuestionController {
   /**
-   * Получение вопросов для пользователя
+   * Получение вопросов для пользователя (разделены на активные и архивные)
    */
   static async getMyQuestions(req: Request, res: Response) {
     try {
       const userId = req.user.id;
-      const userType = req.user.user_type;
+      const userDirection = req.user.direction;
       
-      const questions = await TargetedQuestionService.getQuestionsForUser(userId, userType);
+      const { activeQuestions, answeredQuestions } = await TargetedQuestionService.getQuestionsForUser(userId, userDirection);
       const answers = await TargetedQuestionService.getUserAnswers(userId);
       
-      return res.json({ success: true, questions, answers });
+      return res.json({ 
+        success: true, 
+        activeQuestions, 
+        answeredQuestions,
+        answers 
+      });
     } catch (error) {
       console.error('Get my questions error:', error);
       return res.status(500).json({ error: 'Ошибка при получении вопросов' });
@@ -33,11 +38,19 @@ export class TargetedQuestionController {
       const userId = req.user.id;
       const { questionId, answerData } = req.body;
       
+      // Получаем вопрос, чтобы узнать количество баллов рефлексии
+      const question = await TargetedQuestionService.getQuestionById(questionId);
+      if (!question) {
+        return res.status(404).json({ error: 'Вопрос не найден' });
+      }
+      
       const answer = await TargetedQuestionService.submitAnswer(userId, questionId, answerData);
       
-      // Начисление баллов рефлексии за ответ на персональный вопрос
+      // Начисление баллов рефлексии за ответ на вопрос
+      // Используем reflection_points из вопроса (по умолчанию 1)
       try {
-        await ReflectionService.addReflectionPoints(userId, 'targeted_answer');
+        const reflectionPoints = question.reflection_points || 1;
+        await ReflectionService.addReflectionPoints(userId, 'targeted_answer', reflectionPoints);
         
         // Проверка достижений после начисления баллов
         try {
@@ -76,10 +89,10 @@ export class TargetedQuestionController {
             notifyTargetedQuestionToUsers(userIds, question.text, question.id).catch((err) => 
               logger.error('Error sending targeted question notification', err instanceof Error ? err : new Error(String(err)))
             );
-          } else if (data.target_audience === 'by_type' && data.target_values) {
-            // По типу пользователя
+          } else if (data.target_audience === 'by_direction' && data.target_values) {
+            // По направлению пользователя
             const users = await UserService.getAllUsers();
-            const targetUsers = users.filter(u => data.target_values.includes(u.user_type));
+            const targetUsers = users.filter(u => u.direction && data.target_values.includes(u.direction));
             const userIds = targetUsers.map(u => u.id);
             notifyTargetedQuestionToUsers(userIds, question.text, question.id).catch((err) => 
               logger.error('Error sending targeted question notification', err instanceof Error ? err : new Error(String(err)))
@@ -150,9 +163,9 @@ export class TargetedQuestionController {
             notifyTargetedQuestionToUsers(userIds, question.text, question.id).catch((err) => 
               logger.error('Error sending targeted question notification', err instanceof Error ? err : new Error(String(err)))
             );
-          } else if (question.target_audience === 'by_type' && question.target_values) {
+          } else if (question.target_audience === 'by_direction' && question.target_values) {
             const users = await UserService.getAllUsers();
-            const targetUsers = users.filter(u => question.target_values.includes(u.user_type));
+            const targetUsers = users.filter(u => u.direction && question.target_values.includes(u.direction));
             const userIds = targetUsers.map(u => u.id);
             notifyTargetedQuestionToUsers(userIds, question.text, question.id).catch((err) => 
               logger.error('Error sending targeted question notification', err instanceof Error ? err : new Error(String(err)))

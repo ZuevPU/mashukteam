@@ -23,13 +23,12 @@ export interface User {
   motivation: string;
   status: 'new' | 'registered';
   is_admin?: number;
-  user_type?: string; // Тип пользователя
-  direction_id?: string; // ID направления
-  direction_selected_at?: string; // Дата выбора направления
+  direction?: string; // Направление пользователя (назначенное администратором)
   total_points?: number;
   current_level?: number;
   reflection_level?: number; // Уровень рефлексии (1-5)
   reflection_points?: number; // Баллы рефлексии
+  stars_count?: number; // Количество собранных звездочек за выполненные задания
   created_at: string;
   updated_at: string;
 }
@@ -57,7 +56,7 @@ export interface TargetedQuestion {
   type: QuestionType;
   options?: string[];
   char_limit?: number;
-  target_audience: 'all' | 'by_type' | 'individual';
+  target_audience: 'all' | 'by_direction' | 'individual';
   target_values?: string[];
   status: 'draft' | 'published' | 'archived';
   created_at: string;
@@ -76,8 +75,9 @@ export interface CreateTargetedQuestionDto {
   type: QuestionType;
   options?: string[];
   char_limit?: number;
-  target_audience: 'all' | 'by_type' | 'individual';
+  target_audience: 'all' | 'by_direction' | 'individual';
   target_values?: string[];
+  reflection_points?: number;
 }
 
 export type QuestionType = 'single' | 'multiple' | 'scale' | 'text' | 'randomizer';
@@ -273,8 +273,7 @@ export interface CreateDirectionDto {
 export interface ExportFilters {
   dateFrom?: string;
   dateTo?: string;
-  directionId?: string;
-  userType?: string;
+  direction?: string;
   eventId?: string;
 }
 
@@ -288,7 +287,7 @@ export interface UserType {
 }
 
 export type AssignmentFormat = 'text' | 'number' | 'link';
-export type AssignmentTargetType = 'all' | 'user_type' | 'individual';
+export type AssignmentTargetType = 'all' | 'direction' | 'individual';
 export type SubmissionStatus = 'pending' | 'approved' | 'rejected';
 
 export interface Assignment {
@@ -361,6 +360,18 @@ export interface RandomizerDistribution {
   user_id: string;
   table_number: number;
   distributed_at: string;
+  preview_mode?: boolean;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: 'event' | 'question' | 'assignment' | 'diagnostic' | 'achievement' | 'randomizer' | 'assignment_result';
+  title: string;
+  message: string;
+  deep_link?: string;
+  read: boolean;
+  created_at: string;
 }
 
 export interface CreateRandomizerDto {

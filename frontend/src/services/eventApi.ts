@@ -1,5 +1,5 @@
-import { fetchApiWithAuth, fetchApi } from './api';
-import { Event, Question, Answer } from '../types';
+import { fetchApiWithAuth } from './api';
+import { Event } from '../types';
 
 export const eventApi = {
   /**
@@ -14,57 +14,19 @@ export const eventApi = {
   },
 
   /**
-   * Получение деталей мероприятия с вопросами
+   * Получение деталей мероприятия (только информация о мероприятии)
    */
   getEventDetails: async (
     id: string,
     initData: string
-  ): Promise<{ event: Event; questions: Question[]; userAnswers?: Answer[] }> => {
+  ): Promise<{ event: Event }> => {
     const response = await fetchApiWithAuth<{
       success: boolean;
       event: Event;
-      questions: Question[];
-      userAnswers?: Answer[];
     }>(`/events/${id}/details`, initData);
     
     return { 
-      event: response.event, 
-      questions: response.questions,
-      userAnswers: response.userAnswers 
+      event: response.event
     };
-  },
-
-  /**
-   * Отправка ответа на вопрос
-   */
-  submitAnswer: async (
-    eventId: string,
-    questionId: string,
-    answerData: any,
-    initData: string
-  ): Promise<Answer> => {
-    const response = await fetchApi<{ success: boolean; answer: Answer }>(
-      `/events/${eventId}/answers`,
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          initData,
-          question_id: questionId,
-          answer_data: answerData,
-        }),
-      }
-    );
-    return response.answer;
-  },
-
-  /**
-   * Получение истории ответов пользователя
-   */
-  getMyAnswers: async (initData: string): Promise<Answer[]> => {
-    const response = await fetchApiWithAuth<{ success: boolean; answers: Answer[] }>(
-      '/user/my-answers',
-      initData
-    );
-    return response.answers;
   },
 };

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTelegram } from '../../hooks/useTelegram';
 import { userPreferencesApi } from '../../services/userPreferencesApi';
-import { UserPreferences } from '../../types';
+import { notificationApi } from '../../services/notificationApi';
+import { UserPreferences, Notification } from '../../types';
 import './NotificationsSettingsScreen.css';
 
 interface NotificationsSettingsScreenProps {
@@ -16,6 +17,7 @@ export const NotificationsSettingsScreen: React.FC<NotificationsSettingsScreenPr
 
   useEffect(() => {
     loadPreferences();
+    loadNotifications();
   }, []);
 
   const loadPreferences = async () => {
@@ -28,6 +30,45 @@ export const NotificationsSettingsScreen: React.FC<NotificationsSettingsScreenPr
       showAlert('Ошибка загрузки настроек');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadNotifications = async () => {
+    if (!initData) return;
+    setLoadingNotifications(true);
+    try {
+      const data = await notificationApi.getMyNotifications(initData, 100);
+      setNotifications(data.notifications);
+      setUnreadCount(data.unreadCount);
+    } catch (error: any) {
+      console.error('Error loading notifications:', error);
+      // Не показываем ошибку, так как это не критично
+    } finally {
+      setLoadingNotifications(false);
+    }
+  };
+
+  const handleMarkAsRead = async (notificationId: string) => {
+    if (!initData) return;
+    try {
+      await notificationApi.markAsRead(initData, notificationId);
+      setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read: true } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error: any) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    if (!initData) return;
+    try {
+      await notificationApi.markAllAsRead(initData);
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+      showAlert('Все уведомления отмечены как прочитанные');
+    } catch (error: any) {
+      console.error('Error marking all as read:', error);
+      showAlert('Ошибка при обновлении уведомлений');
     }
   };
 
@@ -172,6 +213,78 @@ export const NotificationsSettingsScreen: React.FC<NotificationsSettingsScreenPr
               <span className="toggle-slider"></span>
             </label>
           </div>
+        </div>
+
+        <div className="settings-section">
+          <h4>История уведомлений</h4>
+          {loadingNotifications ? (
+            <div className="loading" style={{ padding: '20px', textAlign: 'center' }}>Загрузка...</div>
+          ) : notifications.length === 0 ? (
+            <p style={{ fontSize: '14px', opacity: 0.7, textAlign: 'center', padding: '20px' }}>
+              У вас пока нет уведомлений
+            </p>
+          ) : (
+            <>
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllAsRead}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    marginBottom: '12px',
+                    background: '#3E529B',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Отметить все как прочитанные ({unreadCount})
+                </button>
+              )}
+              <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                {notifications.map((notif) => (
+                  <div
+                    key={notif.id}
+                    onClick={() => !notif.read && handleMarkAsRead(notif.id)}
+                    style={{
+                      padding: '12px',
+                      marginBottom: '8px',
+                      background: notif.read ? 'var(--color-bg-primary, #F8F8F7)' : '#e3f2fd',
+                      border: '1px solid var(--color-border, #35A2A8)',
+                      borderRadius: '8px',
+                      cursor: notif.read ? 'default' : 'pointer',
+                      opacity: notif.read ? 0.7 : 1
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
+                      <strong style={{ fontSize: '14px', color: 'var(--color-text-primary, #2C2B2B)' }}>
+                        {notif.title}
+                      </strong>
+                      {!notif.read && (
+                        <span style={{
+                          width: '8px',
+                          height: '8px',
+                          background: '#3E529B',
+                          borderRadius: '50%',
+                          flexShrink: 0,
+                          marginLeft: '8px'
+                        }} />
+                      )}
+                    </div>
+                    <p style={{ fontSize: '13px', color: 'var(--color-text-primary, #2C2B2B)', margin: '4px 0', lineHeight: '1.4' }}>
+                      {notif.message.replace(/<[^>]*>/g, '').substring(0, 100)}
+                      {notif.message.length > 100 ? '...' : ''}
+                    </p>
+                    <div style={{ fontSize: '11px', color: 'var(--color-text-primary, #2C2B2B)', opacity: 0.6, marginTop: '4px' }}>
+                      {new Date(notif.created_at).toLocaleString('ru-RU')}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         <div className="settings-section">

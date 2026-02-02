@@ -10,7 +10,7 @@ import { QuestionsCard } from '../components/bento/QuestionsCard';
 import { AssignmentsCard } from '../components/bento/AssignmentsCard';
 import { ReflectionProgress } from '../components/gamification/ReflectionProgress';
 import { EventsListScreen } from './events/EventsListScreen';
-import { EventSurveyScreen } from './events/EventSurveyScreen';
+import { EventDetailsScreen } from './events/EventDetailsScreen';
 import { AdminDashboard } from './admin/AdminDashboard';
 import { AdminEventsScreen } from './admin/AdminEventsScreen';
 import { AdminEventFormScreen } from './admin/AdminEventFormScreen';
@@ -176,16 +176,15 @@ export function BentoMenuScreen() {
           motivation: '',
           status: (statusResponse.status || 'new') as 'new' | 'registered',
           is_admin: (statusResponse.user as any).is_admin,
-          user_type: (statusResponse.user as any).user_type,
-          direction_id: (statusResponse.user as any).direction_id,
-          direction_selected_at: (statusResponse.user as any).direction_selected_at,
+          direction: (statusResponse.user as any).direction,
+          stars_count: (statusResponse.user as any).stars_count || 0,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
         setUser(userData);
 
         // Проверка направления: если пользователь зарегистрирован, но не выбрал направление
-        if (userData.status === 'registered' && !userData.direction_id && view === 'menu') {
+        if (userData.status === 'registered' && !userData.direction && view === 'menu') {
           setView('direction_selection');
         }
 
@@ -252,7 +251,7 @@ export function BentoMenuScreen() {
     />;
   }
   if (view === 'event_survey' && selectedEventId) {
-    return <EventSurveyScreen eventId={selectedEventId} onBack={() => setView('events_list')} />;
+    return <EventDetailsScreen eventId={selectedEventId} onBack={() => setView('events_list')} />;
   }
 
   // Админская часть
@@ -388,6 +387,9 @@ export function BentoMenuScreen() {
   }
   if (view === 'admin_export') {
     return <AdminExportScreen onBack={() => setView('admin')} />;
+  }
+  if (view === 'admin_analytics') {
+    return <AdminAnalyticsScreen onBack={() => setView('admin')} />;
   }
 
   // === НАСТРОЙКИ ===

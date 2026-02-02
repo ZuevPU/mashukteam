@@ -37,6 +37,7 @@ export const ReflectionProgress: React.FC<ReflectionProgressProps> = ({ stats })
         <div className="reflection-title-group">
           <h3 className="reflection-title">Уровень рефлексии</h3>
           <p className="reflection-level-name">{levelName}</p>
+          <p style={{fontSize: 11, opacity: 0.7, marginTop: 4}}>Считается только по вопросам</p>
         </div>
         <div className="reflection-level-badge">Уровень {level}</div>
       </div>

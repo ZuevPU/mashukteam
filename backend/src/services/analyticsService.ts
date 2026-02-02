@@ -13,7 +13,7 @@ export interface UserActivityStats {
 }
 
 export interface DirectionStats {
-  directionId: string;
+  directionCode: string;
   directionName: string;
   userCount: number;
   totalAnswers: number;
@@ -174,19 +174,19 @@ export class AnalyticsService {
           const { count: userCount } = await supabase
             .from('users')
             .select('*', { count: 'exact', head: true })
-            .eq('direction_id', direction.id);
+            .eq('direction', direction.slug);
 
           // Количество ответов пользователей этого направления
           const { data: usersInDirection } = await supabase
             .from('users')
             .select('id')
-            .eq('direction_id', direction.id);
+            .eq('direction', direction.slug);
 
           const userIds = (usersInDirection || []).map((u: any) => u.id);
 
           if (userIds.length === 0) {
             return {
-              directionId: direction.id,
+              directionCode: direction.slug,
               directionName: direction.name,
               userCount: userCount || 0,
               totalAnswers: 0,
@@ -214,7 +214,7 @@ export class AnalyticsService {
             : 0;
 
           return {
-            directionId: direction.id,
+            directionCode: direction.slug,
             directionName: direction.name,
             userCount: userCount || 0,
             totalAnswers: totalAnswers || 0,

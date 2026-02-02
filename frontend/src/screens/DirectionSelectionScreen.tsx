@@ -5,7 +5,7 @@ import { buildApiEndpoint } from '../utils/apiUrl';
 import './DirectionSelectionScreen.css';
 
 interface DirectionSelectionScreenProps {
-  onSelect: (directionId: string) => void;
+  onSelect: (directionSlug: string) => void;
   onSkip?: () => void;
 }
 
@@ -16,7 +16,7 @@ export const DirectionSelectionScreen: React.FC<DirectionSelectionScreenProps> =
   const { initData, showAlert } = useTelegram();
   const [directions, setDirections] = useState<Direction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
 
   useEffect(() => {
     const loadDirections = async () => {
@@ -39,18 +39,18 @@ export const DirectionSelectionScreen: React.FC<DirectionSelectionScreenProps> =
   }, []);
 
   const handleSelect = async () => {
-    if (!selectedId || !initData) {
+    if (!selectedSlug || !initData) {
       showAlert('Не выбрано направление или отсутствуют данные авторизации');
       return;
     }
 
     try {
-      console.log('[DirectionSelection] Sending direction selection:', { selectedId, hasInitData: !!initData });
+      console.log('[DirectionSelection] Sending direction selection:', { selectedSlug, hasInitData: !!initData });
       
       const response = await fetch(buildApiEndpoint('/user/direction'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData, direction_id: selectedId })
+        body: JSON.stringify({ initData, direction: selectedSlug })
       });
 
       console.log('[DirectionSelection] Response status:', response.status, response.statusText);
@@ -72,7 +72,7 @@ export const DirectionSelectionScreen: React.FC<DirectionSelectionScreenProps> =
         if (data.success === true || data.success === undefined) {
           // Успешное сохранение - даже если success не указан явно, но статус OK
           console.log('[DirectionSelection] Direction saved successfully');
-          onSelect(selectedId);
+          onSelect(selectedSlug);
           return;
         }
       }
@@ -108,15 +108,15 @@ export const DirectionSelectionScreen: React.FC<DirectionSelectionScreenProps> =
         {directions.map((direction) => (
           <div
             key={direction.id}
-            className={`direction-card ${selectedId === direction.id ? 'selected' : ''}`}
-            onClick={() => setSelectedId(direction.id)}
+            className={`direction-card ${selectedSlug === direction.slug ? 'selected' : ''}`}
+            onClick={() => setSelectedSlug(direction.slug)}
           >
             <div className="direction-radio">
               <input
                 type="radio"
                 name="direction"
-                checked={selectedId === direction.id}
-                onChange={() => setSelectedId(direction.id)}
+                checked={selectedSlug === direction.slug}
+                onChange={() => setSelectedSlug(direction.slug)}
               />
             </div>
             <div className="direction-content">
@@ -133,7 +133,7 @@ export const DirectionSelectionScreen: React.FC<DirectionSelectionScreenProps> =
         <button
           className="direction-select-btn"
           onClick={handleSelect}
-          disabled={!selectedId}
+          disabled={!selectedSlug}
         >
           Выбрать
         </button>

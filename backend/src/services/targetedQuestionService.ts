@@ -22,8 +22,12 @@ export class TargetedQuestionService {
 
   /**
    * Получение вопросов для пользователя (с учетом таргетинга)
+   * Возвращает активные вопросы (без ответа) и архивные (с ответом)
    */
-  static async getQuestionsForUser(userId: string, userType?: string): Promise<TargetedQuestion[]> {
+  static async getQuestionsForUser(userId: string, userDirection?: string): Promise<{
+    activeQuestions: TargetedQuestion[];
+    answeredQuestions: TargetedQuestion[];
+  }> {
     // Получаем все опубликованные вопросы
     const { data: questions, error } = await supabase
       .from('targeted_questions')
@@ -37,16 +41,45 @@ export class TargetedQuestionService {
     }
 
     // Фильтрация на бэкенде (так как сложная логика JSONB)
-    return (questions as TargetedQuestion[]).filter(q => {
+    const filteredQuestions = (questions as TargetedQuestion[]).filter(q => {
       if (q.target_audience === 'all') return true;
-      if (q.target_audience === 'by_type' && userType) {
-        return q.target_values?.includes(userType);
+      if (q.target_audience === 'by_direction' && userDirection) {
+        return q.target_values?.includes(userDirection);
       }
       if (q.target_audience === 'individual') {
         return q.target_values?.includes(userId);
       }
       return false;
     });
+
+    // Получаем ответы пользователя
+    const userAnswers = await this.getUserAnswers(userId);
+    const answeredQuestionIds = new Set(userAnswers.map(a => a.question_id));
+
+    // Разделяем на активные и архивные
+    const activeQuestions = filteredQuestions.filter(q => !answeredQuestionIds.has(q.id));
+    const answeredQuestions = filteredQuestions.filter(q => answeredQuestionIds.has(q.id));
+
+    return {
+      activeQuestions,
+      answeredQuestions
+    };
+  }
+
+  /**
+   * Получение активных вопросов для пользователя (без ответов)
+   */
+  static async getActiveQuestions(userId: string, userDirection?: string): Promise<TargetedQuestion[]> {
+    const { activeQuestions } = await this.getQuestionsForUser(userId, userDirection);
+    return activeQuestions;
+  }
+
+  /**
+   * Получение архивных вопросов для пользователя (с ответами)
+   */
+  static async getAnsweredQuestions(userId: string, userDirection?: string): Promise<TargetedQuestion[]> {
+    const { answeredQuestions } = await this.getQuestionsForUser(userId, userDirection);
+    return answeredQuestions;
   }
 
   /**

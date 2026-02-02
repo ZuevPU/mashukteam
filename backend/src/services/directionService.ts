@@ -94,12 +94,11 @@ export class DirectionService {
   /**
    * Назначение направления пользователю
    */
-  static async setUserDirection(userId: string, directionId: string | null): Promise<void> {
+  static async setUserDirection(userId: string, direction: string | null): Promise<void> {
     const { error } = await supabase
       .from('users')
       .update({
-        direction_id: directionId,
-        direction_selected_at: directionId ? new Date().toISOString() : null
+        direction: direction
       })
       .eq('id', userId);
 

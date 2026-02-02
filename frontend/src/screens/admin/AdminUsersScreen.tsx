@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { User, UserType } from '../../types';
+import { User, Direction } from '../../types';
 import { adminApi } from '../../services/adminApi';
 import { useTelegram } from '../../hooks/useTelegram';
 import './AdminScreens.css';
@@ -12,21 +12,21 @@ interface AdminUsersScreenProps {
 export const AdminUsersScreen: React.FC<AdminUsersScreenProps> = ({ onBack, onUserClick }) => {
   const { initData } = useTelegram();
   const [users, setUsers] = useState<User[]>([]);
-  const [userTypes, setUserTypes] = useState<UserType[]>([]);
+  const [directions, setDirections] = useState<Direction[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [directionFilter, setDirectionFilter] = useState<string>('all');
 
   useEffect(() => {
     const loadData = async () => {
       if (!initData) return;
       try {
-        const [usersData, typesData] = await Promise.all([
+        const [usersData, directionsData] = await Promise.all([
           adminApi.getAllUsers(initData),
-          adminApi.getUserTypes()
+          adminApi.getDirections()
         ]);
         setUsers(usersData);
-        setUserTypes(typesData);
+        setDirections(directionsData);
       } catch (error) {
         console.error('Error loading data:', error);
       } finally {
@@ -42,17 +42,17 @@ export const AdminUsersScreen: React.FC<AdminUsersScreenProps> = ({ onBack, onUs
       u.last_name?.toLowerCase().includes(search.toLowerCase()) ||
       u.telegram_username?.toLowerCase().includes(search.toLowerCase());
     
-    const matchesType = typeFilter === 'all' || u.user_type === typeFilter;
+    const matchesDirection = directionFilter === 'all' || u.direction === directionFilter;
     
-    return matchesSearch && matchesType;
+    return matchesSearch && matchesDirection;
   });
 
-  // Count users by type
-  const typeCounts = userTypes.map(t => ({
-    ...t,
-    count: users.filter(u => u.user_type === t.slug).length
+  // Count users by direction
+  const directionCounts = directions.map(d => ({
+    ...d,
+    count: users.filter(u => u.direction === d.slug).length
   }));
-  const noTypeCount = users.filter(u => !u.user_type).length;
+  const noDirectionCount = users.filter(u => !u.direction).length;
 
   if (loading) return <div className="loading">Загрузка...</div>;
 
@@ -75,13 +75,13 @@ export const AdminUsersScreen: React.FC<AdminUsersScreenProps> = ({ onBack, onUs
       <div className="form-group" style={{marginBottom: 20}}>
         <select 
           className="form-select"
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
+          value={directionFilter}
+          onChange={(e) => setDirectionFilter(e.target.value)}
         >
-          <option value="all">Все типы ({users.length})</option>
-          <option value="">Без типа ({noTypeCount})</option>
-          {typeCounts.map(t => (
-            <option key={t.id} value={t.slug}>{t.name} ({t.count})</option>
+          <option value="all">Все направления ({users.length})</option>
+          <option value="">Без направления ({noDirectionCount})</option>
+          {directionCounts.map(d => (
+            <option key={d.id} value={d.slug}>{d.name} ({d.count})</option>
           ))}
         </select>
       </div>
@@ -94,9 +94,9 @@ export const AdminUsersScreen: React.FC<AdminUsersScreenProps> = ({ onBack, onUs
             <div key={user.id} className="admin-item-card" onClick={() => onUserClick(user.id)} style={{cursor: 'pointer'}}>
               <div className="item-info">
                 <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px'}}>
-                  {user.user_type && (
+                  {user.direction && (
                     <span className="status-badge diagnostic">
-                      {userTypes.find(t => t.slug === user.user_type)?.name || user.user_type}
+                      {directions.find(d => d.slug === user.direction)?.name || user.direction}
                     </span>
                   )}
                   <span className={`status-badge ${user.status === 'registered' ? 'published' : 'draft'}`}>

@@ -29,7 +29,7 @@ export interface UserActivityStats {
 }
 
 export interface DirectionStats {
-  directionId: string;
+  directionCode: string;
   directionName: string;
   userCount: number;
   totalAnswers: number;

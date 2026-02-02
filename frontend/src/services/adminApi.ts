@@ -2,7 +2,7 @@ import { fetchApi } from './api';
 import { 
   Event, Question, User, CreateEventRequest, CreateQuestionRequest, Answer,
   TargetedQuestion, CreateTargetedQuestionRequest, 
-  Assignment, AssignmentSubmission, CreateAssignmentRequest, UserType 
+  Assignment, AssignmentSubmission, CreateAssignmentRequest, Direction 
 } from '../types';
 
 export const adminApi = {
@@ -126,14 +126,14 @@ export const adminApi = {
   },
 
   /**
-   * Назначение типа пользователя
+   * Назначение направления пользователю
    */
-  setUserType: async (userId: string, userType: string, initData: string): Promise<User> => {
+  setUserDirection: async (userId: string, direction: string, initData: string): Promise<User> => {
     const response = await fetchApi<{ success: boolean; user: User }>(
-      `/admin/users/${userId}/type`,
+      `/admin/users/${userId}/direction`,
       {
         method: 'PATCH',
-        body: JSON.stringify({ initData, userType }),
+        body: JSON.stringify({ initData, direction }),
       }
     );
     return response.user;
@@ -262,9 +262,9 @@ export const adminApi = {
 
   // === User Types ===
   
-  getUserTypes: async (): Promise<UserType[]> => {
-    const response = await fetchApi<{ success: boolean; types: UserType[] }>(
-      '/user-types',
+  getDirections: async (): Promise<Direction[]> => {
+    const response = await fetchApi<{ success: boolean; directions: Direction[] }>(
+      '/directions',
       { method: 'GET' }
     );
     return response.types;

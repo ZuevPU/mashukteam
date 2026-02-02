@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { User, UserType, AssignmentSubmission, Direction } from '../../types';
+import { User, Direction, AssignmentSubmission } from '../../types';
 import { adminApi } from '../../services/adminApi';
 import { useTelegram } from '../../hooks/useTelegram';
 import { buildApiEndpoint } from '../../utils/apiUrl';
@@ -30,10 +30,8 @@ interface AdminUserDetailsScreenProps {
 export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ userId, onBack }) => {
   const { initData, showAlert } = useTelegram();
   const [user, setUser] = useState<UserWithDetails | null>(null);
-  const [userTypes, setUserTypes] = useState<UserType[]>([]);
   const [directions, setDirections] = useState<Direction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedType, setSelectedType] = useState('');
   const [selectedDirection, setSelectedDirection] = useState('');
   
   // Фильтры и поиск
@@ -45,16 +43,13 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
   const loadDetails = async () => {
     if (!initData) return;
     try {
-      const [userData, typesData, directionsResponse] = await Promise.all([
+      const [userData, directionsResponse] = await Promise.all([
         adminApi.getUserDetails(userId, initData),
-        adminApi.getUserTypes(),
         fetch(buildApiEndpoint('/directions')).then(r => r.json())
       ]);
       setUser(userData as UserWithDetails);
-      setUserTypes(typesData);
       setDirections(directionsResponse.directions || []);
-      setSelectedType(userData.user_type || '');
-      setSelectedDirection(userData.direction_id || '');
+      setSelectedDirection(userData.direction || '');
     } catch (error) {
       console.error('Error loading user details:', error);
     } finally {
@@ -66,32 +61,13 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
     loadDetails();
   }, [userId, initData]);
 
-  const handleSaveType = async () => {
-    if (!initData) return;
-    try {
-      await adminApi.setUserType(userId, selectedType, initData);
-      showAlert('Тип сохранен');
-      loadDetails();
-    } catch (error) {
-      console.error('Error saving user type:', error);
-      showAlert('Ошибка сохранения');
-    }
-  };
 
   const handleSaveDirection = async () => {
     if (!initData) return;
     try {
-      const response = await fetch(buildApiEndpoint(`/admin/users/${userId}/direction`), {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ initData, direction_id: selectedDirection || null })
-      });
-      if (response.ok) {
-        showAlert('Направление сохранено');
-        loadDetails();
-      } else {
-        showAlert('Ошибка сохранения');
-      }
+      await adminApi.setUserDirection(userId, selectedDirection, initData);
+      showAlert('Направление сохранено');
+      loadDetails();
     } catch (error) {
       console.error('Error saving direction:', error);
       showAlert('Ошибка сохранения');
@@ -192,30 +168,6 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
         <p>Баллы: <strong>{user.total_points || 0}</strong></p>
         
         <div className="form-group" style={{marginTop: 16}}>
-          <label>Тип пользователя</label>
-          <div style={{display: 'flex', gap: 8}}>
-            <select 
-              className="form-select"
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              style={{flex: 1}}
-            >
-              <option value="">— Не задан —</option>
-              {userTypes.map(t => (
-                <option key={t.id} value={t.slug}>{t.name}</option>
-              ))}
-            </select>
-            <button 
-              className="save-btn" 
-              style={{marginTop: 0, padding: '0 20px'}} 
-              onClick={handleSaveType}
-            >
-              OK
-            </button>
-          </div>
-        </div>
-
-        <div className="form-group" style={{marginTop: 16}}>
           <label>Направление</label>
           <div style={{display: 'flex', gap: 8}}>
             <select 
@@ -226,7 +178,7 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
             >
               <option value="">— Не выбрано —</option>
               {directions.map(d => (
-                <option key={d.id} value={d.id}>{d.name}</option>
+                <option key={d.id} value={d.slug}>{d.name}</option>
               ))}
             </select>
             <button 

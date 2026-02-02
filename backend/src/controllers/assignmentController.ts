@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { AssignmentService } from '../services/assignmentService';
 import { UserService } from '../services/supabase';
-import { ReflectionService } from '../services/reflectionService';
 import { AchievementService } from '../services/gamification';
 import { notifyAssignmentResult, notifyNewAssignment } from '../utils/telegramBot';
 import { logger } from '../utils/logger';
@@ -9,7 +8,7 @@ import { logger } from '../utils/logger';
 export class AssignmentController {
   // === User Types ===
   
-  static async getUserTypes(req: Request, res: Response) {
+  static async getDirections(req: Request, res: Response) {
     try {
       const types = await AssignmentService.getAllUserTypes();
       return res.json({ success: true, types });
@@ -131,27 +130,8 @@ export class AssignmentController {
       // Выполняем модерацию
       const submission = await AssignmentService.moderateSubmission(id, data);
       
-      // Начисление баллов рефлексии при одобрении задания
-      // Важно: начисляем только если статус изменился на 'approved' (не был approved ранее)
-      if (data.status === 'approved' && previousStatus !== 'approved' && userId) {
-        try {
-          const reward = subDataBefore.assignment?.reward || 0;
-          logger.info('Начисление баллов рефлексии за выполнение задания', { userId, reward });
-          await ReflectionService.addReflectionPoints(userId, 'assignment_completed', reward);
-          logger.info('Баллы рефлексии успешно начислены', { userId, totalPoints: 5 + reward });
-          
-          // Проверка достижений после начисления баллов
-          try {
-            await AchievementService.checkAndUnlockAchievements(userId);
-          } catch (achievementError) {
-            logger.error('Error checking achievements', achievementError instanceof Error ? achievementError : new Error(String(achievementError)));
-            // Не прерываем выполнение, если ошибка проверки достижений
-          }
-        } catch (reflectionError) {
-          logger.error('Error adding reflection points', reflectionError instanceof Error ? reflectionError : new Error(String(reflectionError)));
-          // Не прерываем выполнение, если ошибка начисления рефлексии
-        }
-      }
+      // Примечание: баллы рефлексии больше не начисляются за задания
+      // Задания влияют только на общие баллы (total_points) и звездочки (stars_count)
       
       // Отправляем уведомление пользователю
       if (subDataBefore.user?.telegram_id && subDataBefore.assignment && submission.user_id) {
@@ -191,7 +171,7 @@ export class AssignmentController {
         return res.status(401).json({ error: 'Не авторизован' });
       }
 
-      const assignments = await AssignmentService.getAssignmentsForUser(user.id, user.user_type);
+      const assignments = await AssignmentService.getAssignmentsForUser(user.id, user.direction);
       return res.json({ success: true, assignments });
     } catch (error) {
       logger.error('Get my assignments error', error instanceof Error ? error : new Error(String(error)));

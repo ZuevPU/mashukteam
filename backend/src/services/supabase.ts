@@ -226,10 +226,10 @@ export class UserService {
   }
 
   /**
-   * Назначение типа пользователя
+   * Назначение направления пользователю
    */
-  static async setUserType(userId: string, userType: string): Promise<User> {
-    return this.updateUserByAdmin(userId, { user_type: userType });
+  static async setUserDirection(userId: string, direction: string): Promise<User> {
+    return this.updateUserByAdmin(userId, { direction: direction });
   }
 }
 

@@ -4,6 +4,7 @@ import { useTelegram } from '../../hooks/useTelegram';
 import { buildApiEndpoint } from '../../utils/apiUrl';
 import { adminApi } from '../../services/adminApi';
 import { randomizerApi } from '../../services/randomizerApi';
+import { AdminRandomizerPreviewScreen } from './AdminRandomizerPreviewScreen';
 import './AdminScreens.css';
 
 interface AdminQuestionsListScreenProps {
@@ -121,24 +122,9 @@ export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> =
     const randomizer = randomizers[questionId];
     if (!randomizer) return;
     
-    if (distributing) {
-      showAlert('Распределение уже выполняется');
-      return;
-    }
-    
-    if (confirm(`Подвести итоги и распределить ${randomizer.participantsCount} участников по столам?`)) {
-      setDistributing(questionId);
-      try {
-        await randomizerApi.distribute(initData, randomizer.id);
-        showAlert('Участники распределены! Уведомления отправлены.');
-        loadQuestions();
-      } catch (error: any) {
-        console.error('Error distributing:', error);
-        showAlert(error.message || 'Ошибка при распределении');
-      } finally {
-        setDistributing(null);
-      }
-    }
+    // Открываем экран предпросмотра
+    setPreviewRandomizerId(randomizer.id);
+    setPreviewRandomizer(randomizer);
   };
 
   const getTypeLabel = (type: string) => {
@@ -155,13 +141,33 @@ export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> =
   const getAudienceLabel = (audience: string) => {
     switch (audience) {
       case 'all': return '👥 Всем';
-      case 'by_type': return '📋 По типу';
+      case 'by_direction': return '📋 По направлению';
       case 'individual': return '👤 Персонально';
       default: return audience;
     }
   };
 
   if (loading) return <div className="loading">Загрузка...</div>;
+
+  // Если открыт предпросмотр, показываем его
+  if (previewRandomizerId && previewRandomizer) {
+    return (
+      <AdminRandomizerPreviewScreen
+        randomizerId={previewRandomizerId}
+        randomizer={previewRandomizer}
+        onBack={() => {
+          setPreviewRandomizerId(null);
+          setPreviewRandomizer(null);
+          loadQuestions(); // Обновляем список после публикации
+        }}
+        onPublished={() => {
+          setPreviewRandomizerId(null);
+          setPreviewRandomizer(null);
+          loadQuestions();
+        }}
+      />
+    );
+  }
 
   return (
     <div className="admin-screen">
@@ -210,20 +216,27 @@ export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> =
                     Варианты: {q.options.join(', ')}
                   </p>
                 )}
+                {q.reflection_points !== undefined && (
+                  <p style={{fontSize: 11, opacity: 0.7, marginTop: 4}}>
+                    Баллы рефлексии: {q.reflection_points}
+                  </p>
+                )}
                 <p style={{fontSize: 11, opacity: 0.5, marginTop: 8}}>
                   {new Date(q.created_at).toLocaleDateString()}
                 </p>
               </div>
               <div className="item-actions">
-                {q.type === 'randomizer' && randomizers[q.id] && randomizers[q.id].status === 'open' && (
+                {q.type === 'randomizer' && randomizers[q.id] && (
                   <button
                     className="action-btn"
                     onClick={() => handleDistribute(q.id)}
-                    disabled={distributing === q.id}
-                    title="Подвести итоги"
-                    style={{background: '#28a745', color: '#fff'}}
+                    title={randomizers[q.id].status === 'distributed' ? 'Просмотр распределения' : 'Распределить участников'}
+                    style={{
+                      background: randomizers[q.id].status === 'distributed' ? '#666' : '#28a745',
+                      color: '#fff'
+                    }}
                   >
-                    {distributing === q.id ? '⏳' : '🎲'}
+                    🎲
                   </button>
                 )}
                 <button 

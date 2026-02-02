@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CreateTargetedQuestionRequest, QuestionType, UserType, TargetedQuestion } from '../../types';
+import { CreateTargetedQuestionRequest, QuestionType, Direction, TargetedQuestion } from '../../types';
 import { adminApi } from '../../services/adminApi';
 import { randomizerApi } from '../../services/randomizerApi';
 import { useTelegram } from '../../hooks/useTelegram';
@@ -15,7 +15,7 @@ interface AdminCreateQuestionScreenProps {
 export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps> = ({ onBack, onSuccess, editingQuestion }) => {
   const { initData, showAlert } = useTelegram();
   const [loading, setLoading] = useState(false);
-  const [userTypes, setUserTypes] = useState<UserType[]>([]);
+  const [directions, setDirections] = useState<Direction[]>([]);
   const [sendNotification, setSendNotification] = useState(true);
   
   const [question, setQuestion] = useState<CreateTargetedQuestionRequest>({
@@ -24,7 +24,8 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
     options: editingQuestion?.options || ['', ''],
     char_limit: editingQuestion?.char_limit || 1000,
     target_audience: editingQuestion?.target_audience || 'all',
-    target_values: editingQuestion?.target_values || []
+    target_values: editingQuestion?.target_values || [],
+    reflection_points: editingQuestion?.reflection_points || 1
   });
 
   // Состояние для рандомайзера
@@ -38,10 +39,10 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
   useEffect(() => {
     const load = async () => {
       try {
-        const types = await adminApi.getUserTypes();
-        setUserTypes(types);
+        const directionsData = await adminApi.getDirections();
+        setDirections(directionsData);
       } catch (error) {
-        console.error('Error loading user types:', error);
+        console.error('Error loading directions:', error);
       }
     };
     load();
@@ -81,8 +82,8 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
       showAlert('Выберите пользователей');
       return;
     }
-    if (question.target_audience === 'by_type' && (!question.target_values || question.target_values.length === 0)) {
-      showAlert('Выберите тип пользователя');
+    if (question.target_audience === 'by_direction' && (!question.target_values || question.target_values.length === 0)) {
+      showAlert('Выберите направление');
       return;
     }
 
@@ -116,8 +117,14 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
 
     setLoading(true);
     try {
+      // Для рандомайзера используем topic как text вопроса
+      const questionText = question.type === 'randomizer' 
+        ? randomizerData.topic || 'Рандомайзер'
+        : question.text;
+      
       const dataToSend = {
         ...question,
+        text: questionText,
         options: question.options?.filter((o: string) => o.trim()),
         sendNotification
       };
@@ -172,33 +179,33 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
           <select 
             className="form-select"
             value={question.target_audience}
-            onChange={(e) => setQuestion((prev: CreateTargetedQuestionRequest) => ({...prev, target_audience: e.target.value as 'all' | 'by_type' | 'individual', target_values: []}))}
+            onChange={(e) => setQuestion((prev: CreateTargetedQuestionRequest) => ({...prev, target_audience: e.target.value as 'all' | 'by_direction' | 'individual', target_values: []}))}
           >
             <option value="all">👥 Всем пользователям</option>
-            <option value="by_type">📋 По типу пользователя</option>
+            <option value="by_direction">📋 По направлению</option>
             <option value="individual">👤 Конкретным людям</option>
           </select>
         </div>
 
-        {question.target_audience === 'by_type' && (
+        {question.target_audience === 'by_direction' && (
           <div className="form-group">
-            <label>Выберите типы:</label>
+            <label>Выберите направления:</label>
             <div className="checkbox-group">
-              {userTypes.map(t => (
-                <label key={t.id} className="checkbox-item">
+              {directions.map(d => (
+                <label key={d.id} className="checkbox-item">
                   <input
                     type="checkbox"
-                    checked={question.target_values?.includes(t.slug) || false}
+                    checked={question.target_values?.includes(d.slug) || false}
                     onChange={(e) => {
                       const vals = question.target_values || [];
                       if (e.target.checked) {
-                        setQuestion((prev: CreateTargetedQuestionRequest) => ({...prev, target_values: [...vals, t.slug]}));
+                        setQuestion((prev: CreateTargetedQuestionRequest) => ({...prev, target_values: [...vals, d.slug]}));
                       } else {
-                        setQuestion((prev: CreateTargetedQuestionRequest) => ({...prev, target_values: vals.filter((v: string) => v !== t.slug)}));
+                        setQuestion((prev: CreateTargetedQuestionRequest) => ({...prev, target_values: vals.filter((v: string) => v !== d.slug)}));
                       }
                     }}
                   />
-                  {t.name}
+                  {d.name}
                 </label>
               ))}
             </div>
@@ -335,6 +342,33 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
             placeholder="Введите текст вопроса..."
             rows={3}
           />
+        </div>
+
+        {/* Баллы рефлексии */}
+        <div className="form-group">
+          <label>Баллы рефлексии</label>
+          <input
+            type="number"
+            className="form-input"
+            value={question.reflection_points || 1}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === '') {
+                setQuestion((prev: CreateTargetedQuestionRequest) => ({...prev, reflection_points: 1}));
+              } else {
+                const numValue = parseInt(value, 10);
+                if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+                  setQuestion((prev: CreateTargetedQuestionRequest) => ({...prev, reflection_points: numValue}));
+                }
+              }
+            }}
+            min="0"
+            max="100"
+            placeholder="1"
+          />
+          <small style={{fontSize: 12, opacity: 0.7, display: 'block', marginTop: 4}}>
+            Количество баллов рефлексии за ответ на этот вопрос (по умолчанию 1)
+          </small>
         </div>
 
         {/* 5. УВЕДОМЛЕНИЕ */}

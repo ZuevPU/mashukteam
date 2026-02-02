@@ -505,8 +505,11 @@ export class ExportService {
         ...resultsData
       ];
 
-      // Создаем лист для задания
-      const sheetName = (assignment.title || `Задание ${assignment.id}`).substring(0, 31);
+      // Создаем лист для задания (очищаем имя от недопустимых символов)
+      const rawName = assignment.title || `Задание ${assignment.id}`;
+      const sheetName = rawName
+        .replace(/[:\\\/\?\*\[\]]/g, '') // Удаляем недопустимые символы
+        .substring(0, 31) || `Задание_${assignment.id.substring(0, 20)}`; // Если имя пустое, используем ID
       const sheet = XLSX.utils.json_to_sheet(sheetData);
       XLSX.utils.book_append_sheet(workbook, sheet, sheetName);
     }
@@ -521,7 +524,7 @@ export class ExportService {
   private static getTargetTypeLabel(targetType: string): string {
     const labels: Record<string, string> = {
       'all': 'Все пользователи',
-      'user_type': 'По типу пользователя',
+      'direction': 'По направлению',
       'individual': 'Персонально'
     };
     return labels[targetType] || targetType;
@@ -628,7 +631,7 @@ export class ExportService {
   private static getTargetAudienceLabel(audience: string): string {
     const labels: Record<string, string> = {
       'all': 'Все',
-      'by_type': 'По типу',
+      'by_direction': 'По направлению',
       'individual': 'Персонально'
     };
     return labels[audience] || audience;
@@ -747,11 +750,8 @@ export class ExportService {
       `);
 
     // Применяем фильтры
-    if (filters?.directionId) {
-      usersQuery = usersQuery.eq('direction_id', filters.directionId);
-    }
-    if (filters?.userType) {
-      usersQuery = usersQuery.eq('user_type', filters.userType);
+    if (filters?.direction) {
+      usersQuery = usersQuery.eq('direction', filters.direction);
     }
     if (filters?.dateFrom) {
       usersQuery = usersQuery.gte('created_at', filters.dateFrom);
@@ -1005,10 +1005,8 @@ export class ExportService {
         'Username': user.telegram_username || '',
         'Мотивация': user.motivation || '',
         'Статус': user.status === 'registered' ? 'Зарегистрирован' : 'Новый',
-        'Тип пользователя': user.user_type || '',
-        'Направление': user.direction?.name || '',
+        'Направление': user.direction || '',
         'Дата регистрации': new Date(user.created_at).toLocaleString('ru-RU'),
-        'Дата выбора направления': user.direction_selected_at ? new Date(user.direction_selected_at).toLocaleString('ru-RU') : '',
         'Общие баллы': user.total_points || 0,
         'Баллы рефлексии': user.reflection_points || 0,
         'Уровень рефлексии': user.reflection_level || 1,
@@ -1198,14 +1196,11 @@ export class ExportService {
       XLSX.utils.book_append_sheet(workbook, directionsSheet, 'Направления');
     }
 
-    // 15. Типы пользователей
-    const { data: userTypes } = await supabase.from('user_types').select('*').order('created_at', { ascending: false });
-    if (userTypes && userTypes.length > 0) {
-      const userTypesSheet = XLSX.utils.json_to_sheet(userTypes.map((ut: any) => ({
+    // 15. Направления (уже добавлено выше, удаляем дубликат)
         ...ut,
         created_at: ut.created_at ? new Date(ut.created_at).toLocaleString('ru-RU') : ''
       })));
-      XLSX.utils.book_append_sheet(workbook, userTypesSheet, 'Типы пользователей');
+      XLSX.utils.book_append_sheet(workbook, directionsSheet, 'Направления');
     }
 
     // 16. Транзакции баллов

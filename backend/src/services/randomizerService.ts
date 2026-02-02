@@ -96,8 +96,10 @@ export class RandomizerService {
 
   /**
    * Распределение участников по столам
+   * @param randomizerId ID рандомайзера
+   * @param preview Если true, создает предпросмотр (preview_mode=true), иначе финальное распределение
    */
-  static async distributeParticipants(randomizerId: string): Promise<RandomizerDistribution[]> {
+  static async distributeParticipants(randomizerId: string, preview: boolean = false): Promise<RandomizerDistribution[]> {
     try {
       // Получаем данные рандомайзера
       const { data: randomizer, error: randomizerError } = await supabase
@@ -155,10 +157,31 @@ export class RandomizerService {
         }
       }
 
-      // Сохраняем распределения
+      // Если это предпросмотр, удаляем старые предпросмотры для этого рандомайзера
+      if (preview) {
+        await supabase
+          .from('randomizer_distributions')
+          .delete()
+          .eq('randomizer_id', randomizerId)
+          .eq('preview_mode', true);
+      } else {
+        // Для финального распределения удаляем все предпросмотры
+        await supabase
+          .from('randomizer_distributions')
+          .delete()
+          .eq('randomizer_id', randomizerId)
+          .eq('preview_mode', true);
+      }
+
+      // Сохраняем распределения с флагом preview_mode
+      const distributionsToInsert = distributions.map(d => ({
+        ...d,
+        preview_mode: preview
+      }));
+
       const { data: savedDistributions, error: distributionError } = await supabase
         .from('randomizer_distributions')
-        .insert(distributions)
+        .insert(distributionsToInsert)
         .select();
 
       if (distributionError) {
@@ -175,14 +198,135 @@ export class RandomizerService {
         })
         .eq('id', randomizerId);
 
+      return (savedDistributions || []) as RandomizerDistribution[];
+    } catch (error) {
+      logger.error('Error distributing participants', error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    }
+  }
+
+  /**
+   * Получение предпросмотра распределения
+   */
+  static async getPreviewDistribution(randomizerId: string): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('randomizer_distributions')
+        .select('*, user:users(id, first_name, last_name, middle_name, telegram_username)')
+        .eq('randomizer_id', randomizerId)
+        .eq('preview_mode', true)
+        .order('table_number', { ascending: true });
+
+      if (error) {
+        logger.error('Error getting preview distribution', error instanceof Error ? error : new Error(String(error)));
+        throw error;
+      }
+
+      return (data || []) as any[];
+    } catch (error) {
+      logger.error('Error getting preview distribution', error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    }
+  }
+
+  /**
+   * Изменение стола участника в предпросмотре
+   */
+  static async updateDistribution(
+    randomizerId: string,
+    userId: string,
+    newTableNumber: number
+  ): Promise<RandomizerDistribution> {
+    try {
+      // Проверяем, что это предпросмотр
+      const { data: existing } = await supabase
+        .from('randomizer_distributions')
+        .select('*')
+        .eq('randomizer_id', randomizerId)
+        .eq('user_id', userId)
+        .eq('preview_mode', true)
+        .single();
+
+      if (!existing) {
+        throw new Error('Распределение не найдено в режиме предпросмотра');
+      }
+
+      // Обновляем номер стола
+      const { data: updated, error } = await supabase
+        .from('randomizer_distributions')
+        .update({ table_number: newTableNumber })
+        .eq('randomizer_id', randomizerId)
+        .eq('user_id', userId)
+        .eq('preview_mode', true)
+        .select()
+        .single();
+
+      if (error) {
+        logger.error('Error updating distribution', error instanceof Error ? error : new Error(String(error)));
+        throw error;
+      }
+
+      return updated as RandomizerDistribution;
+    } catch (error) {
+      logger.error('Error updating distribution', error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    }
+  }
+
+  /**
+   * Публикация финального распределения (копирование из предпросмотра)
+   */
+  static async publishDistribution(randomizerId: string): Promise<RandomizerDistribution[]> {
+    try {
+      // Получаем предпросмотр
+      const previewDistributions = await this.getPreviewDistribution(randomizerId);
+
+      if (previewDistributions.length === 0) {
+        throw new Error('Нет предпросмотра для публикации');
+      }
+
+      // Удаляем старые финальные распределения
+      await supabase
+        .from('randomizer_distributions')
+        .delete()
+        .eq('randomizer_id', randomizerId)
+        .eq('preview_mode', false);
+
+      // Копируем предпросмотр в финальное распределение
+      const finalDistributions = previewDistributions.map(d => ({
+        randomizer_id: d.randomizer_id,
+        user_id: d.user_id,
+        table_number: d.table_number,
+        preview_mode: false
+      }));
+
+      const { data: saved, error } = await supabase
+        .from('randomizer_distributions')
+        .insert(finalDistributions)
+        .select();
+
+      if (error) {
+        logger.error('Error publishing distribution', error instanceof Error ? error : new Error(String(error)));
+        throw error;
+      }
+
+      // Обновляем статус рандомайзера
+      const { error: updateError } = await supabase
+        .from('randomizer_questions')
+        .update({
+          status: 'distributed',
+          distributed_at: new Date().toISOString(),
+        })
+        .eq('id', randomizerId);
+
       if (updateError) {
         logger.error('Error updating randomizer status', updateError instanceof Error ? updateError : new Error(String(updateError)));
         throw updateError;
       }
 
-      return (savedDistributions || []) as RandomizerDistribution[];
+      return (saved || []) as RandomizerDistribution[];
     } catch (error) {
-      logger.error('Error distributing participants', error instanceof Error ? error : new Error(String(error)));
+      logger.error('Error publishing distribution', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -304,6 +448,7 @@ export class RandomizerService {
 
   /**
    * Получение распределений рандомайзера (для админа)
+   * Возвращает финальные распределения (preview_mode = false)
    */
   static async getRandomizerDistributions(
     randomizerId: string
@@ -316,6 +461,7 @@ export class RandomizerService {
           user:users(id, first_name, last_name, middle_name)
         `)
         .eq('randomizer_id', randomizerId)
+        .eq('preview_mode', false)
         .order('table_number', { ascending: true });
 
       if (error) {

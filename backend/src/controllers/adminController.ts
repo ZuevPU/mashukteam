@@ -87,22 +87,6 @@ export class AdminController {
     }
   }
 
-  /**
-   * Добавление вопроса
-   */
-  static async addQuestion(req: Request, res: Response) {
-    try {
-      const { id } = req.params; // eventId
-      // Извлекаем initData
-      const { initData, ...questionData } = req.body;
-      
-      const question = await EventService.addQuestion(id, questionData);
-      return res.status(201).json({ success: true, question });
-    } catch (error) {
-      console.error('Add question error:', error);
-      return res.status(500).json({ error: 'Ошибка при добавлении вопроса' });
-    }
-  }
 
   /**
    * Получение списка пользователей
@@ -129,9 +113,6 @@ export class AdminController {
         return res.status(404).json({ error: 'Пользователь не найден' });
       }
 
-      // Ответы на мероприятия/диагностику
-      const answers = await EventService.getUserAnswers(id);
-      
       // Ответы на персональные вопросы
       const targetedAnswers = await TargetedQuestionService.getAllUserAnswers(id);
       
@@ -140,7 +121,7 @@ export class AdminController {
 
       return res.json({ 
         success: true, 
-        user: { ...user, answers, targetedAnswers, submissions } 
+        user: { ...user, targetedAnswers, submissions } 
       });
     } catch (error) {
       logger.error('Get user details error', error instanceof Error ? error : new Error(String(error)));
@@ -196,35 +177,25 @@ export class AdminController {
   /**
    * Назначение типа пользователя
    */
-  static async setUserType(req: Request, res: Response) {
-    try {
-      const { id } = req.params;
-      const { userType } = req.body;
-      const user = await UserService.setUserType(id, userType);
-      return res.json({ success: true, user });
-    } catch (error) {
-      logger.error('Set user type error', error instanceof Error ? error : new Error(String(error)));
-      return res.status(500).json({ error: 'Ошибка при назначении типа' });
-    }
-  }
 
   /**
    * Назначение направления пользователю
    */
-  static async setUserDirection(req: Request, res: Response) {
+  static async setUserDirectionFromSelection(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { direction_id } = req.body;
+      const { direction } = req.body;
       
-      await DirectionService.setUserDirection(id, direction_id || null);
+      await DirectionService.setUserDirection(id, direction || null);
       const user = await UserService.getUserById(id);
       
       // Отправка уведомления, если направление назначено
-      if (direction_id && user) {
-        const direction = await DirectionService.getDirectionById(direction_id);
-        if (direction) {
+      if (direction && user) {
+        const directions = await DirectionService.getAllDirections();
+        const directionObj = directions.find(d => d.slug === direction || d.code === direction);
+        if (directionObj) {
           const { notifyDirectionAssigned } = await import('../utils/telegramBot');
-          notifyDirectionAssigned(user.telegram_id, direction.name).catch((err) => 
+          notifyDirectionAssigned(user.telegram_id, directionObj.name).catch((err) => 
             logger.error('Error sending direction notification', err instanceof Error ? err : new Error(String(err)))
           );
         }

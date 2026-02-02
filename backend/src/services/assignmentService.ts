@@ -5,7 +5,7 @@ import {
   CreateAssignmentDto, 
   SubmitAssignmentDto,
   ModerateSubmissionDto,
-  UserType 
+  Direction 
 } from '../types';
 
 export class AssignmentService {
@@ -13,7 +13,7 @@ export class AssignmentService {
   
   static async getAllUserTypes(): Promise<UserType[]> {
     const { data, error } = await supabase
-      .from('user_types')
+      .from('directions')
       .select('*')
       .order('id', { ascending: true });
 
@@ -82,7 +82,7 @@ export class AssignmentService {
 
   // === Assignments for Users (filtered by target) ===
 
-  static async getAssignmentsForUser(userId: string, userType?: string): Promise<Assignment[]> {
+  static async getAssignmentsForUser(userId: string, userDirection?: string): Promise<Assignment[]> {
     const { data, error } = await supabase
       .from('assignments')
       .select('*')
@@ -94,7 +94,7 @@ export class AssignmentService {
     // Filter by target_type
     const assignments = (data as Assignment[]).filter(a => {
       if (a.target_type === 'all') return true;
-      if (a.target_type === 'user_type' && userType && a.target_values?.includes(userType)) return true;
+      if (a.target_type === 'direction' && userDirection && a.target_values?.includes(userDirection)) return true;
       if (a.target_type === 'individual' && a.target_values?.includes(userId)) return true;
       return false;
     });
@@ -225,7 +225,7 @@ export class AssignmentService {
     // Get all approved submissions with user and assignment data
     const { data, error } = await supabase
       .from('assignment_submissions')
-      .select('user_id, user:users(id, first_name, last_name, telegram_username, user_type), assignment:assignments(reward)')
+      .select('user_id, user:users(id, first_name, last_name, telegram_username, direction), assignment:assignments(reward)')
       .eq('status', 'approved');
 
     if (error) throw error;

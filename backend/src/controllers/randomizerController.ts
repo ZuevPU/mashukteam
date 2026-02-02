@@ -79,8 +79,145 @@ export class RandomizerController {
   }
 
   /**
+   * POST /api/admin/randomizer/preview
+   * Создание предпросмотра распределения (админ)
+   */
+  static async createPreview(req: Request, res: Response) {
+    try {
+      const { randomizer_id } = req.body;
+      if (!randomizer_id) {
+        return res.status(400).json({
+          success: false,
+          error: 'randomizer_id обязателен',
+        });
+      }
+
+      // Создаем предпросмотр распределения
+      const distributions = await RandomizerService.distributeParticipants(randomizer_id, true);
+
+      return res.json({
+        success: true,
+        distributions,
+        message: `Создан предпросмотр для ${distributions.length} участников`,
+      });
+    } catch (error: any) {
+      logger.error('Create preview error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({
+        success: false,
+        error: error.message || 'Ошибка при создании предпросмотра',
+      });
+    }
+  }
+
+  /**
+   * GET /api/admin/randomizer/:id/preview
+   * Получение предпросмотра распределения (админ)
+   */
+  static async getPreview(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const distributions = await RandomizerService.getPreviewDistribution(id);
+
+      return res.json({
+        success: true,
+        distributions,
+      });
+    } catch (error: any) {
+      logger.error('Get preview error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({
+        success: false,
+        error: error.message || 'Ошибка при получении предпросмотра',
+      });
+    }
+  }
+
+  /**
+   * PATCH /api/admin/randomizer/:id/distribution
+   * Изменение стола участника в предпросмотре (админ)
+   */
+  static async updateDistribution(req: Request, res: Response) {
+    try {
+      const { id } = req.params; // randomizer_id
+      const { user_id, table_number } = req.body;
+
+      if (!user_id || !table_number) {
+        return res.status(400).json({
+          success: false,
+          error: 'user_id и table_number обязательны',
+        });
+      }
+
+      const distribution = await RandomizerService.updateDistribution(id, user_id, table_number);
+
+      return res.json({
+        success: true,
+        distribution,
+      });
+    } catch (error: any) {
+      logger.error('Update distribution error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({
+        success: false,
+        error: error.message || 'Ошибка при изменении распределения',
+      });
+    }
+  }
+
+  /**
+   * POST /api/admin/randomizer/:id/publish
+   * Публикация финального распределения (админ)
+   */
+  static async publishDistribution(req: Request, res: Response) {
+    try {
+      const { id } = req.params; // randomizer_id
+
+      // Публикуем распределение
+      const distributions = await RandomizerService.publishDistribution(id);
+
+      // Получаем данные рандомайзера для уведомлений
+      const { data: randomizer } = await supabase
+        .from('randomizer_questions')
+        .select('topic')
+        .eq('id', id)
+        .single();
+
+      // Отправляем уведомления участникам
+      const notificationPromises = distributions.map(async (dist) => {
+        try {
+          const user = await UserService.getUserById(dist.user_id);
+          if (user?.telegram_id) {
+            await notifyRandomizerDistribution(
+              dist.user_id,
+              user.telegram_id,
+              randomizer?.topic || 'Рандомайзер',
+              dist.table_number
+            );
+          }
+        } catch (notifError) {
+          logger.error('Error sending randomizer notification', notifError instanceof Error ? notifError : new Error(String(notifError)));
+          // Не прерываем выполнение при ошибке уведомления
+        }
+      });
+
+      await Promise.all(notificationPromises);
+
+      return res.json({
+        success: true,
+        distributions,
+        message: `Распределение опубликовано для ${distributions.length} участников`,
+      });
+    } catch (error: any) {
+      logger.error('Publish distribution error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({
+        success: false,
+        error: error.message || 'Ошибка при публикации распределения',
+      });
+    }
+  }
+
+  /**
    * POST /api/randomizer/distribute
-   * Подведение итогов и распределение по столам (админ)
+   * Подведение итогов и распределение по столам (админ) - УСТАРЕЛО, используйте publish
+   * Оставлено для обратной совместимости, теперь только для финальной публикации
    */
   static async distribute(req: Request, res: Response) {
     try {
@@ -92,8 +229,8 @@ export class RandomizerController {
         });
       }
 
-      // Выполняем распределение
-      const distributions = await RandomizerService.distributeParticipants(randomizer_id);
+      // Выполняем финальное распределение (без предпросмотра)
+      const distributions = await RandomizerService.distributeParticipants(randomizer_id, false);
 
       // Получаем данные рандомайзера для уведомлений
       const { data: randomizer } = await supabase

@@ -38,17 +38,16 @@ router.post('/gamification/level/up', gamificationRateLimiter, levelUp);
 // Все запросы требуют initData в body или headers
 router.post('/events/list', requireAuth, EventController.getEvents); // POST because we send initData
 router.post('/events/:id/details', requireAuth, EventController.getEventDetails);
-router.post('/events/:id/answers', requireAuth, EventController.submitAnswer);
-router.post('/user/my-answers', requireAuth, EventController.getMyAnswers);
 
 import { TargetedQuestionController } from '../controllers/targetedQuestionController';
 import { RandomizerController } from '../controllers/randomizerController';
 import { AssignmentController } from '../controllers/assignmentController';
 import { UserPreferencesController } from '../controllers/userPreferencesController';
 import { AnalyticsController } from '../controllers/analyticsController';
+import { NotificationController } from '../controllers/notificationController';
 
 // === User Types (public) ===
-router.get('/user-types', AssignmentController.getUserTypes);
+router.get('/directions', AssignmentController.getDirections);
 
 // === Directions (public) ===
 router.get('/directions', DirectionController.getAllDirections);
@@ -77,20 +76,29 @@ router.post('/randomizer/:id/distributions', requireAuth, requireAdmin, Randomiz
 router.post('/randomizer/:id/participants-count', requireAuth, requireAdmin, RandomizerController.getParticipantsCount);
 router.post('/randomizer/by-question/:questionId', requireAuth, requireAdmin, RandomizerController.getRandomizerByQuestionId);
 
+// === Admin Randomizer Preview ===
+router.post('/admin/randomizer/preview', requireAuth, requireAdmin, RandomizerController.createPreview);
+router.post('/admin/randomizer/:id/preview', requireAuth, requireAdmin, RandomizerController.getPreview);
+router.patch('/admin/randomizer/:id/distribution', requireAuth, requireAdmin, RandomizerController.updateDistribution);
+router.post('/admin/randomizer/:id/publish', requireAuth, requireAdmin, RandomizerController.publishDistribution);
+
+// === Notifications ===
+router.post('/notifications/my', requireAuth, NotificationController.getMyNotifications);
+router.post('/notifications/:id/read', requireAuth, NotificationController.markAsRead);
+router.post('/notifications/read-all', requireAuth, NotificationController.markAllAsRead);
+
 // === Admin System ===
 router.post('/admin/targeted-questions', requireAuth, requireAdmin, TargetedQuestionController.getAllQuestions);
 router.post('/admin/targeted-answers', requireAuth, requireAdmin, TargetedQuestionController.getAllAnswers);
 router.post('/admin/questions', requireAuth, requireAdmin, TargetedQuestionController.createQuestion);
 router.put('/admin/questions/:id', requireAuth, requireAdmin, TargetedQuestionController.updateQuestion);
 router.delete('/admin/questions/:id', requireAuth, requireAdmin, TargetedQuestionController.deleteQuestion);
-router.patch('/admin/users/:id/type', requireAuth, requireAdmin, AdminController.setUserType);
+router.patch('/admin/users/:id/direction', requireAuth, requireAdmin, AdminController.setUserDirection);
 
 router.post('/admin/events', requireAuth, requireAdmin, AdminController.createEvent);
 router.post('/admin/events/list', requireAuth, requireAdmin, AdminController.getAllEvents); // Новый роут
 router.put('/admin/events/:id', requireAuth, requireAdmin, AdminController.updateEvent); // PUT usually has body
 router.delete('/admin/events/:id', requireAuth, requireAdmin, AdminController.deleteEvent); // DELETE with body for initData
-router.post('/admin/events/:id/questions', requireAuth, requireAdmin, AdminController.addQuestion);
-router.post('/admin/events/:id/analytics', requireAuth, requireAdmin, AdminController.getEventAnalytics); // Новый роут
 
 router.post('/admin/users', requireAuth, requireAdmin, AdminController.getAllUsers);
 router.post('/admin/users/:id', requireAuth, requireAdmin, AdminController.getUserDetails);

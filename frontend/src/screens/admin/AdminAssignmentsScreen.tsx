@@ -137,7 +137,7 @@ function getFormatLabel(format: string) {
 function getTargetLabel(target: string) {
   switch (target) {
     case 'all': return 'Всем';
-    case 'user_type': return 'По типу';
+    case 'direction': return 'По направлению';
     case 'individual': return 'Лично';
     default: return target;
   }

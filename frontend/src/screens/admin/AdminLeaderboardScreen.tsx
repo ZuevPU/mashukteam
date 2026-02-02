@@ -10,7 +10,7 @@ interface LeaderboardEntry {
     first_name: string;
     last_name?: string;
     telegram_username?: string;
-    user_type?: string;
+    direction?: string;
   };
   approved_count: number;
   total_reward: number;

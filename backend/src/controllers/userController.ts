@@ -86,8 +86,7 @@ export async function getUserStatus(req: UserRequest, res: Response) {
         first_name: user.first_name,
         status: user.status,
         is_admin: user.is_admin,
-        user_type: user.user_type,
-        direction_id: user.direction_id,
+        direction: user.direction,
         direction_selected_at: user.direction_selected_at,
       },
     });
@@ -234,26 +233,26 @@ export async function setUserDirection(req: Request, res: Response) {
       });
     }
 
-    const { direction_id } = req.body;
+    const { direction } = req.body;
     
-    if (!direction_id) {
-      logger.warn('setUserDirection: No direction_id provided');
+    if (!direction) {
+      logger.warn('setUserDirection: No direction provided');
       return res.status(400).json({ 
         success: false,
-        error: 'direction_id обязателен' 
+        error: 'direction обязателен' 
       });
     }
 
-    logger.info('Setting direction for user', { userId, direction_id });
+    logger.info('Setting direction for user', { userId, direction });
 
-    await DirectionService.setUserDirection(userId, direction_id);
+    await DirectionService.setUserDirection(userId, direction);
     
-    logger.info('Direction set successfully', { userId, direction_id });
+    logger.info('Direction set successfully', { userId, direction });
     
     return res.status(200).json({ 
       success: true, 
       message: 'Направление выбрано успешно',
-      direction_id: direction_id
+      direction: direction
     });
   } catch (error: any) {
     logger.error('Error setting user direction', error instanceof Error ? error : new Error(String(error)));

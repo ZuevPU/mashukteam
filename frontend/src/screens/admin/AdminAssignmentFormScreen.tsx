@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Assignment, CreateAssignmentRequest, UserType, User } from '../../types';
+import { Assignment, CreateAssignmentRequest, Direction, User } from '../../types';
 import { adminApi } from '../../services/adminApi';
 import { useTelegram } from '../../hooks/useTelegram';
 import { UserSelector } from './UserSelector';
@@ -17,7 +17,7 @@ export const AdminAssignmentFormScreen: React.FC<AdminAssignmentFormScreenProps>
 }) => {
   const { initData, showAlert } = useTelegram();
   const [loading, setLoading] = useState(false);
-  const [userTypes, setUserTypes] = useState<UserType[]>([]);
+  const [directions, setDirections] = useState<Direction[]>([]);
   const [sendNotification, setSendNotification] = useState(true);
   
   const [formData, setFormData] = useState<CreateAssignmentRequest>({
@@ -30,7 +30,7 @@ export const AdminAssignmentFormScreen: React.FC<AdminAssignmentFormScreenProps>
   });
 
   useEffect(() => {
-    adminApi.getUserTypes().then(setUserTypes).catch(console.error);
+    adminApi.getDirections().then(setDirections).catch(console.error);
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -43,7 +43,7 @@ export const AdminAssignmentFormScreen: React.FC<AdminAssignmentFormScreenProps>
     }));
   };
 
-  const handleTypeCheckbox = (slug: string) => {
+  const handleDirectionCheckbox = (slug: string) => {
     const current = formData.target_values || [];
     if (current.includes(slug)) {
       setFormData((prev: CreateAssignmentRequest) => ({ ...prev, target_values: current.filter((v: string) => v !== slug) }));
@@ -150,23 +150,23 @@ export const AdminAssignmentFormScreen: React.FC<AdminAssignmentFormScreenProps>
             onChange={handleChange}
           >
             <option value="all">👥 Всем пользователям</option>
-            <option value="user_type">📋 По типу пользователя</option>
+            <option value="direction">📋 По направлению</option>
             <option value="individual">👤 Конкретным людям</option>
           </select>
         </div>
 
-        {formData.target_type === 'user_type' && (
+        {formData.target_type === 'direction' && (
           <div className="form-group">
-            <label>Выберите типы</label>
+            <label>Выберите направления</label>
             <div style={{display: 'flex', flexDirection: 'column', gap: 8}}>
-              {userTypes.map(t => (
-                <label key={t.id} style={{display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer'}}>
+              {directions.map(d => (
+                <label key={d.id} style={{display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer'}}>
                   <input 
                     type="checkbox"
-                    checked={formData.target_values?.includes(t.slug) || false}
-                    onChange={() => handleTypeCheckbox(t.slug)}
+                    checked={formData.target_values?.includes(d.slug) || false}
+                    onChange={() => handleDirectionCheckbox(d.slug)}
                   />
-                  {t.name}
+                  {d.name}
                 </label>
               ))}
             </div>

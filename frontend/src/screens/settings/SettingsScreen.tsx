@@ -179,10 +179,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
             <span className="info-label">Статус</span>
             <span className="info-value">{user.status === 'registered' ? 'Зарегистрирован' : 'Новый'}</span>
           </div>
-          {user.user_type && (
+          {user.direction && (
             <div className="info-item">
-              <span className="info-label">Тип пользователя</span>
-              <span className="info-value">{user.user_type}</span>
+              <span className="info-label">Направление</span>
+              <span className="info-value">{user.direction}</span>
             </div>
           )}
           <div className="info-item">
@@ -198,11 +198,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           <button className="settings-action-btn" onClick={onNotificationsClick}>
             <span className="settings-action-icon">🔔</span>
             <span className="settings-action-label">Уведомления</span>
-            <span className="settings-action-arrow">→</span>
-          </button>
-          <button className="settings-action-btn" onClick={onThemeClick}>
-            <span className="settings-action-icon">🎨</span>
-            <span className="settings-action-label">Тема</span>
             <span className="settings-action-arrow">→</span>
           </button>
         </div>
