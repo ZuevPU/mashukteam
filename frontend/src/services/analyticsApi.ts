@@ -55,6 +55,33 @@ export interface QuestionAnswerStats {
   uniqueUsersCount: number;
 }
 
+export interface GamificationStats {
+  totalPoints: number;
+  averagePointsPerUser: number;
+  totalAchievements: number;
+  unlockedAchievements: number;
+  topUsers: Array<{
+    userId: string;
+    userName: string;
+    points: number;
+    achievements: number;
+  }>;
+}
+
+export interface AssignmentStats {
+  totalAssignments: number;
+  totalSubmissions: number;
+  approvedSubmissions: number;
+  rejectedSubmissions: number;
+  pendingSubmissions: number;
+  averageReward: number;
+}
+
+export interface RegistrationTrend {
+  date: string;
+  count: number;
+}
+
 export const analyticsApi = {
   /**
    * Получение статистики активности пользователей
@@ -114,5 +141,47 @@ export const analyticsApi = {
       }
     );
     return response.stats;
+  },
+
+  /**
+   * Получение статистики по баллам и достижениям
+   */
+  getGamificationStats: async (initData: string): Promise<GamificationStats> => {
+    const response = await fetchApi<{ success: boolean; stats: GamificationStats }>(
+      '/admin/analytics/gamification',
+      {
+        method: 'POST',
+        body: JSON.stringify({ initData }),
+      }
+    );
+    return response.stats;
+  },
+
+  /**
+   * Получение статистики по заданиям
+   */
+  getAssignmentStats: async (initData: string): Promise<AssignmentStats> => {
+    const response = await fetchApi<{ success: boolean; stats: AssignmentStats }>(
+      '/admin/analytics/assignments',
+      {
+        method: 'POST',
+        body: JSON.stringify({ initData }),
+      }
+    );
+    return response.stats;
+  },
+
+  /**
+   * Получение динамики регистраций
+   */
+  getRegistrationTrend: async (initData: string, days?: number): Promise<RegistrationTrend[]> => {
+    const response = await fetchApi<{ success: boolean; trend: RegistrationTrend[] }>(
+      '/admin/analytics/registration-trend',
+      {
+        method: 'POST',
+        body: JSON.stringify({ initData, days }),
+      }
+    );
+    return response.trend;
   },
 };

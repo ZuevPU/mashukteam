@@ -6,6 +6,54 @@
   padding-bottom: 80px;
 }
 
+.event-info-card {
+  background: var(--color-bg-card, #FFFFFF);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border: 1px solid var(--color-border, #35A2A8);
+}
+
+.event-info-title {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-text-primary, #2C2B2B);
+}
+
+.event-info-description {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: var(--color-text-primary, #2C2B2B);
+  opacity: 0.8;
+  line-height: 1.5;
+}
+
+.event-info-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border, #35A2A8);
+}
+
+.event-info-item {
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.event-info-label {
+  color: var(--color-text-primary, #2C2B2B);
+  opacity: 0.7;
+  font-weight: 500;
+}
+
+.event-info-value {
+  color: var(--color-primary, #3E529B);
+  font-weight: 600;
+}
+
 .survey-screen.wizard {
   display: flex;
   flex-direction: column;

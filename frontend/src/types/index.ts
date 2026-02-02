@@ -70,6 +70,33 @@ export interface TargetedQuestion {
   created_at: string;
 }
 
+export interface RandomizerQuestion {
+  id: string;
+  question_id: string;
+  tables_count: number;
+  participants_per_table: number;
+  topic: string;
+  description: string;
+  status: 'open' | 'closed' | 'distributed';
+  created_at: string;
+  distributed_at?: string;
+}
+
+export interface RandomizerParticipant {
+  id: string;
+  randomizer_id: string;
+  user_id: string;
+  participated_at: string;
+}
+
+export interface RandomizerDistribution {
+  id: string;
+  randomizer_id: string;
+  user_id: string;
+  table_number: number;
+  distributed_at: string;
+}
+
 export interface TargetedAnswer {
   id: string;
   user_id: string;
@@ -87,7 +114,7 @@ export interface CreateTargetedQuestionDto {
   target_values?: string[];
 }
 
-export type QuestionType = 'single' | 'multiple' | 'scale' | 'text';
+export type QuestionType = 'single' | 'multiple' | 'scale' | 'text' | 'randomizer';
 
 export interface Question {
   id: string;

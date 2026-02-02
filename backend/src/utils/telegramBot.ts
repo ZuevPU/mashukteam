@@ -324,6 +324,27 @@ export async function notifyAchievementUnlocked(
 }
 
 /**
+ * Отправка уведомления о распределении по столам в рандомайзере
+ */
+export async function notifyRandomizerDistribution(
+  userId: string,
+  telegramId: number,
+  randomizerTopic: string,
+  tableNumber: number
+): Promise<boolean> {
+  // Проверяем настройки пользователя
+  const shouldSend = await shouldSendNotification(userId, 'questions');
+  if (!shouldSend) {
+    logger.debug('Randomizer notification skipped due to user preferences', { userId });
+    return false;
+  }
+  
+  const text = `🎲 <b>Подведены итоги распределения!</b>\n\nТема: ${randomizerTopic}\n\nВаш стол: <b>№${tableNumber}</b>\n\nУдачи!`;
+  
+  return await sendMessageToUser(telegramId, text, true);
+}
+
+/**
  * Отправка уведомления о новом персональном вопросе
  */
 export async function notifyNewTargetedQuestion(

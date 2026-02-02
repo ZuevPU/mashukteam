@@ -424,31 +424,31 @@ export function BentoMenuScreen() {
     });
   }
 
-  // 1. Диагностика
-  bentoItems.push({
-    id: 'diagnostic',
-    content: <DiagnosticCard onClick={() => setView('diagnostic_list')} />,
-    size: '1x1',
-  });
-
-  // 2. Мероприятия
+  // 1. Мероприятия
   bentoItems.push({
     id: 'events',
     content: <EventsCard onClick={() => setView('events_list')} />,
     size: '1x1',
   });
 
-  // 3. Вопросы
+  // 2. Вопросы
   bentoItems.push({
     id: 'my_questions',
     content: <QuestionsCard onClick={() => setView('targeted_questions')} />,
     size: '1x1',
   });
 
-  // 4. Задания
+  // 3. Задания
   bentoItems.push({
     id: 'assignments',
     content: <AssignmentsCard onClick={() => setView('assignments_list')} />,
+    size: '1x1',
+  });
+
+  // 4. Диагностика
+  bentoItems.push({
+    id: 'diagnostic',
+    content: <DiagnosticCard onClick={() => setView('diagnostic_list')} />,
     size: '1x1',
   });
 

@@ -42,6 +42,7 @@ router.post('/events/:id/answers', requireAuth, EventController.submitAnswer);
 router.post('/user/my-answers', requireAuth, EventController.getMyAnswers);
 
 import { TargetedQuestionController } from '../controllers/targetedQuestionController';
+import { RandomizerController } from '../controllers/randomizerController';
 import { AssignmentController } from '../controllers/assignmentController';
 import { UserPreferencesController } from '../controllers/userPreferencesController';
 import { AnalyticsController } from '../controllers/analyticsController';
@@ -65,6 +66,16 @@ router.patch('/user/preferences', requireAuth, UserPreferencesController.updateP
 // === Targeted Questions ===
 router.post('/questions/my', requireAuth, TargetedQuestionController.getMyQuestions);
 router.post('/questions/answer', requireAuth, TargetedQuestionController.submitAnswer);
+
+// === Randomizers ===
+router.post('/randomizer/create', requireAuth, requireAdmin, RandomizerController.createRandomizer);
+router.post('/randomizer/participate', requireAuth, RandomizerController.participate);
+router.post('/randomizer/distribute', requireAuth, requireAdmin, RandomizerController.distribute);
+router.post('/randomizer/my', requireAuth, RandomizerController.getMyRandomizers);
+router.post('/randomizer/:id', requireAuth, RandomizerController.getRandomizer);
+router.post('/randomizer/:id/distributions', requireAuth, requireAdmin, RandomizerController.getDistributions);
+router.post('/randomizer/:id/participants-count', requireAuth, requireAdmin, RandomizerController.getParticipantsCount);
+router.post('/randomizer/by-question/:questionId', requireAuth, requireAdmin, RandomizerController.getRandomizerByQuestionId);
 
 // === Admin System ===
 router.post('/admin/targeted-questions', requireAuth, requireAdmin, TargetedQuestionController.getAllQuestions);
@@ -120,5 +131,8 @@ router.post('/admin/analytics/user-activity', requireAuth, requireAdmin, Analyti
 router.post('/admin/analytics/directions', requireAuth, requireAdmin, AnalyticsController.getDirectionStats);
 router.post('/admin/analytics/events', requireAuth, requireAdmin, AnalyticsController.getEventStats);
 router.post('/admin/analytics/questions', requireAuth, requireAdmin, AnalyticsController.getQuestionStats);
+router.post('/admin/analytics/gamification', requireAuth, requireAdmin, AnalyticsController.getGamificationStats);
+router.post('/admin/analytics/assignments', requireAuth, requireAdmin, AnalyticsController.getAssignmentStats);
+router.post('/admin/analytics/registration-trend', requireAuth, requireAdmin, AnalyticsController.getRegistrationTrend);
 
 export default router;

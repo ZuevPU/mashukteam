@@ -343,4 +343,156 @@ export class AnalyticsService {
       throw error;
     }
   }
+
+  /**
+   * Статистика по баллам и достижениям
+   */
+  static async getGamificationStats(): Promise<{
+    totalPoints: number;
+    averagePointsPerUser: number;
+    totalAchievements: number;
+    unlockedAchievements: number;
+    topUsers: Array<{ userId: string; userName: string; points: number; achievements: number }>;
+  }> {
+    try {
+      // Получаем всех пользователей с их баллами
+      const { data: usersData } = await supabase
+        .from('users')
+        .select('id, first_name, last_name, middle_name, total_points');
+
+      const totalPoints = (usersData || []).reduce((sum, u: any) => sum + (u.total_points || 0), 0);
+      const totalUsers = usersData?.length || 0;
+      
+      const averagePointsPerUser = totalUsers > 0 ? Math.round((totalPoints / totalUsers) * 100) / 100 : 0;
+
+      // Статистика по достижениям
+      const { count: totalAchievements } = await supabase
+        .from('achievements')
+        .select('*', { count: 'exact', head: true });
+
+      const { count: unlockedAchievements } = await supabase
+        .from('user_achievements')
+        .select('*', { count: 'exact', head: true });
+
+      // Топ пользователей по баллам
+      const topUsersData = (usersData || [])
+        .sort((a: any, b: any) => (b.total_points || 0) - (a.total_points || 0))
+        .slice(0, 10)
+        .map(async (user: any) => {
+          const { count: achievementsCount } = await supabase
+            .from('user_achievements')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id);
+
+          const userName = `${user.last_name || ''} ${user.first_name || ''} ${user.middle_name || ''}`.trim() || 'Неизвестный';
+
+          return {
+            userId: user.id,
+            userName,
+            points: user.total_points || 0,
+            achievements: achievementsCount || 0,
+          };
+        });
+
+      const resolvedTopUsers = await Promise.all(topUsersData);
+
+      return {
+        totalPoints,
+        averagePointsPerUser,
+        totalAchievements: totalAchievements || 0,
+        unlockedAchievements: unlockedAchievements || 0,
+        topUsers: resolvedTopUsers,
+      };
+    } catch (error) {
+      logger.error('Error getting gamification stats', error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    }
+  }
+
+  /**
+   * Статистика по заданиям
+   */
+  static async getAssignmentStats(): Promise<{
+    totalAssignments: number;
+    totalSubmissions: number;
+    approvedSubmissions: number;
+    rejectedSubmissions: number;
+    pendingSubmissions: number;
+    averageReward: number;
+  }> {
+    try {
+      const { count: totalAssignments } = await supabase
+        .from('assignments')
+        .select('*', { count: 'exact', head: true });
+
+      const { data: submissions } = await supabase
+        .from('assignment_submissions')
+        .select('status');
+
+      const totalSubmissions = submissions?.length || 0;
+      const approvedSubmissions = submissions?.filter((s: any) => s.status === 'approved').length || 0;
+      const rejectedSubmissions = submissions?.filter((s: any) => s.status === 'rejected').length || 0;
+      const pendingSubmissions = submissions?.filter((s: any) => s.status === 'pending').length || 0;
+
+      // Средняя награда за задания
+      const { data: assignments } = await supabase
+        .from('assignments')
+        .select('reward');
+      
+      const averageReward = assignments && assignments.length > 0
+        ? Math.round((assignments.reduce((sum, a: any) => sum + (a.reward || 0), 0) / assignments.length) * 100) / 100
+        : 0;
+
+      return {
+        totalAssignments: totalAssignments || 0,
+        totalSubmissions,
+        approvedSubmissions,
+        rejectedSubmissions,
+        pendingSubmissions,
+        averageReward,
+      };
+    } catch (error) {
+      logger.error('Error getting assignment stats', error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    }
+  }
+
+  /**
+   * Динамика регистраций по дням
+   */
+  static async getRegistrationTrend(days: number = 30): Promise<Array<{ date: string; count: number }>> {
+    try {
+      const { data: users } = await supabase
+        .from('users')
+        .select('created_at')
+        .order('created_at', { ascending: false });
+
+      if (!users || users.length === 0) {
+        return [];
+      }
+
+      const now = new Date();
+      const startDate = new Date(now);
+      startDate.setDate(startDate.getDate() - days);
+
+      const dateMap = new Map<string, number>();
+
+      users.forEach((user: any) => {
+        const userDate = new Date(user.created_at);
+        if (userDate >= startDate) {
+          const dateKey = userDate.toISOString().split('T')[0];
+          dateMap.set(dateKey, (dateMap.get(dateKey) || 0) + 1);
+        }
+      });
+
+      const trend = Array.from(dateMap.entries())
+        .map(([date, count]) => ({ date, count }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      return trend;
+    } catch (error) {
+      logger.error('Error getting registration trend', error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    }
+  }
 }

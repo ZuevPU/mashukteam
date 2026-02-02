@@ -80,7 +80,7 @@ export interface CreateTargetedQuestionDto {
   target_values?: string[];
 }
 
-export type QuestionType = 'single' | 'multiple' | 'scale' | 'text';
+export type QuestionType = 'single' | 'multiple' | 'scale' | 'text' | 'randomizer';
 
 export interface UserPreferences {
   id: string;
@@ -333,4 +333,40 @@ export interface SubmitAssignmentDto {
 export interface ModerateSubmissionDto {
   status: 'approved' | 'rejected';
   admin_comment?: string;
+}
+
+// Рандомайзеры
+export interface RandomizerQuestion {
+  id: string;
+  question_id: string;
+  tables_count: number;
+  participants_per_table: number;
+  topic: string;
+  description: string;
+  status: 'open' | 'closed' | 'distributed';
+  created_at: string;
+  distributed_at?: string;
+}
+
+export interface RandomizerParticipant {
+  id: string;
+  randomizer_id: string;
+  user_id: string;
+  participated_at: string;
+}
+
+export interface RandomizerDistribution {
+  id: string;
+  randomizer_id: string;
+  user_id: string;
+  table_number: number;
+  distributed_at: string;
+}
+
+export interface CreateRandomizerDto {
+  question_id: string;
+  tables_count: number;
+  participants_per_table: number;
+  topic: string;
+  description?: string;
 }

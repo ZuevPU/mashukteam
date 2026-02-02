@@ -7,7 +7,8 @@ export class ReflectionService {
    */
   static async addReflectionPoints(
     userId: string,
-    actionType: 'event_answer' | 'diagnostic_answer' | 'targeted_answer' | 'assignment_completed'
+    actionType: 'event_answer' | 'diagnostic_answer' | 'targeted_answer' | 'assignment_completed',
+    additionalPoints: number = 0
   ): Promise<void> {
     // Определяем количество баллов в зависимости от типа действия
     const pointsMap: Record<string, number> = {
@@ -17,7 +18,8 @@ export class ReflectionService {
       'assignment_completed': 5
     };
 
-    const points = pointsMap[actionType] || 0;
+    const basePoints = pointsMap[actionType] || 0;
+    const points = basePoints + additionalPoints;
     if (points === 0) return;
 
     // Получаем текущие баллы пользователя

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CreateTargetedQuestionRequest, QuestionType, UserType, TargetedQuestion } from '../../types';
 import { adminApi } from '../../services/adminApi';
+import { randomizerApi } from '../../services/randomizerApi';
 import { useTelegram } from '../../hooks/useTelegram';
 import { UserSelector } from './UserSelector';
 import './AdminScreens.css';
@@ -24,6 +25,14 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
     char_limit: editingQuestion?.char_limit || 1000,
     target_audience: editingQuestion?.target_audience || 'all',
     target_values: editingQuestion?.target_values || []
+  });
+
+  // Состояние для рандомайзера
+  const [randomizerData, setRandomizerData] = useState({
+    tables_count: 20,
+    participants_per_table: 4,
+    topic: '',
+    description: '',
   });
 
   useEffect(() => {
@@ -90,6 +99,21 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
       }
     }
 
+    if (question.type === 'randomizer') {
+      if (!randomizerData.topic.trim()) {
+        showAlert('Введите тему вопроса');
+        return;
+      }
+      if (randomizerData.tables_count <= 0) {
+        showAlert('Укажите количество столов');
+        return;
+      }
+      if (randomizerData.participants_per_table <= 0) {
+        showAlert('Укажите количество участников на стол');
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const dataToSend = {
@@ -102,13 +126,32 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
         await adminApi.updateTargetedQuestion(editingQuestion.id, dataToSend, initData);
         showAlert('Вопрос обновлен!');
       } else {
-        await adminApi.createTargetedQuestion({ ...dataToSend, status: 'published' }, initData);
+        const createdQuestion = await adminApi.createTargetedQuestion({ ...dataToSend, status: 'published' }, initData);
+        
+        // Если тип рандомайзер, создаем рандомайзер
+        if (question.type === 'randomizer' && createdQuestion?.id) {
+          try {
+            await randomizerApi.createRandomizer(initData, {
+              question_id: createdQuestion.id,
+              tables_count: randomizerData.tables_count,
+              participants_per_table: randomizerData.participants_per_table,
+              topic: randomizerData.topic,
+              description: randomizerData.description || undefined,
+            });
+          } catch (randomizerError: any) {
+            console.error('Error creating randomizer:', randomizerError);
+            showAlert('Вопрос создан, но ошибка создания рандомайзера: ' + (randomizerError.message || 'Неизвестная ошибка'));
+            onSuccess();
+            return;
+          }
+        }
+        
         showAlert('Вопрос создан!');
       }
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error:', error);
-      showAlert(editingQuestion ? 'Ошибка обновления' : 'Ошибка создания');
+      showAlert(error.message || (editingQuestion ? 'Ошибка обновления' : 'Ошибка создания'));
     } finally {
       setLoading(false);
     }
@@ -180,8 +223,80 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
             <option value="single">⭕ Выбрать один вариант</option>
             <option value="multiple">☑️ Выбрать несколько вариантов</option>
             <option value="scale">🔢 Ввод числа (1-10)</option>
+            <option value="randomizer">🎲 Рандомайзер</option>
           </select>
         </div>
+
+        {/* ПОЛЯ ДЛЯ РАНДОМАЙЗЕРА */}
+        {question.type === 'randomizer' && (
+          <>
+            <div className="form-group">
+              <label>Количество столов</label>
+              <input
+                type="number"
+                className="form-input"
+                value={randomizerData.tables_count}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === '') {
+                    setRandomizerData(prev => ({...prev, tables_count: 0}));
+                  } else {
+                    const numValue = parseInt(value, 10);
+                    if (!isNaN(numValue) && numValue > 0) {
+                      setRandomizerData(prev => ({...prev, tables_count: numValue}));
+                    }
+                  }
+                }}
+                min="1"
+                placeholder="20"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Участников на стол</label>
+              <input
+                type="number"
+                className="form-input"
+                value={randomizerData.participants_per_table}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === '') {
+                    setRandomizerData(prev => ({...prev, participants_per_table: 0}));
+                  } else {
+                    const numValue = parseInt(value, 10);
+                    if (!isNaN(numValue) && numValue > 0) {
+                      setRandomizerData(prev => ({...prev, participants_per_table: numValue}));
+                    }
+                  }
+                }}
+                min="1"
+                placeholder="4"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Тема вопроса *</label>
+              <input
+                type="text"
+                className="form-input"
+                value={randomizerData.topic}
+                onChange={(e) => setRandomizerData(prev => ({...prev, topic: e.target.value}))}
+                placeholder="Введите тему вопроса..."
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Описание вопроса</label>
+              <textarea
+                className="form-textarea"
+                value={randomizerData.description}
+                onChange={(e) => setRandomizerData(prev => ({...prev, description: e.target.value}))}
+                placeholder="Введите описание вопроса..."
+                rows={3}
+              />
+            </div>
+          </>
+        )}
 
         {/* 3. ВАРИАНТЫ ОТВЕТОВ */}
         {(question.type === 'single' || question.type === 'multiple') && (

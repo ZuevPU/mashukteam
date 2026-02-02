@@ -135,9 +135,10 @@ export class AssignmentController {
       // Важно: начисляем только если статус изменился на 'approved' (не был approved ранее)
       if (data.status === 'approved' && previousStatus !== 'approved' && userId) {
         try {
-          logger.info('Начисление баллов рефлексии за выполнение задания', { userId });
-          await ReflectionService.addReflectionPoints(userId, 'assignment_completed');
-          logger.info('Баллы рефлексии успешно начислены', { userId });
+          const reward = subDataBefore.assignment?.reward || 0;
+          logger.info('Начисление баллов рефлексии за выполнение задания', { userId, reward });
+          await ReflectionService.addReflectionPoints(userId, 'assignment_completed', reward);
+          logger.info('Баллы рефлексии успешно начислены', { userId, totalPoints: 5 + reward });
           
           // Проверка достижений после начисления баллов
           try {

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { TargetedQuestion, TargetedAnswer } from '../types';
+import { TargetedQuestion, TargetedAnswer, RandomizerQuestion } from '../types';
 import { fetchApiWithAuth, fetchApi } from '../services/api';
+import { buildApiEndpoint } from '../utils/apiUrl';
+import { RandomizerCard } from '../components/questions/RandomizerCard';
 import { useTelegram } from '../hooks/useTelegram';
 import './TargetedQuestionsListScreen.css';
 
@@ -12,6 +14,7 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
   const { initData, showAlert } = useTelegram();
   const [questions, setQuestions] = useState<TargetedQuestion[]>([]);
   const [answers, setAnswers] = useState<TargetedAnswer[]>([]);
+  const [randomizers, setRandomizers] = useState<Record<string, string>>({}); // question_id -> randomizer_id
   const [loading, setLoading] = useState(true);
   
   // State for current answer input
@@ -30,6 +33,31 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
         
         setQuestions(response.questions || []);
         setAnswers(response.answers || []);
+        
+        // Загружаем данные рандомайзеров для вопросов типа randomizer
+        const randomizerQuestions = (response.questions || []).filter(q => q.type === 'randomizer');
+        const randomizerMap: Record<string, string> = {};
+        
+        for (const q of randomizerQuestions) {
+          try {
+            const response = await fetch(buildApiEndpoint(`/randomizer/by-question/${q.id}`), {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ initData }),
+            });
+            
+            if (response.ok) {
+              const randomizerResponse = await response.json();
+              if (randomizerResponse.randomizer) {
+                randomizerMap[q.id] = randomizerResponse.randomizer.id;
+              }
+            }
+          } catch (err) {
+            console.error('Error loading randomizer for question:', q.id, err);
+          }
+        }
+        
+        setRandomizers(randomizerMap);
       } catch (error) {
         console.error('Error loading questions:', error);
       } finally {
@@ -183,7 +211,8 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
                   </button>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}

@@ -1,0 +1,127 @@
+/* Стили для аналитики */
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.analytics-section {
+  margin-bottom: 24px;
+}
+
+.analytics-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary, #2C2B2B);
+}
+
+.analytics-top-users {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.analytics-top-user-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: var(--color-bg-card, #FFFFFF);
+  border-radius: 8px;
+  border: 1px solid var(--color-border, #35A2A8);
+}
+
+.analytics-top-user-name {
+  font-weight: 500;
+  color: var(--color-text-primary, #2C2B2B);
+}
+
+.analytics-top-user-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 14px;
+}
+
+.analytics-top-user-points {
+  color: var(--color-primary, #3E529B);
+  font-weight: 600;
+}
+
+.analytics-top-user-achievements {
+  color: var(--color-text-primary, #2C2B2B);
+  opacity: 0.7;
+}
+
+.analytics-trend-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.analytics-trend-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  background: var(--color-bg-card, #FFFFFF);
+  border-radius: 6px;
+  border: 1px solid var(--color-border, #35A2A8);
+}
+
+.analytics-trend-date {
+  min-width: 100px;
+  font-size: 12px;
+  color: var(--color-text-primary, #2C2B2B);
+  opacity: 0.7;
+}
+
+.analytics-trend-bar {
+  flex: 1;
+  height: 24px;
+  background: var(--color-bg-primary, #F8F8F7);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.analytics-trend-bar-fill {
+  height: 100%;
+  background: var(--color-primary, #3E529B);
+  transition: width 0.3s ease;
+}
+
+.analytics-trend-count {
+  min-width: 40px;
+  text-align: right;
+  font-weight: 600;
+  color: var(--color-primary, #3E529B);
+  font-size: 14px;
+}
+
+.analytics-status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.analytics-status-approved {
+  background: #d4edda;
+  color: #155724;
+}
+
+.analytics-status-rejected {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.analytics-status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
