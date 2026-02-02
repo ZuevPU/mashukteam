@@ -55,7 +55,7 @@ export const AssignmentsListScreen: React.FC<AssignmentsListScreenProps> = ({ on
             {available.map((a) => (
               <div key={a.id} className="assignment-card" onClick={() => onSelect(a)}>
                 <div className="assignment-header">
-                  <span className="reward-badge">+{a.reward} баллов</span>
+                  <span className="reward-badge">⭐ {a.reward}</span>
                 </div>
                 <h4>{a.title}</h4>
                 {a.description && <p className="description">{a.description.slice(0, 100)}...</p>}

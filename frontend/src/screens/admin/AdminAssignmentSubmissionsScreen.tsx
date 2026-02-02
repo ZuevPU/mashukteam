@@ -73,6 +73,11 @@ export const AdminAssignmentSubmissionsScreen: React.FC<AdminAssignmentSubmissio
                   </span>
                 </div>
                 <p className="answer-box">{sub.content}</p>
+                {(sub as any).assignment?.reward && (
+                  <div style={{marginTop: 8, padding: '8px 12px', background: '#fff3cd', borderRadius: '6px', fontSize: '13px'}}>
+                    ⭐ За выполнение: <strong>{(sub as any).assignment.reward} звездочек</strong>
+                  </div>
+                )}
                 
                 {moderating === sub.id ? (
                   <div style={{marginTop: 12}}>
@@ -89,7 +94,7 @@ export const AdminAssignmentSubmissionsScreen: React.FC<AdminAssignmentSubmissio
                         style={{flex: 1, marginTop: 0, background: '#28a745'}}
                         onClick={() => handleModerate(sub.id, 'approved')}
                       >
-                        ✓ Принять
+                        ✓ Принять {((sub as any).assignment?.reward) ? `(+⭐ ${(sub as any).assignment.reward})` : ''}
                       </button>
                       <button 
                         className="save-btn" 
@@ -134,6 +139,11 @@ export const AdminAssignmentSubmissionsScreen: React.FC<AdminAssignmentSubmissio
                   </span>
                 </div>
                 <p className="answer-box">{sub.content}</p>
+                {sub.status === 'approved' && (sub as any).assignment?.reward && (
+                  <div style={{marginTop: 8, padding: '8px 12px', background: '#d4edda', borderRadius: '6px', fontSize: '13px'}}>
+                    ⭐ Начислено: <strong>{(sub as any).assignment.reward} звездочек</strong>
+                  </div>
+                )}
                 {sub.admin_comment && (
                   <p style={{fontSize: 12, opacity: 0.7, marginTop: 8}}>
                     Комментарий: {sub.admin_comment}

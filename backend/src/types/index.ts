@@ -79,6 +79,7 @@ export interface CreateTargetedQuestionDto {
   target_audience: 'all' | 'by_direction' | 'individual';
   target_values?: string[];
   reflection_points?: number;
+  status?: 'draft' | 'published' | 'archived';
 }
 
 export type QuestionType = 'single' | 'multiple' | 'scale' | 'text' | 'randomizer';

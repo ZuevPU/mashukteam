@@ -27,6 +27,31 @@
   opacity: 0.95;
 }
 
+.welcome-text p {
+  margin: 8px 0;
+}
+
+.welcome-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+  text-align: left;
+}
+
+.welcome-list li {
+  margin: 8px 0;
+  padding-left: 20px;
+  position: relative;
+}
+
+.welcome-list li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--color-text-on-primary, #FFFFFF);
+  font-weight: bold;
+}
+
 .welcome-button {
   background: var(--color-bg-card, #FFFFFF);
   color: var(--color-primary, #3E529B);

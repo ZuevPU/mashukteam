@@ -8,7 +8,6 @@ interface SettingsScreenProps {
   user: User;
   onBack: () => void;
   onNotificationsClick: () => void;
-  onThemeClick: () => void;
   onUserUpdate?: (updatedUser: User) => void;
 }
 
@@ -16,7 +15,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   user,
   onBack,
   onNotificationsClick,
-  onThemeClick,
   onUserUpdate,
 }) => {
   const { initData, showAlert } = useTelegram();

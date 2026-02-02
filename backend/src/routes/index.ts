@@ -38,6 +38,8 @@ router.post('/gamification/level/up', gamificationRateLimiter, levelUp);
 // Все запросы требуют initData в body или headers
 router.post('/events/list', requireAuth, EventController.getEvents); // POST because we send initData
 router.post('/events/:id/details', requireAuth, EventController.getEventDetails);
+router.post('/events/:id/note', requireAuth, EventController.saveEventNote);
+router.get('/events/:id/note', requireAuth, EventController.getEventNote);
 
 import { TargetedQuestionController } from '../controllers/targetedQuestionController';
 import { RandomizerController } from '../controllers/randomizerController';

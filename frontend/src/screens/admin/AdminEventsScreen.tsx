@@ -120,8 +120,13 @@ export const AdminEventsScreen: React.FC<AdminEventsScreenProps> = ({
                   {getStatusIcon(event.status || 'draft')}
                 </button>
                 <button className="action-btn" onClick={() => onEdit(event)}>✏️</button>
-                <button className="action-btn" onClick={() => onAddQuestions(event)}>❓</button>
-                <button className="action-btn" onClick={() => onAnalytics(event.id)}>📊</button>
+                {/* Иконки вопросов и аналитики только для диагностики */}
+                {typeFilter === 'diagnostic' && (
+                  <>
+                    <button className="action-btn" onClick={() => onAddQuestions(event)}>❓</button>
+                    <button className="action-btn" onClick={() => onAnalytics(event.id)}>📊</button>
+                  </>
+                )}
                 <button className="action-btn" onClick={() => handleDelete(event.id, event.title)}>🗑️</button>
               </div>
             </div>

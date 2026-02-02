@@ -115,4 +115,49 @@ export class EventService {
     return data as Event;
   }
 
+  /**
+   * Сохранение или обновление заметки пользователя по мероприятию
+   */
+  static async saveEventNote(userId: string, eventId: string, noteText: string): Promise<{ id: string; note_text: string }> {
+    const { data, error } = await supabase
+      .from('event_notes')
+      .upsert({
+        user_id: userId,
+        event_id: eventId,
+        note_text: noteText,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,event_id'
+      })
+      .select('id, note_text')
+      .single();
+
+    if (error) {
+      console.error('Error saving event note:', error);
+      throw error;
+    }
+
+    return data as { id: string; note_text: string };
+  }
+
+  /**
+   * Получение заметки пользователя по мероприятию
+   */
+  static async getEventNote(userId: string, eventId: string): Promise<{ id: string; note_text: string } | null> {
+    const { data, error } = await supabase
+      .from('event_notes')
+      .select('id, note_text')
+      .eq('user_id', userId)
+      .eq('event_id', eventId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') return null;
+      console.error('Error getting event note:', error);
+      throw error;
+    }
+
+    return data as { id: string; note_text: string };
+  }
+
 }

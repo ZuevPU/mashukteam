@@ -19,9 +19,11 @@ export const NotificationsSettingsScreen: React.FC<NotificationsSettingsScreenPr
   const [loadingNotifications, setLoadingNotifications] = useState(false);
 
   useEffect(() => {
-    loadPreferences();
-    loadNotifications();
-  }, []);
+    if (initData) {
+      loadPreferences();
+      loadNotifications();
+    }
+  }, [initData]);
 
   const loadPreferences = async () => {
     if (!initData) return;
@@ -247,17 +249,31 @@ export const NotificationsSettingsScreen: React.FC<NotificationsSettingsScreenPr
                 </button>
               )}
               <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                {notifications.map((notif) => (
+                {notifications.map((notif: Notification) => (
                   <div
                     key={notif.id}
-                    onClick={() => !notif.read && handleMarkAsRead(notif.id)}
+                    onClick={() => {
+                      if (!notif.read) {
+                        handleMarkAsRead(notif.id);
+                      }
+                      // Если есть deep_link, можно обработать навигацию
+                      if (notif.deep_link && typeof window !== 'undefined' && window.Telegram?.WebApp) {
+                        const tg = window.Telegram.WebApp as any;
+                        if (tg.openLink) {
+                          tg.openLink(notif.deep_link);
+                        } else {
+                          // Fallback: открываем ссылку в новом окне
+                          window.open(notif.deep_link, '_blank');
+                        }
+                      }
+                    }}
                     style={{
                       padding: '12px',
                       marginBottom: '8px',
                       background: notif.read ? 'var(--color-bg-primary, #F8F8F7)' : '#e3f2fd',
                       border: '1px solid var(--color-border, #35A2A8)',
                       borderRadius: '8px',
-                      cursor: notif.read ? 'default' : 'pointer',
+                      cursor: 'pointer',
                       opacity: notif.read ? 0.7 : 1
                     }}
                   >
@@ -283,6 +299,11 @@ export const NotificationsSettingsScreen: React.FC<NotificationsSettingsScreenPr
                     <div style={{ fontSize: '11px', color: 'var(--color-text-primary, #2C2B2B)', opacity: 0.6, marginTop: '4px' }}>
                       {new Date(notif.created_at).toLocaleString('ru-RU')}
                     </div>
+                    {notif.deep_link && (
+                      <div style={{ fontSize: '11px', color: '#3E529B', marginTop: '4px', fontWeight: 500 }}>
+                        Нажмите, чтобы перейти →
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

@@ -160,19 +160,20 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
               type="number"
               className="form-input"
               name="group_order"
-              value={formData.group_order}
+              value={formData.group_order || ''}
               onChange={(e) => {
                 const value = e.target.value;
                 if (value === '') {
                   setFormData({...formData, group_order: 0});
                 } else {
                   const numValue = parseInt(value, 10);
-                  if (!isNaN(numValue)) {
+                  if (!isNaN(numValue) && numValue >= 0) {
                     setFormData({...formData, group_order: numValue});
                   }
                 }
               }}
               placeholder="0"
+              min="0"
             />
             <small style={{fontSize: 11, opacity: 0.7, marginTop: 4, display: 'block'}}>
               Меньше = выше в списке
@@ -185,19 +186,20 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
               type="number"
               className="form-input"
               name="event_order"
-              value={formData.event_order}
+              value={formData.event_order ?? ''}
               onChange={(e) => {
                 const value = e.target.value;
                 if (value === '') {
                   setFormData({...formData, event_order: 0});
                 } else {
                   const numValue = parseInt(value, 10);
-                  if (!isNaN(numValue)) {
+                  if (!isNaN(numValue) && numValue >= 0) {
                     setFormData({...formData, event_order: numValue});
                   }
                 }
               }}
               placeholder="0"
+              min="0"
             />
             <small style={{fontSize: 11, opacity: 0.7, marginTop: 4, display: 'block'}}>
               Порядок внутри группы

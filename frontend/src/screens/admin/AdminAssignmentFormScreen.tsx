@@ -130,7 +130,7 @@ export const AdminAssignmentFormScreen: React.FC<AdminAssignmentFormScreenProps>
         </div>
 
         <div className="form-group">
-          <label>Награда (баллы)</label>
+          <label>Звездочки</label>
           <input 
             type="number"
             className="form-input"
@@ -138,7 +138,11 @@ export const AdminAssignmentFormScreen: React.FC<AdminAssignmentFormScreenProps>
             value={formData.reward}
             onChange={handleChange}
             min={0}
+            placeholder="Количество звездочек за выполнение"
           />
+          <small style={{fontSize: 12, opacity: 0.7, display: 'block', marginTop: 4}}>
+            Количество звездочек, которые получит пользователь при одобрении задания
+          </small>
         </div>
 
         <div className="form-group">

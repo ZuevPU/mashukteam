@@ -1,22 +1,5 @@
-import { buildApiEndpoint } from '../utils/apiUrl';
+import { fetchApiWithAuth } from './api';
 import { Notification } from '../types';
-
-async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const response = await fetch(buildApiEndpoint(endpoint), {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || errorData.message || 'Ошибка запроса');
-  }
-
-  return response.json();
-}
 
 export const notificationApi = {
   /**
@@ -26,16 +9,13 @@ export const notificationApi = {
     notifications: Notification[];
     unreadCount: number;
   }> => {
-    const response = await fetchApi<{ success: boolean; notifications: Notification[]; unreadCount: number }>(
+    const response = await fetchApiWithAuth<{ success: boolean; notifications: Notification[]; unreadCount: number }>(
       '/notifications/my',
-      {
-        method: 'POST',
-        body: JSON.stringify({ initData, limit, offset }),
-      }
+      initData
     );
     return {
-      notifications: response.notifications,
-      unreadCount: response.unreadCount,
+      notifications: response.notifications || [],
+      unreadCount: response.unreadCount || 0,
     };
   },
 
@@ -43,12 +23,9 @@ export const notificationApi = {
    * Отметить уведомление как прочитанное
    */
   markAsRead: async (initData: string, notificationId: string): Promise<void> => {
-    await fetchApi<{ success: boolean }>(
+    await fetchApiWithAuth<{ success: boolean }>(
       `/notifications/${notificationId}/read`,
-      {
-        method: 'POST',
-        body: JSON.stringify({ initData }),
-      }
+      initData
     );
   },
 
@@ -56,12 +33,9 @@ export const notificationApi = {
    * Отметить все уведомления как прочитанные
    */
   markAllAsRead: async (initData: string): Promise<void> => {
-    await fetchApi<{ success: boolean }>(
+    await fetchApiWithAuth<{ success: boolean }>(
       '/notifications/read-all',
-      {
-        method: 'POST',
-        body: JSON.stringify({ initData }),
-      }
+      initData
     );
   },
 };

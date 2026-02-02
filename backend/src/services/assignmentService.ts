@@ -146,7 +146,7 @@ export class AssignmentService {
   static async getSubmissionsForAssignment(assignmentId: string): Promise<AssignmentSubmission[]> {
     const { data, error } = await supabase
       .from('assignment_submissions')
-      .select('*, user:users(id, first_name, last_name, telegram_username)')
+      .select('*, user:users(id, first_name, last_name, telegram_username), assignment:assignments(id, title, reward)')
       .eq('assignment_id', assignmentId)
       .order('created_at', { ascending: false });
 

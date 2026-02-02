@@ -122,18 +122,26 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
         ? randomizerData.topic || 'Рандомайзер'
         : question.text;
       
-      const dataToSend = {
+      // Подготавливаем данные для отправки
+      const dataToSend: any = {
         ...question,
         text: questionText,
-        options: question.options?.filter((o: string) => o.trim()),
         sendNotification
       };
+      
+      // Для рандомайзера не отправляем options
+      if (question.type !== 'randomizer') {
+        dataToSend.options = question.options?.filter((o: string) => o.trim());
+      } else {
+        // Убираем options для рандомайзера
+        delete dataToSend.options;
+      }
       
       if (editingQuestion) {
         await adminApi.updateTargetedQuestion(editingQuestion.id, dataToSend, initData);
         showAlert('Вопрос обновлен!');
       } else {
-        const createdQuestion = await adminApi.createTargetedQuestion({ ...dataToSend, status: 'published' }, initData);
+        const createdQuestion = await adminApi.createTargetedQuestion({ ...dataToSend, status: 'published', sendNotification }, initData);
         
         // Если тип рандомайзер, создаем рандомайзер
         if (question.type === 'randomizer' && createdQuestion?.id) {

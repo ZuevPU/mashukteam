@@ -38,4 +38,41 @@ export class EventController {
       return res.status(500).json({ error: 'Ошибка при получении деталей мероприятия' });
     }
   }
+
+  /**
+   * Сохранение заметки пользователя по мероприятию
+   */
+  static async saveEventNote(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+      const { note_text } = req.body;
+
+      if (!note_text || typeof note_text !== 'string') {
+        return res.status(400).json({ error: 'Текст заметки обязателен' });
+      }
+
+      const note = await EventService.saveEventNote(userId, id, note_text);
+      return res.json({ success: true, note });
+    } catch (error) {
+      logger.error('Save event note error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ error: 'Ошибка при сохранении заметки' });
+    }
+  }
+
+  /**
+   * Получение заметки пользователя по мероприятию
+   */
+  static async getEventNote(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+
+      const note = await EventService.getEventNote(userId, id);
+      return res.json({ success: true, note });
+    } catch (error) {
+      logger.error('Get event note error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ error: 'Ошибка при получении заметки' });
+    }
+  }
 }

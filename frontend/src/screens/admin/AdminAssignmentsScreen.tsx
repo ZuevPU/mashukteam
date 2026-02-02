@@ -96,7 +96,7 @@ export const AdminAssignmentsScreen: React.FC<AdminAssignmentsScreenProps> = ({
                     {a.status === 'published' ? 'Активно' : 'Черновик'}
                   </span>
                   <span className="status-badge event">
-                    {a.reward} баллов
+                    ⭐ {a.reward}
                   </span>
                 </div>
                 <h4>{a.title}</h4>

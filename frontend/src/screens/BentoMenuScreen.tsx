@@ -35,7 +35,6 @@ import { AssignmentSubmitScreen } from './assignments/AssignmentSubmitScreen';
 import { DirectionSelectionScreen } from './DirectionSelectionScreen';
 import { SettingsScreen } from './settings/SettingsScreen';
 import { NotificationsSettingsScreen } from './settings/NotificationsSettingsScreen';
-import { ThemeSettingsScreen } from './settings/ThemeSettingsScreen';
 import { SettingsCard } from '../components/bento/SettingsCard';
 import './BentoMenuScreen.css';
 
@@ -67,8 +66,7 @@ type ScreenView =
   | 'admin_export'
   | 'admin_analytics'
   | 'settings'
-  | 'settings_notifications'
-  | 'settings_theme';
+  | 'settings_notifications';
 
 export function BentoMenuScreen() {
   const { initData, isReady, showAlert } = useTelegram();
@@ -399,7 +397,6 @@ export function BentoMenuScreen() {
         user={user}
         onBack={() => setView('menu')}
         onNotificationsClick={() => setView('settings_notifications')}
-        onThemeClick={() => setView('settings_theme')}
         onUserUpdate={(updatedUser) => {
           // Обновляем состояние пользователя
           setUser(updatedUser);
@@ -409,9 +406,6 @@ export function BentoMenuScreen() {
   }
   if (view === 'settings_notifications') {
     return <NotificationsSettingsScreen onBack={() => setView('settings')} />;
-  }
-  if (view === 'settings_theme') {
-    return <ThemeSettingsScreen onBack={() => setView('settings')} />;
   }
 
   // === ГЛАВНОЕ МЕНЮ (BENTO) ===
@@ -470,7 +464,6 @@ export function BentoMenuScreen() {
       <SettingsCard
         onGeneralClick={() => setView('settings')}
         onNotificationsClick={() => setView('settings_notifications')}
-        onThemeClick={() => setView('settings_theme')}
       />
     ),
     size: '1x1',

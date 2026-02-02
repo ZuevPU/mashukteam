@@ -10,9 +10,12 @@ interface EventDetailsScreenProps {
 }
 
 export const EventDetailsScreen: React.FC<EventDetailsScreenProps> = ({ eventId, onBack }) => {
-  const { initData } = useTelegram();
+  const { initData, showAlert } = useTelegram();
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
+  const [noteText, setNoteText] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+  const [loadingNote, setLoadingNote] = useState(true);
 
   useEffect(() => {
     const loadDetails = async () => {
@@ -28,6 +31,37 @@ export const EventDetailsScreen: React.FC<EventDetailsScreenProps> = ({ eventId,
     };
     loadDetails();
   }, [eventId, initData]);
+
+  useEffect(() => {
+    const loadNote = async () => {
+      if (!initData) return;
+      try {
+        const note = await eventApi.getEventNote(eventId, initData);
+        if (note) {
+          setNoteText(note.note_text);
+        }
+      } catch (error) {
+        console.error('Error loading note:', error);
+      } finally {
+        setLoadingNote(false);
+      }
+    };
+    loadNote();
+  }, [eventId, initData]);
+
+  const handleSaveNote = async () => {
+    if (!initData) return;
+    setSavingNote(true);
+    try {
+      await eventApi.saveEventNote(eventId, noteText, initData);
+      showAlert('Заметка сохранена');
+    } catch (error) {
+      console.error('Error saving note:', error);
+      showAlert('Ошибка сохранения заметки');
+    } finally {
+      setSavingNote(false);
+    }
+  };
 
   if (loading) return <div className="loading">Загрузка...</div>;
   if (!event) return <div className="error">Мероприятие не найдено</div>;
@@ -71,6 +105,42 @@ export const EventDetailsScreen: React.FC<EventDetailsScreenProps> = ({ eventId,
             </div>
           )}
         </div>
+      </div>
+
+      {/* Блок для заметок */}
+      <div className="event-info-card" style={{ marginTop: '20px' }}>
+        <h4 className="event-info-title" style={{ marginBottom: '12px' }}>📝 Мои заметки</h4>
+        {loadingNote ? (
+          <div className="loading">Загрузка заметки...</div>
+        ) : (
+          <>
+            <textarea
+              className="form-textarea"
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              placeholder="Добавьте свои заметки по этому мероприятию..."
+              style={{
+                minHeight: '120px',
+                width: '100%',
+                padding: '12px',
+                borderRadius: '8px',
+                border: '1px solid var(--color-border, #35A2A8)',
+                fontSize: '14px',
+                fontFamily: 'inherit',
+                resize: 'vertical',
+                marginBottom: '12px'
+              }}
+            />
+            <button
+              onClick={handleSaveNote}
+              disabled={savingNote}
+              className="save-btn"
+              style={{ width: '100%' }}
+            >
+              {savingNote ? 'Сохранение...' : '💾 Сохранить заметку'}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

@@ -4,7 +4,6 @@ interface SettingsCardProps {
   className?: string;
   onGeneralClick?: () => void;
   onNotificationsClick?: () => void;
-  onThemeClick?: () => void;
 }
 
 /**
@@ -13,8 +12,7 @@ interface SettingsCardProps {
 export function SettingsCard({ 
   className = '', 
   onGeneralClick, 
-  onNotificationsClick, 
-  onThemeClick 
+  onNotificationsClick
 }: SettingsCardProps) {
   return (
     <div className={`settings-card ${className}`}>
@@ -28,11 +26,6 @@ export function SettingsCard({
         <button className="settings-item" onClick={onNotificationsClick}>
           <span className="settings-item-icon">🔔</span>
           <span className="settings-item-label">Уведомления</span>
-          <span className="settings-item-arrow">›</span>
-        </button>
-        <button className="settings-item" onClick={onThemeClick}>
-          <span className="settings-item-icon">🌙</span>
-          <span className="settings-item-label">Тема</span>
           <span className="settings-item-arrow">›</span>
         </button>
       </div>

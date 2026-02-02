@@ -249,7 +249,7 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
                     )}
                     {sub.status === 'approved' && sub.assignment?.reward && (
                       <p style={{fontSize: 12, marginTop: 4, color: '#34c759'}}>
-                        +{sub.assignment.reward} баллов
+                        ⭐ +{sub.assignment.reward}
                       </p>
                     )}
                   </div>

@@ -113,19 +113,20 @@ export const AdminDiagnosticFormScreen: React.FC<AdminDiagnosticFormScreenProps>
               type="number"
               className="form-input"
               name="group_order"
-              value={formData.group_order}
+              value={formData.group_order ?? ''}
               onChange={(e) => {
                 const value = e.target.value;
                 if (value === '') {
                   setFormData({...formData, group_order: 0});
                 } else {
                   const numValue = parseInt(value, 10);
-                  if (!isNaN(numValue)) {
+                  if (!isNaN(numValue) && numValue >= 0) {
                     setFormData({...formData, group_order: numValue});
                   }
                 }
               }}
               placeholder="0"
+              min="0"
             />
           </div>
 
@@ -135,19 +136,20 @@ export const AdminDiagnosticFormScreen: React.FC<AdminDiagnosticFormScreenProps>
               type="number"
               className="form-input"
               name="event_order"
-              value={formData.event_order}
+              value={formData.event_order ?? ''}
               onChange={(e) => {
                 const value = e.target.value;
                 if (value === '') {
                   setFormData({...formData, event_order: 0});
                 } else {
                   const numValue = parseInt(value, 10);
-                  if (!isNaN(numValue)) {
+                  if (!isNaN(numValue) && numValue >= 0) {
                     setFormData({...formData, event_order: numValue});
                   }
                 }
               }}
               placeholder="0"
+              min="0"
             />
           </div>
         </div>

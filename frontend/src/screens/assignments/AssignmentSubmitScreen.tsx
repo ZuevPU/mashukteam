@@ -56,7 +56,7 @@ export const AssignmentSubmitScreen: React.FC<AssignmentSubmitScreenProps> = ({
       </div>
 
       <div className="assignment-detail">
-        <div className="reward-badge large">+{assignment.reward} баллов</div>
+        <div className="reward-badge large">⭐ {assignment.reward} звездочек</div>
         
         <h2>{assignment.title}</h2>
         

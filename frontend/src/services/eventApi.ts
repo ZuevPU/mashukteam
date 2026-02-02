@@ -1,4 +1,4 @@
-import { fetchApiWithAuth } from './api';
+import { fetchApiWithAuth, fetchApi } from './api';
 import { Event } from '../types';
 
 export const eventApi = {
@@ -28,5 +28,37 @@ export const eventApi = {
     return { 
       event: response.event
     };
+  },
+
+  /**
+   * Сохранение заметки пользователя по мероприятию
+   */
+  saveEventNote: async (
+    eventId: string,
+    noteText: string,
+    initData: string
+  ): Promise<{ id: string; note_text: string }> => {
+    const response = await fetchApi<{
+      success: boolean;
+      note: { id: string; note_text: string };
+    }>(`/events/${eventId}/note`, {
+      method: 'POST',
+      body: JSON.stringify({ initData, note_text: noteText }),
+    });
+    return response.note;
+  },
+
+  /**
+   * Получение заметки пользователя по мероприятию
+   */
+  getEventNote: async (
+    eventId: string,
+    initData: string
+  ): Promise<{ id: string; note_text: string } | null> => {
+    const response = await fetchApiWithAuth<{
+      success: boolean;
+      note: { id: string; note_text: string } | null;
+    }>(`/events/${eventId}/note`, initData);
+    return response.note;
   },
 };
