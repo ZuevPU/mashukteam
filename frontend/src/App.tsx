@@ -34,17 +34,21 @@ function App() {
         const response = await verifyAuth(initData);
         
         if (response.success && response.user) {
-          const status = response.user.status as 'new' | 'registered';
+          // Нормализуем статус: если не 'registered', считаем 'new'
+          const status = (response.user.status === 'registered' ? 'registered' : 'new') as 'new' | 'registered';
           setUserStatus(status);
+
+          console.log('User status:', status, 'user:', response.user);
 
           if (status === 'registered') {
             // Пользователь уже зарегистрирован - показываем меню
             setScreen('bento');
           } else {
-            // Новый пользователь - показываем приветствие
+            // Новый пользователь или статус не 'registered' - показываем приветствие
             setScreen('welcome');
           }
         } else {
+          console.warn('verifyAuth returned unsuccessful response:', response);
           setScreen('welcome');
         }
       } catch (error) {

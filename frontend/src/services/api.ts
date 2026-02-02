@@ -174,7 +174,7 @@ export async function registerUser(
     first_name: string;
     last_name: string;
     middle_name?: string;
-    motivation: string;
+    motivation?: string;
   }
 ) {
   return fetchApi<{

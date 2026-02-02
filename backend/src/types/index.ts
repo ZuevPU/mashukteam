@@ -133,7 +133,7 @@ export interface CreateUserDto {
   first_name: string;
   last_name: string;
   middle_name?: string;
-  motivation: string;
+  motivation?: string;
 }
 
 export interface UpdateUserStatusDto {

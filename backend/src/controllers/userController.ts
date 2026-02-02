@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { UserService } from '../services/supabase';
 import { DirectionService } from '../services/directionService';
-import { getTelegramIdFromInitData } from '../utils/telegramAuth';
+import { getTelegramIdFromInitData, validateInitData } from '../utils/telegramAuth';
 import { CreateUserDto } from '../types';
 import { requireAuth } from '../middleware/authMiddleware';
 
@@ -118,6 +118,15 @@ export async function registerUser(req: UserRequest, res: Response) {
       });
     }
 
+    // Валидация initData
+    const isValid = validateInitData(initData);
+    if (!isValid) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'Невалидный initData' 
+      });
+    }
+
     if (!registrationData) {
       return res.status(400).json({ 
         success: false,
@@ -133,13 +142,6 @@ export async function registerUser(req: UserRequest, res: Response) {
       });
     }
 
-    if (!registrationData.motivation || registrationData.motivation.length < 10) {
-      return res.status(400).json({ 
-        success: false,
-        error: 'Мотивация обязательна и должна содержать минимум 10 символов' 
-      });
-    }
-
     const telegramId = getTelegramIdFromInitData(initData);
     if (!telegramId) {
       return res.status(400).json({ 
@@ -149,12 +151,43 @@ export async function registerUser(req: UserRequest, res: Response) {
     }
 
     // Проверка существования пользователя
-    const existingUser = await UserService.getUserByTelegramId(telegramId);
+    let existingUser = await UserService.getUserByTelegramId(telegramId);
+    
+    // Если пользователь не найден, создаем его
     if (!existingUser) {
-      console.warn('registerUser: Пользователь не найден, telegramId:', telegramId);
-      return res.status(404).json({ 
-        success: false,
-        error: 'Пользователь не найден. Сначала выполните аутентификацию.' 
+      console.log('registerUser: Пользователь не найден, создаем нового, telegramId:', telegramId);
+      
+      // Парсим данные пользователя из initData для создания
+      const { parseInitData } = await import('../utils/telegramAuth');
+      const parsed = parseInitData(initData);
+      
+      if (!parsed) {
+        return res.status(400).json({ 
+          success: false,
+          error: 'Ошибка парсинга initData' 
+        });
+      }
+
+      // Создаем пользователя со статусом "new"
+      existingUser = await UserService.createUser({
+        telegram_id: telegramId,
+        telegram_username: parsed.username,
+        first_name: parsed.first_name || registrationData.first_name,
+        last_name: parsed.last_name || registrationData.last_name,
+        middle_name: undefined,
+        motivation: registrationData.motivation || '', // Мотивация необязательна
+      });
+      
+      console.log('User created during registration:', existingUser.id);
+    }
+
+    // Проверяем, не зарегистрирован ли пользователь уже
+    if (existingUser.status === 'registered') {
+      console.log('User already registered:', existingUser.id);
+      return res.json({
+        success: true,
+        user: existingUser,
+        message: 'Пользователь уже зарегистрирован',
       });
     }
 
@@ -166,7 +199,7 @@ export async function registerUser(req: UserRequest, res: Response) {
       first_name: registrationData.first_name,
       last_name: registrationData.last_name,
       middle_name: registrationData.middle_name,
-      motivation: registrationData.motivation,
+      motivation: registrationData.motivation || '', // Мотивация больше не обязательна
     });
 
     console.log('Registration completed successfully:', updatedUser.id);

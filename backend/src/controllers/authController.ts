@@ -60,7 +60,7 @@ export async function verifyAuth(req: AuthRequest, res: Response) {
 
     // Проверка существования пользователя
     let user = await UserService.getUserByTelegramId(telegramId);
-    console.log('User exists:', !!user);
+    console.log('User exists:', !!user, 'status:', user?.status);
 
     // Если пользователь не существует, создаём нового со статусом "new"
     if (!user) {
@@ -88,15 +88,38 @@ export async function verifyAuth(req: AuthRequest, res: Response) {
         motivation: '', // Будет заполнено при регистрации
       });
       
-      console.log('User created:', user.id);
+      console.log('User created:', user.id, 'status:', user.status);
     }
+
+    // Нормализуем статус: если не 'registered', считаем 'new'
+    // Это важно для старых пользователей, у которых статус может быть NULL или другим значением
+    const normalizedStatus = user.status === 'registered' ? 'registered' : 'new';
+    
+    // Если статус был не 'registered', но пользователь существует, обновляем статус на 'new'
+    if (user.status !== 'registered' && user.status !== 'new') {
+      console.log('Normalizing user status from', user.status, 'to new');
+      try {
+        await UserService.updateUserStatus(user.telegram_id, 'new');
+        user.status = 'new';
+      } catch (error) {
+        console.error('Error updating user status:', error);
+        // Продолжаем с текущим статусом
+      }
+    }
+
+    console.log('verifyAuth returning:', {
+      userId: user.id,
+      telegramId: user.telegram_id,
+      status: normalizedStatus,
+      originalStatus: user.status,
+    });
 
     return res.json({
       success: true,
       user: {
         id: user.id,
         telegram_id: user.telegram_id,
-        status: user.status,
+        status: normalizedStatus,
         first_name: user.first_name,
       },
     });

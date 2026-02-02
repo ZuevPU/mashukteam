@@ -69,7 +69,7 @@ export class UserService {
         first_name: userData.first_name,
         last_name: userData.last_name,
         middle_name: userData.middle_name || null,
-        motivation: userData.motivation,
+        motivation: userData.motivation || '',
         status: 'new',
       })
       .select()
@@ -135,7 +135,7 @@ export class UserService {
         first_name: registrationData.first_name,
         last_name: registrationData.last_name,
         middle_name: registrationData.middle_name || null,
-        motivation: registrationData.motivation,
+        motivation: registrationData.motivation || '',
         status: 'registered',
       })
       .eq('telegram_id', telegramId)
