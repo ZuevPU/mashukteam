@@ -70,7 +70,7 @@ export async function verifyAuth(req: AuthRequest, res: Response) {
       const parsed = parseInitData(initData);
       
       if (!parsed) {
-        logger.error(new Error('Ошибка парсинга initData'));
+        logger.error('Ошибка парсинга initData', new Error('Ошибка парсинга initData'));
         return res.status(400).json({ 
           success: false,
           error: 'Ошибка парсинга initData' 
