@@ -32,11 +32,11 @@
 }
 
 .questions-card .card-image {
-  width: 64px;
-  height: 64px;
+  width: 100px;
+  height: 100px;
   object-fit: contain;
   display: block;
-  margin: 0 auto 8px;
+  margin: 0 auto 12px;
 }
 
 .questions-card .card-title {
