@@ -59,12 +59,32 @@ export class StorageService {
       throw new Error('Ошибка загрузки файла');
     }
 
-    // Получаем публичный URL
-    const { data: urlData } = supabase.storage
+    // Создаем подписанный URL с длительным сроком действия (7 дней)
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
       .from(BUCKET_NAME)
-      .getPublicUrl(filePath);
+      .createSignedUrl(filePath, 60 * 60 * 24 * 7); // 7 дней
 
-    logger.info('File uploaded successfully', { 
+    if (signedUrlError) {
+      logger.error('Error creating signed URL after upload', signedUrlError);
+      // Fallback на публичный URL (на случай если бакет публичный)
+      const { data: urlData } = supabase.storage
+        .from(BUCKET_NAME)
+        .getPublicUrl(filePath);
+      
+      logger.info('File uploaded successfully (public URL)', { 
+        path: filePath, 
+        size: fileBuffer.length,
+        userId,
+        assignmentId 
+      });
+
+      return {
+        url: urlData.publicUrl,
+        path: filePath,
+      };
+    }
+
+    logger.info('File uploaded successfully (signed URL)', { 
       path: filePath, 
       size: fileBuffer.length,
       userId,
@@ -72,7 +92,7 @@ export class StorageService {
     });
 
     return {
-      url: urlData.publicUrl,
+      url: signedUrlData.signedUrl,
       path: filePath,
     };
   }
@@ -107,5 +127,66 @@ export class StorageService {
     }
 
     return data.signedUrl;
+  }
+
+  /**
+   * Обновляет подписанный URL для file_url (извлекает path и создает новый подписанный URL)
+   */
+  static async refreshSignedUrl(fileUrl: string, expiresIn: number = 3600): Promise<string> {
+    try {
+      // Извлекаем путь из URL
+      // URL может быть в формате: 
+      // 1. Signed URL: https://xxx.supabase.co/storage/v1/object/sign/task_submissions/path?token=xxx
+      // 2. Public URL: https://xxx.supabase.co/storage/v1/object/public/task_submissions/path
+      
+      let filePath: string | null = null;
+      
+      // Пробуем извлечь путь из signed URL
+      const signedMatch = fileUrl.match(/\/task_submissions\/([^?]+)/);
+      if (signedMatch) {
+        filePath = signedMatch[1];
+      }
+      
+      // Пробуем извлечь из public URL
+      if (!filePath) {
+        const publicMatch = fileUrl.match(/\/public\/task_submissions\/(.+)$/);
+        if (publicMatch) {
+          filePath = publicMatch[1];
+        }
+      }
+
+      if (!filePath) {
+        logger.warn('Could not extract file path from URL', { fileUrl });
+        return fileUrl; // Возвращаем оригинальный URL
+      }
+
+      // Создаем новый подписанный URL
+      const newSignedUrl = await this.getSignedUrl(filePath, expiresIn);
+      return newSignedUrl;
+    } catch (error) {
+      logger.error('Error refreshing signed URL', error instanceof Error ? error : new Error(String(error)));
+      return fileUrl; // Возвращаем оригинальный URL в случае ошибки
+    }
+  }
+
+  /**
+   * Обновляет подписанные URL для массива submissions
+   */
+  static async refreshSubmissionUrls(submissions: any[]): Promise<any[]> {
+    const refreshedSubmissions = await Promise.all(
+      submissions.map(async (sub) => {
+        if (sub.file_url) {
+          try {
+            const refreshedUrl = await this.refreshSignedUrl(sub.file_url, 60 * 60 * 24); // 24 часа
+            return { ...sub, file_url: refreshedUrl };
+          } catch (error) {
+            logger.error('Error refreshing URL for submission', error instanceof Error ? error : new Error(String(error)));
+            return sub;
+          }
+        }
+        return sub;
+      })
+    );
+    return refreshedSubmissions;
   }
 }

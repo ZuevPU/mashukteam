@@ -8,16 +8,26 @@ import './AdminScreens.css';
 const SubmissionImage: React.FC<{ fileUrl: string; userName: string }> = ({ fileUrl, userName }) => {
   const [imageError, setImageError] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+  const [currentUrl, setCurrentUrl] = useState(fileUrl);
+
+  // При изменении fileUrl обновляем currentUrl
+  useEffect(() => {
+    setCurrentUrl(fileUrl);
+    setImageError(false);
+    setImageLoading(true);
+  }, [fileUrl]);
 
   const handleDownload = async () => {
     try {
-      const response = await fetch(fileUrl);
+      const response = await fetch(currentUrl);
+      if (!response.ok) throw new Error('Ошибка загрузки');
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       // Извлекаем расширение из URL или используем jpg по умолчанию
-      const extension = fileUrl.split('.').pop()?.split('?')[0] || 'jpg';
+      const extension = currentUrl.split('.').pop()?.split('?')[0]?.split('/')[0] || 'jpg';
       a.download = `${userName.replace(/\s+/g, '_')}_submission.${extension}`;
       document.body.appendChild(a);
       a.click();
@@ -26,8 +36,18 @@ const SubmissionImage: React.FC<{ fileUrl: string; userName: string }> = ({ file
     } catch (error) {
       console.error('Download error:', error);
       // Fallback: открыть в новой вкладке
-      window.open(fileUrl, '_blank');
+      window.open(currentUrl, '_blank');
     }
+  };
+
+  const handleImageLoad = () => {
+    setImageLoading(false);
+    setImageError(false);
+  };
+
+  const handleImageError = () => {
+    setImageLoading(false);
+    setImageError(true);
   };
 
   if (imageError) {
@@ -35,15 +55,18 @@ const SubmissionImage: React.FC<{ fileUrl: string; userName: string }> = ({ file
       <div style={{ 
         marginTop: 12, 
         padding: '12px', 
-        background: '#f8f9fa', 
+        background: '#fff3cd', 
         borderRadius: '8px',
         textAlign: 'center'
       }}>
-        <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#666' }}>
-          📎 Прикреплен файл
+        <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#856404' }}>
+          ⚠️ Не удалось загрузить изображение
+        </p>
+        <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#856404' }}>
+          Попробуйте открыть файл напрямую:
         </p>
         <button
-          onClick={handleDownload}
+          onClick={() => window.open(currentUrl, '_blank')}
           style={{
             background: '#007bff',
             color: '#fff',
@@ -54,7 +77,7 @@ const SubmissionImage: React.FC<{ fileUrl: string; userName: string }> = ({ file
             fontSize: '13px'
           }}
         >
-          📥 Скачать файл
+          🔗 Открыть в браузере
         </button>
       </div>
     );
@@ -71,11 +94,29 @@ const SubmissionImage: React.FC<{ fileUrl: string; userName: string }> = ({ file
         <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#666' }}>
           📷 Загруженное фото:
         </p>
+        
+        {/* Индикатор загрузки */}
+        {imageLoading && (
+          <div style={{
+            width: '100%',
+            height: '200px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: '#eee',
+            borderRadius: '8px',
+            marginBottom: '8px'
+          }}>
+            <span>⏳ Загрузка изображения...</span>
+          </div>
+        )}
+        
         <img 
-          src={fileUrl} 
+          src={currentUrl} 
           alt="Загруженное фото"
           onClick={() => setFullscreen(true)}
-          onError={() => setImageError(true)}
+          onLoad={handleImageLoad}
+          onError={handleImageError}
           style={{
             maxWidth: '100%',
             maxHeight: '300px',
@@ -83,7 +124,8 @@ const SubmissionImage: React.FC<{ fileUrl: string; userName: string }> = ({ file
             cursor: 'pointer',
             objectFit: 'contain',
             background: '#fff',
-            border: '1px solid #ddd'
+            border: '1px solid #ddd',
+            display: imageLoading ? 'none' : 'block'
           }}
         />
         <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
@@ -140,7 +182,7 @@ const SubmissionImage: React.FC<{ fileUrl: string; userName: string }> = ({ file
           }}
         >
           <img 
-            src={fileUrl} 
+            src={currentUrl} 
             alt="Полноэкранный просмотр"
             style={{
               maxWidth: '100%',

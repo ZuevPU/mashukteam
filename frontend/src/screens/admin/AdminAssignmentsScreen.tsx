@@ -114,9 +114,23 @@ export const AdminAssignmentsScreen: React.FC<AdminAssignmentsScreenProps> = ({
                 >
                   {a.status === 'draft' ? '🚀' : '🔒'}
                 </button>
-                <button className="action-btn" onClick={() => onEdit(a)}>✏️</button>
-                <button className="action-btn" onClick={() => onSubmissions(a.id)}>📝</button>
-                <button className="action-btn" onClick={() => handleDelete(a.id, a.title)}>🗑️</button>
+                <button className="action-btn" onClick={() => onEdit(a)} title="Редактировать">✏️</button>
+                {/* Для рандомайзера показываем кнопку управления распределением */}
+                {a.answer_format === 'random_number' && onRandomizer && (
+                  <button 
+                    className="action-btn" 
+                    onClick={() => onRandomizer(a.id)} 
+                    title="Управление распределением"
+                    style={{ background: '#667eea', color: '#fff' }}
+                  >
+                    🎲
+                  </button>
+                )}
+                {/* Для обычных заданий показываем кнопку ответов */}
+                {a.answer_format !== 'random_number' && (
+                  <button className="action-btn" onClick={() => onSubmissions(a.id)} title="Ответы">📝</button>
+                )}
+                <button className="action-btn" onClick={() => handleDelete(a.id, a.title)} title="Удалить">🗑️</button>
               </div>
             </div>
           ))

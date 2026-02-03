@@ -54,8 +54,12 @@ export const AssignmentsListScreen: React.FC<AssignmentsListScreenProps> = ({ on
   const randomNumberAssignments = assignments.filter(a => a.answer_format === 'random_number');
   
   // Рандомайзеры из вопросов (устаревший способ, для обратной совместимости)
-  const openRandomizers = randomizers.filter(r => r.randomizer.status === 'open');
-  const distributedRandomizers = randomizers.filter(r => r.randomizer.status === 'distributed');
+  // Фильтруем только те, у которых есть question_id (старые), но НЕТ assignment_id (новые)
+  const legacyRandomizers = randomizers.filter(r => 
+    r.randomizer.question_id && !(r.randomizer as any).assignment_id
+  );
+  const openRandomizers = legacyRandomizers.filter(r => r.randomizer.status === 'open');
+  const distributedRandomizers = legacyRandomizers.filter(r => r.randomizer.status === 'distributed');
 
   return (
     <div className="assignments-screen">
@@ -97,10 +101,10 @@ export const AssignmentsListScreen: React.FC<AssignmentsListScreenProps> = ({ on
         </>
       )}
 
-      {/* Случайные числа из вопросов (устаревший способ, для обратной совместимости) */}
-      {(openRandomizers.length > 0 || distributedRandomizers.length > 0) && (
+      {/* Старые рандомайзеры из вопросов (для обратной совместимости) */}
+      {legacyRandomizers.length > 0 && (
         <>
-          <h4 className="section-title">Случайные числа (архив)</h4>
+          <h4 className="section-title">Архивные распределения</h4>
           <div className="assignments-list" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {openRandomizers.map((r) => (
               <div key={r.randomizer.id} className="assignment-card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -141,8 +145,8 @@ export const AssignmentsListScreen: React.FC<AssignmentsListScreenProps> = ({ on
         </>
       )}
 
-      {assignments.length === 0 && randomizers.length === 0 && (
-        <p className="no-data">Нет доступных заданий и случайных чисел</p>
+      {assignments.length === 0 && legacyRandomizers.length === 0 && (
+        <p className="no-data">Нет доступных заданий</p>
       )}
     </div>
   );

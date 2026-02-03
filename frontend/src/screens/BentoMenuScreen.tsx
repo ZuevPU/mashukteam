@@ -378,6 +378,7 @@ export function BentoMenuScreen() {
       onEdit={(a) => { setSelectedAssignment(a); setView('admin_assignment_form'); }}
       onSubmissions={(id) => { setSelectedAssignmentId(id); setView('admin_assignment_submissions'); }}
       onLeaderboard={() => setView('admin_leaderboard')}
+      onRandomizer={(id) => { setSelectedAssignmentId(id); setView('admin_assignment_randomizer'); }}
     />;
   }
   if (view === 'admin_assignment_form') {

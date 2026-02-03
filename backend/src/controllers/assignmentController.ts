@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { AssignmentService } from '../services/assignmentService';
 import { RandomizerService } from '../services/randomizerService';
+import { StorageService } from '../services/storageService';
 import { UserService } from '../services/supabase';
 import { AchievementService } from '../services/gamification';
 import { notifyAssignmentResult, notifyNewAssignment } from '../utils/telegramBot';
@@ -100,7 +101,11 @@ export class AssignmentController {
     try {
       const { id } = req.params;
       const submissions = await AssignmentService.getSubmissionsForAssignment(id);
-      return res.json({ success: true, submissions });
+      
+      // Обновляем подписанные URL для файлов (если есть)
+      const submissionsWithFreshUrls = await StorageService.refreshSubmissionUrls(submissions);
+      
+      return res.json({ success: true, submissions: submissionsWithFreshUrls });
     } catch (error) {
       console.error('Get submissions error:', error);
       return res.status(500).json({ error: 'Ошибка при получении ответов' });
@@ -110,7 +115,11 @@ export class AssignmentController {
   static async getAllSubmissions(req: Request, res: Response) {
     try {
       const submissions = await AssignmentService.getAllSubmissions();
-      return res.json({ success: true, submissions });
+      
+      // Обновляем подписанные URL для файлов (если есть)
+      const submissionsWithFreshUrls = await StorageService.refreshSubmissionUrls(submissions);
+      
+      return res.json({ success: true, submissions: submissionsWithFreshUrls });
     } catch (error) {
       logger.error('Get all submissions error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при получении ответов' });
