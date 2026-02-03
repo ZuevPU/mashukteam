@@ -32,8 +32,8 @@
 }
 
 .assignments-card .card-image {
-  width: 100px;
-  height: 100px;
+  width: 140px;
+  height: 140px;
   object-fit: contain;
   display: block;
   margin: 0 auto 12px;
