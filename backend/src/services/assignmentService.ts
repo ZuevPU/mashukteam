@@ -25,7 +25,7 @@ export class AssignmentService {
 
   // === Assignments CRUD ===
 
-  static async createAssignment(data: CreateAssignmentDto): Promise<Assignment> {
+  static async createAssignment(data: CreateAssignmentDto & { status?: string; scheduled_at?: string | null }): Promise<Assignment> {
     // Подготавливаем данные для вставки (только поля, которые есть в таблице assignments)
     const assignmentData: any = {
       title: data.title,
@@ -35,6 +35,18 @@ export class AssignmentService {
       target_type: data.target_type,
       target_values: data.target_values,
     };
+
+    // Добавляем статус (по умолчанию draft)
+    if (data.status) {
+      assignmentData.status = data.status;
+    }
+
+    // Добавляем scheduled_at если указано
+    if (data.scheduled_at) {
+      assignmentData.scheduled_at = data.scheduled_at;
+    }
+
+    logger.info('Creating assignment with data', { assignmentData, originalStatus: data.status });
 
     const { data: assignment, error } = await supabase
       .from('assignments')

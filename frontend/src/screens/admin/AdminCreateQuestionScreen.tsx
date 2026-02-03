@@ -142,8 +142,16 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
       const scheduled_at = publishMode === 'scheduled' ? new Date(scheduledAt).toISOString() : null;
       const shouldNotify = publishMode === 'now' && sendNotification;
 
+      console.log('Creating question with:', {
+        status,
+        scheduled_at,
+        sendNotification: shouldNotify,
+        publishMode,
+        text: dataToSend.text?.substring(0, 50)
+      });
+
       if (editingQuestion) {
-        await adminApi.updateTargetedQuestion(editingQuestion.id, { ...dataToSend, status, scheduled_at }, initData);
+        await adminApi.updateTargetedQuestion(editingQuestion.id, { ...dataToSend, status, scheduled_at, sendNotification: shouldNotify }, initData);
         showAlert(publishMode === 'scheduled' ? 'Вопрос запланирован!' : 'Вопрос обновлен!');
       } else {
         await adminApi.createTargetedQuestion({ 

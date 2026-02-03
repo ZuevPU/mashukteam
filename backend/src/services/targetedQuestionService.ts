@@ -24,6 +24,11 @@ export class TargetedQuestionService {
       question_order: data.question_order ?? 0,
     };
 
+    // Добавляем scheduled_at если указано
+    if (data.scheduled_at) {
+      insertData.scheduled_at = data.scheduled_at;
+    }
+
     // Обработка options: для рандомайзера null, для других типов - массив или null
     if (data.type === 'randomizer') {
       insertData.options = null;

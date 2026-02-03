@@ -209,8 +209,16 @@ export async function broadcastMessage(
 ) {
   const startTime = Date.now();
   
+  logger.info('broadcastMessage started', { notificationType, textLength: text.length, deepLink });
+  
+  if (!BOT_TOKEN) {
+    logger.warn('TELEGRAM_BOT_TOKEN не установлен, broadcast не отправлен');
+    return;
+  }
+  
   try {
     const users = await UserService.getAllUsers();
+    logger.info('Users fetched for broadcast', { totalUsers: users.length });
     
     // Если указан тип уведомления, фильтруем пользователей
     if (notificationType) {

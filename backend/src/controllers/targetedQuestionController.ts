@@ -116,8 +116,16 @@ export class TargetedQuestionController {
 
       const question = await TargetedQuestionService.createQuestion(cleanData);
       
+      logger.info('Question created', {
+        questionId: question.id,
+        status: question.status,
+        sendNotification: sendNotification,
+        willNotify: sendNotification && question.status === 'published'
+      });
+      
       // Отправка уведомлений, если запрошено
       if (sendNotification && question.status === 'published') {
+        logger.info('Sending question notification', { questionId: question.id, targetAudience: data.target_audience });
         try {
           if (data.target_audience === 'all') {
             // Всем пользователям

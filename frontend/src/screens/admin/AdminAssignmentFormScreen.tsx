@@ -114,22 +114,31 @@ export const AdminAssignmentFormScreen: React.FC<AdminAssignmentFormScreenProps>
           delete cleanData.number_max;
         }
 
-        // Удаляем undefined значения
+        // Удаляем undefined значения (но НЕ удаляем status!)
         Object.keys(cleanData).forEach(key => {
-          if (cleanData[key] === undefined || cleanData[key] === '') {
+          if (key !== 'status' && (cleanData[key] === undefined || cleanData[key] === '')) {
             delete cleanData[key];
           }
+        });
+
+        const requestBody = { 
+          initData, 
+          ...cleanData,
+          sendNotification: shouldNotify 
+        };
+        
+        console.log('Creating assignment with:', { 
+          status: cleanData.status, 
+          sendNotification: shouldNotify,
+          publishMode,
+          title: cleanData.title
         });
 
         // Передаем все данные включая статус и scheduled_at
         const response = await fetch(buildApiEndpoint('/admin/assignments'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            initData, 
-            ...cleanData,
-            sendNotification: shouldNotify 
-          })
+          body: JSON.stringify(requestBody)
         });
         
         if (!response.ok) {
