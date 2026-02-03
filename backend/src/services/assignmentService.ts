@@ -407,48 +407,81 @@ export class AssignmentService {
       return 0;
     }
 
-    // Получаем всех участников
-    const { data: participants, error } = await supabase
-      .from('randomizer_participants')
-      .select('user_id')
-      .eq('randomizer_id', randomizer.id);
+    // Получаем финальные распределения
+    const { data: distributions, error } = await supabase
+      .from('randomizer_distributions')
+      .select('*')
+      .eq('randomizer_id', randomizer.id)
+      .eq('preview_mode', false);
 
-    if (error || !participants?.length) {
+    if (error || !distributions?.length) {
       return 0;
     }
 
-    // Начисляем звёздочки каждому участнику
     let awardedCount = 0;
-    for (const participant of participants) {
-      try {
-        // Добавляем баллы
-        await supabase
-          .from('points_transactions')
-          .insert({
-            user_id: participant.user_id,
-            points: assignment.reward,
-            reason: `Участие в случайном числе: ${assignment.title}`
-          });
 
-        // Обновляем total_points
-        const { data: userData } = await supabase
-          .from('users')
-          .select('total_points')
-          .eq('id', participant.user_id)
+    for (const dist of distributions) {
+      try {
+        // Проверяем, есть ли уже ответ на задание
+        const { data: existingSub } = await supabase
+          .from('assignment_submissions')
+          .select('id')
+          .eq('assignment_id', assignmentId)
+          .eq('user_id', dist.user_id)
           .single();
 
-        const currentPoints = userData?.total_points || 0;
-        await supabase
-          .from('users')
-          .update({ total_points: currentPoints + assignment.reward })
-          .eq('id', participant.user_id);
+        if (!existingSub) {
+          // Формируем контент ответа
+          const content = dist.table_number > 0 
+            ? `Стол №${dist.table_number}` 
+            : `Случайное число: ${dist.random_number}`;
 
-        // Пересчитываем звёздочки (учитывая только одобренные задания)
-        await this.recalculateUserStars(participant.user_id);
+          // Создаем submission со статусом approved
+          // Это нужно, чтобы лидерборд и пересчет звезд видели достижение
+          await supabase
+            .from('assignment_submissions')
+            .insert({
+              user_id: dist.user_id,
+              assignment_id: assignmentId,
+              content: content,
+              status: 'approved',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            });
 
-        awardedCount++;
+          // Добавляем баллы в транзакции
+          await supabase
+            .from('points_transactions')
+            .insert({
+              user_id: dist.user_id,
+              points: assignment.reward,
+              reason: `Участие в случайном числе: ${assignment.title}`
+            });
+
+          // Обновляем total_points пользователя
+          const { data: userData } = await supabase
+            .from('users')
+            .select('total_points')
+            .eq('id', dist.user_id)
+            .single();
+
+          const currentPoints = userData?.total_points || 0;
+          await supabase
+            .from('users')
+            .update({ total_points: currentPoints + assignment.reward })
+            .eq('id', dist.user_id);
+
+          // Пересчитываем звёздочки
+          await this.recalculateUserStars(dist.user_id);
+
+          awardedCount++;
+        } else {
+            // Если submission уже есть, просто убедимся что звезды пересчитаны
+            // (на случай если статус поменялся или логика изменилась)
+            await this.recalculateUserStars(dist.user_id);
+        }
       } catch (err) {
-        logger.error(`Error awarding stars to participant ${participant.user_id}`, err instanceof Error ? err : new Error(String(err)));
+        logger.error(`Error awarding stars to participant ${dist.user_id}`, err instanceof Error ? err : new Error(String(err)));
       }
     }
 

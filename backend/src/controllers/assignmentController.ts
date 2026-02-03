@@ -27,12 +27,27 @@ export class AssignmentController {
     try {
       const { initData, sendNotification, ...data } = req.body;
       
-      logger.debug('Creating assignment', { data: { ...data, target_values: data.target_values?.length } });
+      logger.debug('Creating assignment', { 
+        data: { ...data, target_values: data.target_values?.length },
+        sendNotification: sendNotification 
+      });
       
       const assignment = await AssignmentService.createAssignment(data);
       
+      logger.info('Assignment created', { 
+        assignmentId: assignment.id, 
+        status: assignment.status, 
+        sendNotification: sendNotification,
+        willNotify: sendNotification && assignment.status === 'published'
+      });
+      
       // Отправка уведомлений, если задание опубликовано и запрошено
       if (sendNotification && assignment.status === 'published') {
+        logger.info('Sending new assignment notification', { 
+          title: assignment.title, 
+          reward: assignment.reward, 
+          id: assignment.id 
+        });
         notifyNewAssignment(assignment.title, assignment.reward, assignment.id).catch((err) => 
           logger.error('Error sending assignment notification', err instanceof Error ? err : new Error(String(err)))
         );

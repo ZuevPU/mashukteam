@@ -284,7 +284,8 @@ export async function broadcastMessage(
  * Отправка уведомления о новом задании
  */
 export async function notifyNewAssignment(title: string, reward: number, assignmentId: string) {
-  const text = `📋 <b>Анонс нового задания</b>\n\n${title}\n\n🎁 Награда: ${reward} баллов`;
+  logger.info('notifyNewAssignment called', { title, reward, assignmentId });
+  const text = `📋 <b>Новое задание!</b>\n\n${title}\n\n⭐ Награда: ${reward} звёздочек`;
   const deepLink = buildAppLink('assignment', assignmentId);
   await broadcastMessage(text, deepLink, 'assignments');
 }
