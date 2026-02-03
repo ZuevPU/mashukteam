@@ -52,8 +52,16 @@ export const AdminDiagnosticFormScreen: React.FC<AdminDiagnosticFormScreenProps>
       const status: 'draft' | 'published' = publishMode === 'now' ? 'published' : 'draft';
       const shouldNotify = publishMode === 'now' && sendNotification;
 
+      // Очищаем пустые строки перед отправкой
+      const cleanFormData: any = { ...formData };
+      Object.keys(cleanFormData).forEach(key => {
+        if (cleanFormData[key] === '' || cleanFormData[key] === undefined) {
+          delete cleanFormData[key];
+        }
+      });
+
       const data = {
-        ...formData,
+        ...cleanFormData,
         type: 'diagnostic' as const,
         event_date: new Date().toISOString().split('T')[0],
         status,

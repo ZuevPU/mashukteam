@@ -118,6 +118,48 @@ export class AssignmentService {
   }
 
   static async deleteAssignment(id: string): Promise<boolean> {
+    // Сначала удаляем все связанные данные
+    
+    // 1. Получаем рандомайзер если он есть
+    const { data: randomizer } = await supabase
+      .from('randomizer_questions')
+      .select('id')
+      .eq('assignment_id', id)
+      .single();
+
+    if (randomizer) {
+      // 2. Удаляем распределения рандомайзера
+      await supabase
+        .from('randomizer_distributions')
+        .delete()
+        .eq('randomizer_id', randomizer.id);
+
+      // 3. Удаляем участников рандомайзера
+      await supabase
+        .from('randomizer_participants')
+        .delete()
+        .eq('randomizer_id', randomizer.id);
+
+      // 4. Удаляем сам рандомайзер
+      await supabase
+        .from('randomizer_questions')
+        .delete()
+        .eq('assignment_id', id);
+    }
+
+    // 5. Удаляем все ответы на задание
+    await supabase
+      .from('assignment_submissions')
+      .delete()
+      .eq('assignment_id', id);
+
+    // 6. Удаляем транзакции баллов связанные с заданием
+    await supabase
+      .from('points_transactions')
+      .delete()
+      .ilike('reason', `%${id}%`);
+
+    // 7. Наконец удаляем само задание
     const { error } = await supabase
       .from('assignments')
       .delete()

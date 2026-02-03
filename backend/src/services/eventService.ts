@@ -10,10 +10,12 @@ export class EventService {
     // Очищаем пустые строки и undefined значения
     const cleanData: any = { ...data };
     Object.keys(cleanData).forEach(key => {
-      if (cleanData[key] === '' || cleanData[key] === null) {
+      if (cleanData[key] === '' || cleanData[key] === null || cleanData[key] === undefined) {
         delete cleanData[key];
       }
     });
+
+    logger.debug('Creating event', { cleanData });
 
     const { data: event, error } = await supabase
       .from('events')
@@ -22,7 +24,7 @@ export class EventService {
       .single();
 
     if (error) {
-      logger.error('Error creating event', error instanceof Error ? error : new Error(String(error)), { cleanData });
+      logger.error('Error creating event', error instanceof Error ? error : new Error(JSON.stringify(error)), { cleanData, errorDetails: error });
       throw new Error(`Ошибка создания мероприятия: ${error.message || JSON.stringify(error)}`);
     }
 
@@ -33,16 +35,26 @@ export class EventService {
    * Обновление мероприятия
    */
   static async updateEvent(id: string, data: Partial<CreateEventDto>): Promise<Event> {
+    // Очищаем пустые строки (но оставляем null для очистки полей)
+    const cleanData: any = { ...data };
+    Object.keys(cleanData).forEach(key => {
+      if (cleanData[key] === '') {
+        delete cleanData[key];
+      }
+    });
+
+    logger.debug('Updating event', { id, cleanData });
+
     const { data: event, error } = await supabase
       .from('events')
-      .update(data)
+      .update(cleanData)
       .eq('id', id)
       .select()
       .single();
 
     if (error) {
-      console.error('Error updating event:', error);
-      throw error;
+      logger.error('Error updating event', error instanceof Error ? error : new Error(JSON.stringify(error)), { id, cleanData });
+      throw new Error(`Ошибка обновления: ${error.message || JSON.stringify(error)}`);
     }
 
     return event as Event;

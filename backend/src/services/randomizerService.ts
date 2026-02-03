@@ -519,7 +519,7 @@ export class RandomizerService {
     distribution?: RandomizerDistribution;
   }>> {
     try {
-      // Получаем все рандомайзеры через вопросы пользователя
+      // Получаем все рандомайзеры
       const { data: randomizers, error } = await supabase
         .from('randomizer_questions')
         .select('*')
@@ -529,8 +529,38 @@ export class RandomizerService {
         throw error;
       }
 
+      // Фильтруем — показываем только те, у которых есть связанный вопрос или задание
+      const validRandomizers = [];
+      for (const r of randomizers || []) {
+        let isValid = false;
+
+        // Проверяем связь с заданием (новый способ)
+        if (r.assignment_id) {
+          const { data: assignment } = await supabase
+            .from('assignments')
+            .select('id')
+            .eq('id', r.assignment_id)
+            .single();
+          if (assignment) isValid = true;
+        }
+        
+        // Проверяем связь с вопросом (старый способ)
+        if (!isValid && r.question_id) {
+          const { data: question } = await supabase
+            .from('targeted_questions')
+            .select('id')
+            .eq('id', r.question_id)
+            .single();
+          if (question) isValid = true;
+        }
+
+        if (isValid) {
+          validRandomizers.push(r);
+        }
+      }
+
       const result = await Promise.all(
-        (randomizers || []).map(async (r) => {
+        validRandomizers.map(async (r) => {
           const { data: participant } = await supabase
             .from('randomizer_participants')
             .select('id')

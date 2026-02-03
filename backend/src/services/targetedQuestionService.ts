@@ -316,6 +316,42 @@ export class TargetedQuestionService {
    * Удаление вопроса
    */
   static async deleteQuestion(id: string): Promise<void> {
+    // Сначала удаляем все связанные данные
+    
+    // 1. Получаем рандомайзер если он есть (старый способ — рандомайзер привязан к вопросу)
+    const { data: randomizer } = await supabase
+      .from('randomizer_questions')
+      .select('id')
+      .eq('question_id', id)
+      .single();
+
+    if (randomizer) {
+      // 2. Удаляем распределения рандомайзера
+      await supabase
+        .from('randomizer_distributions')
+        .delete()
+        .eq('randomizer_id', randomizer.id);
+
+      // 3. Удаляем участников рандомайзера
+      await supabase
+        .from('randomizer_participants')
+        .delete()
+        .eq('randomizer_id', randomizer.id);
+
+      // 4. Удаляем сам рандомайзер
+      await supabase
+        .from('randomizer_questions')
+        .delete()
+        .eq('question_id', id);
+    }
+
+    // 5. Удаляем все ответы на вопрос
+    await supabase
+      .from('targeted_answers')
+      .delete()
+      .eq('question_id', id);
+
+    // 6. Наконец удаляем сам вопрос
     const { error } = await supabase
       .from('targeted_questions')
       .delete()
