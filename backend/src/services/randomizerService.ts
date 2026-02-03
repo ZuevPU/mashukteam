@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { logger } from '../utils/logger';
 import { NotificationService } from './notificationService';
+import { sendMessageToUser } from '../utils/telegramBot';
 import {
   RandomizerQuestion,
   RandomizerParticipant,
@@ -246,7 +247,7 @@ export class RandomizerService {
       const { data: savedDistributions, error: distributionError } = await supabase
         .from('randomizer_distributions')
         .insert(distributionsToInsert)
-        .select();
+        .select('*, user:users(id, first_name, last_name, middle_name, telegram_username, telegram_id)');
 
       if (distributionError) {
         logger.error('Error saving distributions', distributionError instanceof Error ? distributionError : new Error(String(distributionError)));
@@ -282,7 +283,7 @@ export class RandomizerService {
     try {
       const { data, error } = await supabase
         .from('randomizer_distributions')
-        .select('*, user:users(id, first_name, last_name, middle_name, telegram_username)')
+        .select('*, user:users(id, first_name, last_name, middle_name, telegram_username, telegram_id)')
         .eq('randomizer_id', randomizerId)
         .eq('preview_mode', true)
         .order('table_number', { ascending: true });
@@ -410,17 +411,31 @@ export class RandomizerService {
         try {
           let message: string;
           if (isTablesMode) {
-            message = `Результаты распределения по столам готовы! Ваш стол: №${distribution.table_number}`;
+            message = `🎲 <b>Подведены итоги распределения!</b>\n\nТема: ${assignmentTitle}\n\nВаш стол: <b>№${distribution.table_number}</b>`;
           } else {
-            message = `Результаты готовы! Ваше случайное число: ${distribution.random_number}`;
+            message = `🎲 <b>Подведены итоги!</b>\n\nТема: ${assignmentTitle}\n\nВаше случайное число: <b>${distribution.random_number}</b>`;
           }
 
+          // Создаем уведомление в БД
           await NotificationService.createNotification(
             distribution.user_id,
             'randomizer',
             `🎲 ${assignmentTitle}`,
             message
           );
+
+          // Отправляем сообщение в Telegram, если есть telegram_id
+          if (distribution.user?.telegram_id) {
+            await sendMessageToUser(
+              distribution.user.telegram_id,
+              message,
+              true, // includeAppLink
+              undefined, // deepLink
+              distribution.user_id,
+              'randomizer',
+              `🎲 ${assignmentTitle}`
+            );
+          }
         } catch (notifError) {
           // Логируем ошибку, но не прерываем процесс
           logger.error('Error sending randomizer notification', notifError instanceof Error ? notifError : new Error(String(notifError)));
