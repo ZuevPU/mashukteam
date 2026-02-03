@@ -1,20 +1,29 @@
 import { supabase } from './supabase';
 import { CreateEventDto, Event, Question, Answer } from '../types';
+import { logger } from '../utils/logger';
 
 export class EventService {
   /**
    * Создание мероприятия
    */
   static async createEvent(data: CreateEventDto): Promise<Event> {
+    // Очищаем пустые строки и undefined значения
+    const cleanData: any = { ...data };
+    Object.keys(cleanData).forEach(key => {
+      if (cleanData[key] === '' || cleanData[key] === null) {
+        delete cleanData[key];
+      }
+    });
+
     const { data: event, error } = await supabase
       .from('events')
-      .insert(data)
+      .insert(cleanData)
       .select()
       .single();
 
     if (error) {
-      console.error('Error creating event:', error);
-      throw error;
+      logger.error('Error creating event', error instanceof Error ? error : new Error(String(error)), { cleanData });
+      throw new Error(`Ошибка создания мероприятия: ${error.message || JSON.stringify(error)}`);
     }
 
     return event as Event;

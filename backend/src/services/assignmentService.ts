@@ -47,7 +47,7 @@ export class AssignmentService {
     // Если тип random_number, создаем рандомайзер
     if (data.answer_format === 'random_number' && assignment) {
       try {
-        const randomizerData = {
+        const randomizerData: any = {
           assignment_id: assignment.id,
           tables_count: data.tables_count || 20,
           participants_per_table: data.participants_per_table || 4,
@@ -55,20 +55,38 @@ export class AssignmentService {
           description: data.description || null,
           status: 'open',
           randomizer_mode: data.randomizer_mode || 'tables',
-          number_min: data.number_min || 1,
-          number_max: data.number_max || 100,
         };
+
+        // Добавляем number_min и number_max только если они указаны
+        if (data.number_min !== undefined && data.number_min !== null) {
+          randomizerData.number_min = data.number_min;
+        }
+        if (data.number_max !== undefined && data.number_max !== null) {
+          randomizerData.number_max = data.number_max;
+        }
+
+        // Очищаем null значения
+        Object.keys(randomizerData).forEach(key => {
+          if (randomizerData[key] === null) {
+            delete randomizerData[key];
+          }
+        });
+
+        logger.debug('Creating randomizer', { randomizerData });
 
         const { error: randomizerError } = await supabase
           .from('randomizer_questions')
           .insert(randomizerData);
 
         if (randomizerError) {
-          logger.error('Error creating randomizer for assignment', randomizerError);
-          // Не прерываем создание задания, если не удалось создать рандомайзер
+          logger.error('Error creating randomizer for assignment', randomizerError instanceof Error ? randomizerError : new Error(String(randomizerError)), { randomizerData });
+          // Выбрасываем ошибку, чтобы пользователь знал о проблеме
+          throw new Error(`Ошибка создания рандомайзера: ${randomizerError.message || JSON.stringify(randomizerError)}`);
         }
       } catch (randomizerErr) {
         logger.error('Error creating randomizer for assignment', randomizerErr instanceof Error ? randomizerErr : new Error(String(randomizerErr)));
+        // Выбрасываем ошибку дальше
+        throw randomizerErr;
       }
     }
 

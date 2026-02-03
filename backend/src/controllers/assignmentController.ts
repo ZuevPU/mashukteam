@@ -25,6 +25,9 @@ export class AssignmentController {
   static async createAssignment(req: Request, res: Response) {
     try {
       const { initData, sendNotification, ...data } = req.body;
+      
+      logger.debug('Creating assignment', { data: { ...data, target_values: data.target_values?.length } });
+      
       const assignment = await AssignmentService.createAssignment(data);
       
       // Отправка уведомлений, если задание опубликовано и запрошено
@@ -36,8 +39,9 @@ export class AssignmentController {
       
       return res.status(201).json({ success: true, assignment });
     } catch (error) {
-      console.error('Create assignment error:', error);
-      return res.status(500).json({ error: 'Ошибка при создании задания' });
+      logger.error('Create assignment error', error instanceof Error ? error : new Error(String(error)));
+      const errorMessage = error instanceof Error ? error.message : 'Ошибка при создании задания';
+      return res.status(500).json({ error: errorMessage });
     }
   }
 

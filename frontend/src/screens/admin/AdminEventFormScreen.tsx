@@ -22,7 +22,6 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
     description: editingEvent?.description || '',
     audience: editingEvent?.audience || '',
     event_date: editingEvent?.event_date || '',
-    event_time: editingEvent?.event_time || '',
     start_time: editingEvent?.start_time || '',
     end_time: editingEvent?.end_time || '',
     location: editingEvent?.location || '',
@@ -47,16 +46,34 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
 
     setLoading(true);
     try {
-      const data = {
-        ...formData,
+      // Очищаем пустые строки и удаляем неиспользуемые поля
+      const cleanData: any = {
+        title: formData.title,
+        speaker: formData.speaker || undefined,
+        description: formData.description || undefined,
+        audience: formData.audience || undefined,
+        event_date: formData.event_date || undefined,
+        start_time: formData.start_time || undefined,
+        end_time: formData.end_time || undefined,
+        location: formData.location || undefined,
+        group_name: formData.group_name || undefined,
+        group_order: formData.group_order || 0,
+        event_order: formData.event_order || 0,
         type: 'event' as const, // Всегда event
       };
 
+      // Удаляем undefined значения
+      Object.keys(cleanData).forEach(key => {
+        if (cleanData[key] === undefined || cleanData[key] === '') {
+          delete cleanData[key];
+        }
+      });
+
       if (editingEvent) {
-        await adminApi.updateEvent(editingEvent.id, data, initData);
+        await adminApi.updateEvent(editingEvent.id, cleanData, initData);
         showAlert('Обновлено');
       } else {
-        await adminApi.createEvent(data, initData);
+        await adminApi.createEvent(cleanData, initData);
         showAlert('Создано');
       }
       onSuccess();
@@ -116,17 +133,6 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
             className="form-input"
             name="event_date"
             value={formData.event_date}
-            onChange={handleChange}
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Время (старое поле)</label>
-          <input 
-            type="time"
-            className="form-input"
-            name="event_time"
-            value={formData.event_time}
             onChange={handleChange}
           />
         </div>

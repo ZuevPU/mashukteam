@@ -98,19 +98,45 @@ export const AdminAssignmentFormScreen: React.FC<AdminAssignmentFormScreenProps>
         await adminApi.updateAssignment(editingAssignment.id, updateData, initData, shouldNotify);
         showAlert(publishMode === 'scheduled' ? 'Запланировано' : 'Обновлено');
       } else {
+        // Очищаем данные перед отправкой
+        const cleanData: any = {
+          ...formData,
+          status,
+          scheduled_at: scheduled_at || undefined,
+        };
+
+        // Удаляем undefined и пустые значения для полей рандомайзера, если это не random_number
+        if (cleanData.answer_format !== 'random_number') {
+          delete cleanData.randomizer_mode;
+          delete cleanData.tables_count;
+          delete cleanData.participants_per_table;
+          delete cleanData.number_min;
+          delete cleanData.number_max;
+        }
+
+        // Удаляем undefined значения
+        Object.keys(cleanData).forEach(key => {
+          if (cleanData[key] === undefined || cleanData[key] === '') {
+            delete cleanData[key];
+          }
+        });
+
         // Передаем все данные включая статус и scheduled_at
         const response = await fetch(buildApiEndpoint('/admin/assignments'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             initData, 
-            ...formData, 
-            status,
-            scheduled_at,
+            ...cleanData,
             sendNotification: shouldNotify 
           })
         });
-        if (!response.ok) throw new Error('Ошибка создания');
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Ошибка создания' }));
+          throw new Error(errorData.error || 'Ошибка создания');
+        }
+        
         showAlert(publishMode === 'scheduled' ? 'Запланировано' : 'Создано');
       }
       onSuccess();

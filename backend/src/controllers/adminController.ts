@@ -17,6 +17,8 @@ export class AdminController {
       // Извлекаем initData и оставляем только данные события
       const { initData, ...eventData } = req.body;
       
+      logger.debug('Creating event', { eventData });
+      
       const event = await EventService.createEvent(eventData);
 
       // Отправка уведомления только если мероприятие опубликовано
