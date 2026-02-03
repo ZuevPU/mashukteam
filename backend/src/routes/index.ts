@@ -74,9 +74,6 @@ const upload = multer({
   },
 });
 
-// === User Types (public) ===
-router.get('/directions', AssignmentController.getDirections);
-
 // === Directions (public) ===
 router.get('/directions', DirectionController.getAllDirections);
 
