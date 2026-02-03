@@ -6,6 +6,7 @@ import { notifyTargetedQuestionToUsers } from '../utils/telegramBot';
 import { UserService } from '../services/supabase';
 import { logger } from '../utils/logger';
 import { CreateTargetedQuestionDto } from '../types';
+import { SchedulerService } from '../services/schedulerService';
 
 export class TargetedQuestionController {
   /**
@@ -15,6 +16,9 @@ export class TargetedQuestionController {
     try {
       const userId = req.user.id;
       const userDirection = req.user.direction;
+      
+      // Проверяем запланированный контент перед получением вопросов (асинхронно, не блокирует ответ)
+      SchedulerService.checkScheduledContentIfNeeded();
       
       const { activeQuestions, answeredQuestions } = await TargetedQuestionService.getQuestionsForUser(userId, userDirection);
       const answers = await TargetedQuestionService.getUserAnswers(userId);

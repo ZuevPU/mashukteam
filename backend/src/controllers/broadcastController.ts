@@ -4,6 +4,7 @@ import { UserService } from '../services/supabase';
 import { sendBroadcastToUsers } from '../utils/telegramBot';
 import { logger } from '../utils/logger';
 import { CreateBroadcastDto } from '../types';
+import { SchedulerService } from '../services/schedulerService';
 
 export class BroadcastController {
   /**
@@ -38,6 +39,9 @@ export class BroadcastController {
    */
   static async getAllBroadcasts(req: Request, res: Response) {
     try {
+      // Проверяем запланированный контент перед получением рассылок
+      SchedulerService.checkScheduledContentIfNeeded();
+      
       const broadcasts = await BroadcastService.getAllBroadcasts();
       return res.json({ success: true, broadcasts });
     } catch (error) {

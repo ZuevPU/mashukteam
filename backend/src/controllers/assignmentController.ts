@@ -5,6 +5,7 @@ import { UserService } from '../services/supabase';
 import { AchievementService } from '../services/gamification';
 import { notifyAssignmentResult, notifyNewAssignment } from '../utils/telegramBot';
 import { logger } from '../utils/logger';
+import { SchedulerService } from '../services/schedulerService';
 
 export class AssignmentController {
   // === User Types ===
@@ -78,6 +79,9 @@ export class AssignmentController {
 
   static async getAllAssignments(req: Request, res: Response) {
     try {
+      // Проверяем запланированный контент перед получением заданий
+      SchedulerService.checkScheduledContentIfNeeded();
+      
       const assignments = await AssignmentService.getAllAssignments();
       return res.json({ success: true, assignments });
     } catch (error) {
@@ -171,6 +175,9 @@ export class AssignmentController {
       if (!user) {
         return res.status(401).json({ error: 'Не авторизован' });
       }
+
+      // Проверяем запланированный контент перед получением заданий (асинхронно, не блокирует ответ)
+      SchedulerService.checkScheduledContentIfNeeded();
 
       const assignments = await AssignmentService.getAssignmentsForUser(user.id, user.direction);
       return res.json({ success: true, assignments });

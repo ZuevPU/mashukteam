@@ -4,8 +4,36 @@ import { BroadcastService } from './broadcastService';
 import { notifyNewAssignment, notifyTargetedQuestionToUsers, sendBroadcastToUsers } from '../utils/telegramBot';
 import { logger } from '../utils/logger';
 import { Assignment, TargetedQuestion, Broadcast } from '../types';
+import { SchedulerThrottle } from '../utils/schedulerThrottle';
 
 export class SchedulerService {
+  /**
+   * Проверяет и обрабатывает запланированный контент, если прошло достаточно времени (throttling)
+   * Выполняется асинхронно и не блокирует выполнение
+   * @returns true если проверка была выполнена, false если была пропущена из-за throttling
+   */
+  static checkScheduledContentIfNeeded(): boolean {
+    if (!SchedulerThrottle.shouldCheck()) {
+      return false;
+    }
+
+    // Отмечаем, что проверка началась
+    SchedulerThrottle.markChecked();
+
+    // Выполняем проверку асинхронно, не блокируя основной запрос
+    this.processScheduledContent()
+      .then((results) => {
+        if (results.assignments > 0 || results.questions > 0 || results.broadcasts > 0) {
+          logger.info('Scheduled content checked and processed', results);
+        }
+      })
+      .catch((error) => {
+        logger.error('Error in scheduled content check', error instanceof Error ? error : new Error(String(error)));
+      });
+
+    return true;
+  }
+
   /**
    * Обрабатывает весь запланированный контент
    */
