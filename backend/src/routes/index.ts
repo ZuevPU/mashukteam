@@ -131,6 +131,8 @@ router.post('/admin/events/list', requireAuth, requireAdmin, AdminController.get
 router.put('/admin/events/:id', requireAuth, requireAdmin, AdminController.updateEvent); // PUT usually has body
 router.delete('/admin/events/:id', requireAuth, requireAdmin, AdminController.deleteEvent); // DELETE with body for initData
 router.post('/admin/events/:id/questions', requireAuth, requireAdmin, AdminController.addQuestionToDiagnostic);
+router.put('/admin/events/questions/:questionId', requireAuth, requireAdmin, AdminController.updateDiagnosticQuestion);
+router.delete('/admin/events/questions/:questionId', requireAuth, requireAdmin, AdminController.deleteDiagnosticQuestion);
 router.post('/admin/events/:id/analytics', requireAuth, requireAdmin, AdminController.getDiagnosticAnalytics);
 
 router.post('/admin/users', requireAuth, requireAdmin, AdminController.getAllUsers);

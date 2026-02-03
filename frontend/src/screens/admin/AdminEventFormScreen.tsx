@@ -10,11 +10,17 @@ interface AdminEventFormScreenProps {
   editingEvent?: Event;
 }
 
+type PublishMode = 'draft' | 'now' | 'scheduled';
+
 export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({ 
   onBack, onSuccess, editingEvent 
 }) => {
   const { initData, showAlert } = useTelegram();
   const [loading, setLoading] = useState(false);
+  const [sendNotification, setSendNotification] = useState(true);
+  const [publishMode, setPublishMode] = useState<PublishMode>(
+    editingEvent?.status === 'published' ? 'now' : 'draft'
+  );
   
   const [formData, setFormData] = useState({
     title: editingEvent?.title || '',
@@ -46,6 +52,10 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
 
     setLoading(true);
     try {
+      // Определяем статус на основе publishMode
+      const status: 'draft' | 'published' = publishMode === 'now' ? 'published' : 'draft';
+      const shouldNotify = publishMode === 'now' && sendNotification;
+
       // Очищаем пустые строки и удаляем неиспользуемые поля
       const cleanData: any = {
         title: formData.title,
@@ -59,22 +69,24 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
         group_name: formData.group_name || undefined,
         group_order: formData.group_order || 0,
         event_order: formData.event_order || 0,
-        type: 'event' as const, // Всегда event
+        type: 'event' as const,
+        status,
+        sendNotification: shouldNotify,
       };
 
-      // Удаляем undefined значения
+      // Удаляем undefined значения (но не status и sendNotification!)
       Object.keys(cleanData).forEach(key => {
-        if (cleanData[key] === undefined || cleanData[key] === '') {
+        if (key !== 'status' && key !== 'sendNotification' && (cleanData[key] === undefined || cleanData[key] === '')) {
           delete cleanData[key];
         }
       });
 
       if (editingEvent) {
         await adminApi.updateEvent(editingEvent.id, cleanData, initData);
-        showAlert('Обновлено');
+        showAlert(publishMode === 'now' ? 'Опубликовано' : 'Обновлено');
       } else {
         await adminApi.createEvent(cleanData, initData);
-        showAlert('Создано');
+        showAlert(publishMode === 'now' ? 'Программа опубликована' : 'Программа создана');
       }
       onSuccess();
     } catch (error) {
@@ -251,8 +263,48 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
           </div>
         </div>
 
+        {/* Секция публикации */}
+        <div className="form-group">
+          <label>Публикация</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="publishMode"
+                checked={publishMode === 'draft'}
+                onChange={() => setPublishMode('draft')}
+              />
+              <span>💾 Сохранить как черновик</span>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="publishMode"
+                checked={publishMode === 'now'}
+                onChange={() => setPublishMode('now')}
+              />
+              <span>🚀 Опубликовать сейчас</span>
+            </label>
+          </div>
+        </div>
+
+        {publishMode === 'now' && (
+          <div className="form-group">
+            <label className="checkbox-item" style={{display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer'}}>
+              <input
+                type="checkbox"
+                checked={sendNotification}
+                onChange={(e) => setSendNotification(e.target.checked)}
+              />
+              <span>📬 Отправить уведомление пользователям</span>
+            </label>
+          </div>
+        )}
+
         <button type="submit" className="save-btn" disabled={loading}>
-          {loading ? 'Сохранение...' : (editingEvent ? 'Обновить' : 'Создать')}
+          {loading ? 'Сохранение...' : (
+            publishMode === 'now' ? '🚀 Опубликовать' : '💾 Сохранить'
+          )}
         </button>
       </form>
     </div>

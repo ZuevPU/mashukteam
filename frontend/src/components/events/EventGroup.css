@@ -46,6 +46,7 @@
 
 .event-group-items .event-card .event-date,
 .event-group-items .event-card .event-location,
+.event-group-items .event-card .event-format,
 .event-group-items .event-card .event-speaker {
   font-size: 13px;
   margin: 4px 0;
@@ -53,6 +54,11 @@
 
 .event-group-items .event-card .event-location {
   color: var(--color-text-secondary, #666);
+}
+
+.event-group-items .event-card .event-format {
+  color: var(--color-primary, #3E529B);
+  font-weight: 500;
 }
 
 .event-group-items .event-card .event-description {

@@ -69,6 +69,38 @@ export const adminApi = {
   },
 
   /**
+   * Обновление вопроса диагностики
+   */
+  updateDiagnosticQuestion: async (
+    questionId: string,
+    data: Partial<CreateQuestionRequest>,
+    initData: string
+  ): Promise<Question> => {
+    const response = await fetchApi<{ success: boolean; question: Question }>(
+      `/admin/events/questions/${questionId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ initData, ...data }),
+      }
+    );
+    return response.question;
+  },
+
+  /**
+   * Удаление вопроса диагностики
+   */
+  deleteDiagnosticQuestion: async (questionId: string, initData: string): Promise<boolean> => {
+    const response = await fetchApi<{ success: boolean }>(
+      `/admin/events/questions/${questionId}`,
+      {
+        method: 'DELETE',
+        body: JSON.stringify({ initData }),
+      }
+    );
+    return response.success;
+  },
+
+  /**
    * Получение аналитики по мероприятию
    */
   getEventAnalytics: async (

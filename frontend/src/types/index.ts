@@ -56,6 +56,8 @@ export interface Event {
   group_name?: string; // Название группы (например, "День 1")
   group_order?: number; // Порядок группы для сортировки
   event_order?: number; // Порядок мероприятия внутри группы
+  admin_comment?: string; // Комментарий администратора (отображается курсивом)
+  footer_text?: string; // Текст в конце диагностики (после всех вопросов)
   created_at: string;
   updated_at: string;
 }
@@ -260,6 +262,8 @@ export interface CreateEventRequest {
   title: string;
   speaker?: string;
   description?: string;
+  admin_comment?: string;
+  footer_text?: string;
   audience?: string;
   event_date?: string;
   event_time?: string;
@@ -270,6 +274,7 @@ export interface CreateEventRequest {
   group_order?: number;
   event_order?: number;
   status?: 'draft' | 'published' | 'completed';
+  sendNotification?: boolean;
 }
 
 export interface CreateQuestionRequest {

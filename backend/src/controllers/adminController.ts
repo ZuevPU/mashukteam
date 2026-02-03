@@ -14,15 +14,16 @@ export class AdminController {
    */
   static async createEvent(req: Request, res: Response) {
     try {
-      // Извлекаем initData и оставляем только данные события
-      const { initData, ...eventData } = req.body;
+      // Извлекаем initData, sendNotification и оставляем только данные события
+      const { initData, sendNotification, ...eventData } = req.body;
       
-      logger.debug('Creating event', { eventData });
+      logger.debug('Creating event', { eventData, sendNotification });
       
       const event = await EventService.createEvent(eventData);
 
-      // Отправка уведомления только если мероприятие опубликовано
-      if (event.status === 'published' && (process.env.NODE_ENV === 'production' || process.env.ENABLE_NOTIFICATIONS === 'true')) {
+      // Отправка уведомления только если мероприятие опубликовано И sendNotification = true
+      if (sendNotification && event.status === 'published' && (process.env.NODE_ENV === 'production' || process.env.ENABLE_NOTIFICATIONS === 'true')) {
+        logger.info('Sending notification for new event', { eventId: event.id, type: event.type });
         if (event.type === 'diagnostic') {
           notifyNewDiagnostic(event.title, event.id).catch((err) => 
             logger.error('Error sending diagnostic notification', err instanceof Error ? err : new Error(String(err)))
@@ -47,8 +48,8 @@ export class AdminController {
   static async updateEvent(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      // Извлекаем initData и оставляем только данные для обновления
-      const { initData, ...updates } = req.body;
+      // Извлекаем initData, sendNotification и оставляем только данные для обновления
+      const { initData, sendNotification, ...updates } = req.body;
       
       // Получаем текущее состояние мероприятия для проверки изменения статуса
       const currentEvent = await EventService.getEventById(id);
@@ -56,8 +57,9 @@ export class AdminController {
       
       const event = await EventService.updateEvent(id, updates);
       
-      // Отправка уведомления, если статус изменился на published
-      if (updates.status === 'published' && !wasPublished && (process.env.NODE_ENV === 'production' || process.env.ENABLE_NOTIFICATIONS === 'true')) {
+      // Отправка уведомления, если статус изменился на published И sendNotification = true
+      if (sendNotification && updates.status === 'published' && !wasPublished && (process.env.NODE_ENV === 'production' || process.env.ENABLE_NOTIFICATIONS === 'true')) {
+        logger.info('Sending notification for published event', { eventId: event.id, type: event.type });
         if (event.type === 'diagnostic') {
           notifyNewDiagnostic(event.title, event.id).catch((err) => 
             logger.error('Error sending diagnostic notification', err instanceof Error ? err : new Error(String(err)))
@@ -254,6 +256,75 @@ export class AdminController {
     } catch (error) {
       logger.error('Add question to diagnostic error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при добавлении вопроса' });
+    }
+  }
+
+  /**
+   * Обновление вопроса диагностики
+   */
+  static async updateDiagnosticQuestion(req: Request, res: Response) {
+    try {
+      const { questionId } = req.params;
+      const { initData, ...questionData } = req.body;
+
+      const { data: question, error } = await supabase
+        .from('questions')
+        .update({
+          text: questionData.text,
+          type: questionData.type,
+          options: questionData.options ? JSON.stringify(questionData.options) : null,
+          char_limit: questionData.char_limit || null,
+          order_index: questionData.order_index,
+        })
+        .eq('id', questionId)
+        .select()
+        .single();
+
+      if (error) {
+        logger.error('Error updating diagnostic question', error instanceof Error ? error : new Error(String(error)));
+        return res.status(500).json({ error: 'Ошибка при обновлении вопроса' });
+      }
+
+      const questionWithOptions = {
+        ...question,
+        options: question.options ? JSON.parse(question.options) : null,
+      };
+
+      return res.json({ success: true, question: questionWithOptions });
+    } catch (error) {
+      logger.error('Update diagnostic question error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ error: 'Ошибка при обновлении вопроса' });
+    }
+  }
+
+  /**
+   * Удаление вопроса диагностики
+   */
+  static async deleteDiagnosticQuestion(req: Request, res: Response) {
+    try {
+      const { questionId } = req.params;
+
+      // Сначала удаляем все ответы на этот вопрос
+      await supabase
+        .from('answers')
+        .delete()
+        .eq('question_id', questionId);
+
+      // Затем удаляем сам вопрос
+      const { error } = await supabase
+        .from('questions')
+        .delete()
+        .eq('id', questionId);
+
+      if (error) {
+        logger.error('Error deleting diagnostic question', error instanceof Error ? error : new Error(String(error)));
+        return res.status(500).json({ error: 'Ошибка при удалении вопроса' });
+      }
+
+      return res.json({ success: true });
+    } catch (error) {
+      logger.error('Delete diagnostic question error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ error: 'Ошибка при удалении вопроса' });
     }
   }
 

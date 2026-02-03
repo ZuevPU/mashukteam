@@ -40,6 +40,7 @@ export const EventGroup: React.FC<EventGroupProps> = ({ groupName, events, onEve
                   </p>
                 )}
                 {event.location && <p className="event-location">📍 {event.location}</p>}
+                {event.audience && <p className="event-format">🎯 {event.audience}</p>}
                 {event.speaker && <p className="event-speaker">🎤 {event.speaker}</p>}
                 {event.description && <p className="event-description">{event.description}</p>}
               </div>

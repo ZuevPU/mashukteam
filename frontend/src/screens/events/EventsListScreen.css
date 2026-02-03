@@ -99,10 +99,15 @@
   font-size: 18px;
 }
 
-.event-date, .event-location, .event-speaker {
+.event-date, .event-location, .event-format, .event-speaker {
   margin: 4px 0;
   font-size: 14px;
   color: var(--color-text-secondary, #35A2A8);
+}
+
+.event-format {
+  color: var(--color-primary, #3E529B);
+  font-weight: 500;
 }
 
 .event-description {

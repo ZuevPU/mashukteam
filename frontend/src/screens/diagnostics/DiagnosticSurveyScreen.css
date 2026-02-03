@@ -128,3 +128,44 @@
   padding: 40px;
   color: #666;
 }
+
+/* Комментарий администратора */
+.admin-comment {
+  font-style: italic;
+  color: #555;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #ddd;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.event-info-card {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.event-info-description {
+  color: #333;
+  font-size: 15px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Текст в конце диагностики */
+.footer-text-card {
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 24px;
+  border: 1px solid #a5d6a7;
+}
+
+.footer-text {
+  color: #2e7d32;
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0;
+  text-align: center;
+}

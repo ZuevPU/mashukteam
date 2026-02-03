@@ -10,15 +10,23 @@ interface AdminDiagnosticFormScreenProps {
   editingDiagnostic?: Event;
 }
 
+type PublishMode = 'draft' | 'now' | 'scheduled';
+
 export const AdminDiagnosticFormScreen: React.FC<AdminDiagnosticFormScreenProps> = ({ 
   onBack, onSuccess, editingDiagnostic 
 }) => {
   const { initData, showAlert } = useTelegram();
   const [loading, setLoading] = useState(false);
+  const [sendNotification, setSendNotification] = useState(true);
+  const [publishMode, setPublishMode] = useState<PublishMode>(
+    editingDiagnostic?.status === 'published' ? 'now' : 'draft'
+  );
   
   const [formData, setFormData] = useState({
     title: editingDiagnostic?.title || '',
     description: editingDiagnostic?.description || '',
+    admin_comment: editingDiagnostic?.admin_comment || '',
+    footer_text: editingDiagnostic?.footer_text || '',
     group_name: editingDiagnostic?.group_name || '',
     group_order: editingDiagnostic?.group_order || 0,
     event_order: editingDiagnostic?.event_order || 0,
@@ -40,18 +48,24 @@ export const AdminDiagnosticFormScreen: React.FC<AdminDiagnosticFormScreenProps>
 
     setLoading(true);
     try {
+      // Определяем статус на основе publishMode
+      const status: 'draft' | 'published' = publishMode === 'now' ? 'published' : 'draft';
+      const shouldNotify = publishMode === 'now' && sendNotification;
+
       const data = {
         ...formData,
         type: 'diagnostic' as const,
-        event_date: new Date().toISOString().split('T')[0], // Текущая дата
+        event_date: new Date().toISOString().split('T')[0],
+        status,
+        sendNotification: shouldNotify,
       };
 
       if (editingDiagnostic) {
         await adminApi.updateEvent(editingDiagnostic.id, data, initData);
-        showAlert('Обновлено');
+        showAlert(publishMode === 'now' ? 'Опубликовано' : 'Обновлено');
       } else {
         await adminApi.createEvent(data, initData);
-        showAlert('Диагностика создана');
+        showAlert(publishMode === 'now' ? 'Диагностика опубликована' : 'Диагностика создана');
       }
       onSuccess();
     } catch (error) {
@@ -90,6 +104,35 @@ export const AdminDiagnosticFormScreen: React.FC<AdminDiagnosticFormScreenProps>
             onChange={handleChange}
             placeholder="Краткое описание диагностики..."
           />
+        </div>
+
+        <div className="form-group">
+          <label>Комментарий администратора (необязательно)</label>
+          <textarea 
+            className="form-textarea"
+            name="admin_comment"
+            value={formData.admin_comment}
+            onChange={handleChange}
+            placeholder="Комментарий будет отображаться курсивом после описания..."
+            style={{ fontStyle: 'italic' }}
+          />
+          <small style={{fontSize: 11, opacity: 0.7, marginTop: 4, display: 'block'}}>
+            Этот текст будет показан участникам курсивом сразу после описания
+          </small>
+        </div>
+
+        <div className="form-group">
+          <label>Текст в конце диагностики (необязательно)</label>
+          <textarea 
+            className="form-textarea"
+            name="footer_text"
+            value={formData.footer_text}
+            onChange={handleChange}
+            placeholder="Этот текст будет отображаться в конце, после всех вопросов..."
+          />
+          <small style={{fontSize: 11, opacity: 0.7, marginTop: 4, display: 'block'}}>
+            Отображается участникам после всех вопросов диагностики
+          </small>
         </div>
 
         <div className="form-group">
@@ -158,8 +201,48 @@ export const AdminDiagnosticFormScreen: React.FC<AdminDiagnosticFormScreenProps>
           После создания добавьте вопросы через кнопку "❓" в списке
         </p>
 
+        {/* Секция публикации */}
+        <div className="form-group">
+          <label>Публикация</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="publishMode"
+                checked={publishMode === 'draft'}
+                onChange={() => setPublishMode('draft')}
+              />
+              <span>💾 Сохранить как черновик</span>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="publishMode"
+                checked={publishMode === 'now'}
+                onChange={() => setPublishMode('now')}
+              />
+              <span>🚀 Опубликовать сейчас</span>
+            </label>
+          </div>
+        </div>
+
+        {publishMode === 'now' && (
+          <div className="form-group">
+            <label className="checkbox-item" style={{display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer'}}>
+              <input
+                type="checkbox"
+                checked={sendNotification}
+                onChange={(e) => setSendNotification(e.target.checked)}
+              />
+              <span>📬 Отправить уведомление пользователям</span>
+            </label>
+          </div>
+        )}
+
         <button type="submit" className="save-btn" disabled={loading}>
-          {loading ? 'Сохранение...' : (editingDiagnostic ? 'Обновить' : 'Создать')}
+          {loading ? 'Сохранение...' : (
+            publishMode === 'now' ? '🚀 Опубликовать' : '💾 Сохранить'
+          )}
         </button>
       </form>
     </div>

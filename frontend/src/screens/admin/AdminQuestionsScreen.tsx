@@ -14,6 +14,7 @@ export const AdminQuestionsScreen: React.FC<AdminQuestionsScreenProps> = ({ even
   const [loading, setLoading] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loadingQuestions, setLoadingQuestions] = useState(true);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   
   const [question, setQuestion] = useState<CreateQuestionRequest>({
     text: '',
@@ -80,11 +81,18 @@ export const AdminQuestionsScreen: React.FC<AdminQuestionsScreenProps> = ({ even
         options: question.options?.filter((o: string) => o.trim())
       };
 
-      const newQuestion = await adminApi.addQuestion(event.id, dataToSend, initData);
-      showAlert('Вопрос добавлен!');
-      
-      // Добавляем в список
-      setQuestions(prev => [...prev, newQuestion]);
+      if (editingQuestion) {
+        // Обновление существующего вопроса
+        const updatedQuestion = await adminApi.updateDiagnosticQuestion(editingQuestion.id, dataToSend, initData);
+        showAlert('Вопрос обновлен!');
+        setQuestions(prev => prev.map(q => q.id === editingQuestion.id ? updatedQuestion : q));
+        setEditingQuestion(null);
+      } else {
+        // Добавление нового вопроса
+        const newQuestion = await adminApi.addQuestion(event.id, dataToSend, initData);
+        showAlert('Вопрос добавлен!');
+        setQuestions(prev => [...prev, newQuestion]);
+      }
       
       // Сброс формы
       setQuestion({
@@ -94,10 +102,44 @@ export const AdminQuestionsScreen: React.FC<AdminQuestionsScreenProps> = ({ even
         char_limit: 1000
       });
     } catch (error) {
-      console.error('Error adding question:', error);
-      showAlert('Ошибка добавления');
+      console.error('Error saving question:', error);
+      showAlert('Ошибка сохранения');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEdit = (q: Question) => {
+    setEditingQuestion(q);
+    setQuestion({
+      text: q.text,
+      type: q.type,
+      options: q.options || [''],
+      char_limit: q.char_limit || 1000
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingQuestion(null);
+    setQuestion({
+      text: '',
+      type: 'text',
+      options: [''],
+      char_limit: 1000
+    });
+  };
+
+  const handleDelete = async (q: Question) => {
+    if (!initData) return;
+    if (!confirm(`Удалить вопрос "${q.text.substring(0, 50)}..."?`)) return;
+
+    try {
+      await adminApi.deleteDiagnosticQuestion(q.id, initData);
+      showAlert('Вопрос удален');
+      setQuestions(prev => prev.filter(item => item.id !== q.id));
+    } catch (error) {
+      console.error('Error deleting question:', error);
+      showAlert('Ошибка удаления');
     }
   };
 
@@ -127,24 +169,60 @@ export const AdminQuestionsScreen: React.FC<AdminQuestionsScreenProps> = ({ even
         <div className="admin-list" style={{marginBottom: 24}}>
           <h4 style={{marginBottom: 12}}>Добавленные вопросы ({questions.length})</h4>
           {questions.map((q, idx) => (
-            <div key={q.id} className="admin-item-card block">
-              <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: 4}}>
-                <span style={{fontWeight: 600}}>#{idx + 1}</span>
-                <span className="status-badge draft">{getTypeLabel(q.type)}</span>
+            <div key={q.id} className="admin-item-card">
+              <div className="item-info">
+                <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: 4}}>
+                  <span style={{fontWeight: 600}}>#{idx + 1}</span>
+                  <span className="status-badge draft">{getTypeLabel(q.type)}</span>
+                </div>
+                <p style={{marginBottom: 4}}>{q.text}</p>
+                {q.options && q.options.length > 0 && (
+                  <p style={{fontSize: 12, opacity: 0.7, marginTop: 4}}>
+                    Варианты: {q.options.join(', ')}
+                  </p>
+                )}
               </div>
-              <p>{q.text}</p>
-              {q.options && q.options.length > 0 && (
-                <p style={{fontSize: 12, opacity: 0.7, marginTop: 4}}>
-                  Варианты: {q.options.join(', ')}
-                </p>
-              )}
+              <div className="item-actions">
+                <button 
+                  className="action-btn" 
+                  onClick={() => handleEdit(q)}
+                  title="Редактировать"
+                >
+                  ✏️
+                </button>
+                <button 
+                  className="action-btn" 
+                  onClick={() => handleDelete(q)}
+                  title="Удалить"
+                >
+                  🗑️
+                </button>
+              </div>
             </div>
           ))}
         </div>
       ) : null}
 
-      {/* Форма добавления нового вопроса */}
-      <h4 style={{marginBottom: 12}}>Добавить вопрос</h4>
+      {/* Форма добавления/редактирования вопроса */}
+      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12}}>
+        <h4 style={{margin: 0}}>{editingQuestion ? '✏️ Редактирование вопроса' : '➕ Добавить вопрос'}</h4>
+        {editingQuestion && (
+          <button 
+            type="button" 
+            onClick={handleCancelEdit}
+            style={{
+              background: 'transparent',
+              border: '1px solid #ccc',
+              padding: '6px 12px',
+              borderRadius: 6,
+              cursor: 'pointer',
+              fontSize: 13
+            }}
+          >
+            Отмена
+          </button>
+        )}
+      </div>
       <form className="admin-form" onSubmit={handleSubmit}>
         <div className="form-group">
           <label>Текст вопроса</label>
@@ -210,7 +288,7 @@ export const AdminQuestionsScreen: React.FC<AdminQuestionsScreenProps> = ({ even
         )}
 
         <button type="submit" className="save-btn" disabled={loading}>
-          {loading ? 'Сохранение...' : '+ Добавить вопрос'}
+          {loading ? 'Сохранение...' : (editingQuestion ? '✓ Сохранить изменения' : '+ Добавить вопрос')}
         </button>
       </form>
     </div>

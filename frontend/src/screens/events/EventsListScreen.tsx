@@ -209,6 +209,7 @@ export const EventsListScreen: React.FC<EventsListScreenProps> = ({
                             </p>
                           )}
                           {event.location && <p className="event-location">📍 {event.location}</p>}
+                          {event.audience && <p className="event-format">🎯 {event.audience}</p>}
                           {event.speaker && <p className="event-speaker">🎤 {event.speaker}</p>}
                           {event.description && <p className="event-description">{event.description}</p>}
                         </div>

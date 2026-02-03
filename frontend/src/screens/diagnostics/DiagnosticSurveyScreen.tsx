@@ -118,9 +118,14 @@ export const DiagnosticSurveyScreen: React.FC<DiagnosticSurveyScreenProps> = ({ 
         <h3>{event.title}</h3>
       </div>
 
-      {event.description && (
+      {(event.description || event.admin_comment) && (
         <div className="event-info-card" style={{ marginBottom: '20px' }}>
-          <p className="event-info-description">{event.description}</p>
+          {event.description && (
+            <p className="event-info-description">{event.description}</p>
+          )}
+          {event.admin_comment && (
+            <p className="admin-comment">{event.admin_comment}</p>
+          )}
         </div>
       )}
 
@@ -219,6 +224,13 @@ export const DiagnosticSurveyScreen: React.FC<DiagnosticSurveyScreenProps> = ({ 
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Текст в конце диагностики */}
+      {event.footer_text && (
+        <div className="footer-text-card">
+          <p className="footer-text">{event.footer_text}</p>
         </div>
       )}
     </div>

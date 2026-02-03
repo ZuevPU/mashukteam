@@ -38,6 +38,8 @@ export interface Event {
   title: string;
   speaker?: string;
   description?: string;
+  admin_comment?: string; // Комментарий администратора (отображается курсивом)
+  footer_text?: string; // Текст в конце диагностики (после всех вопросов)
   audience?: string;
   event_date?: string;
   event_time?: string;
@@ -141,6 +143,8 @@ export interface CreateEventDto {
   title: string;
   speaker?: string;
   description?: string;
+  admin_comment?: string; // Комментарий администратора (отображается курсивом)
+  footer_text?: string; // Текст в конце диагностики (после всех вопросов)
   audience?: string;
   event_date?: string;
   event_time?: string;
