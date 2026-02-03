@@ -160,12 +160,12 @@ export const AdminExportScreen: React.FC<AdminExportScreenProps> = ({ onBack }) 
           </div>
 
           <div className="form-group">
-            <label>Мероприятие:</label>
+            <label>Программа:</label>
             <select
               value={filters.eventId}
               onChange={(e) => setFilters({ ...filters, eventId: e.target.value })}
             >
-              <option value="">Все мероприятия</option>
+              <option value="">Все программы</option>
               {events.map((event) => (
                 <option key={event.id} value={event.id}>
                   {event.title}
@@ -188,7 +188,7 @@ export const AdminExportScreen: React.FC<AdminExportScreenProps> = ({ onBack }) 
               {filters.dateFrom && <li>Дата от: {new Date(filters.dateFrom).toLocaleDateString('ru-RU')}</li>}
               {filters.dateTo && <li>Дата до: {new Date(filters.dateTo).toLocaleDateString('ru-RU')}</li>}
               {filters.direction && <li>Направление: {directions.find(d => d.slug === filters.direction)?.name}</li>}
-              {filters.eventId && <li>Мероприятие: {events.find(e => e.id === filters.eventId)?.title}</li>}
+              {filters.eventId && <li>Программа: {events.find(e => e.id === filters.eventId)?.title}</li>}
             </ul>
           </div>
         )}
@@ -211,10 +211,10 @@ export const AdminExportScreen: React.FC<AdminExportScreenProps> = ({ onBack }) 
           </button>
           <button
             className="create-btn"
-            onClick={() => handleExport('/admin/export/events', 'events_export', 'Мероприятия')}
+            onClick={() => handleExport('/admin/export/events', 'events_export', 'Программы')}
             disabled={!!exporting}
           >
-            {exporting === 'Мероприятия' ? 'Экспорт...' : 'Экспорт мероприятий'}
+            {exporting === 'Программы' ? 'Экспорт...' : 'Экспорт программ'}
           </button>
           <button
             className="create-btn"

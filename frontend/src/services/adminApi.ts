@@ -2,8 +2,10 @@ import { fetchApi } from './api';
 import { 
   Event, Question, User, CreateEventRequest, CreateQuestionRequest, Answer,
   TargetedQuestion, CreateTargetedQuestionRequest, 
-  Assignment, AssignmentSubmission, CreateAssignmentRequest, Direction 
+  Assignment, AssignmentSubmission, CreateAssignmentRequest, Direction,
+  RandomizerQuestion, RandomizerDistribution
 } from '../types';
+import { RandomizerParticipantsResponse } from './assignmentApi';
 
 export const adminApi = {
   /**
@@ -212,10 +214,10 @@ export const adminApi = {
     return response.assignment;
   },
 
-  updateAssignment: async (id: string, data: Partial<CreateAssignmentRequest & { status: string }>, initData: string): Promise<Assignment> => {
+  updateAssignment: async (id: string, data: Partial<CreateAssignmentRequest & { status: string; scheduled_at: string | null }>, initData: string, sendNotification?: boolean): Promise<Assignment> => {
     const response = await fetchApi<{ success: boolean; assignment: Assignment }>(
       `/admin/assignments/${id}`,
-      { method: 'PUT', body: JSON.stringify({ initData, ...data }) }
+      { method: 'PUT', body: JSON.stringify({ initData, ...data, sendNotification }) }
     );
     return response.assignment;
   },
@@ -268,5 +270,66 @@ export const adminApi = {
       { method: 'GET' }
     );
     return response.directions;
+  },
+
+  // === Assignment Randomizer (Random Number) ===
+
+  /**
+   * Получение участников рандомайзера задания
+   */
+  getRandomizerParticipants: async (assignmentId: string, initData: string): Promise<RandomizerParticipantsResponse> => {
+    const response = await fetchApi<{ success: boolean } & RandomizerParticipantsResponse>(
+      `/admin/assignments/${assignmentId}/randomizer/participants`,
+      { method: 'POST', body: JSON.stringify({ initData }) }
+    );
+    return {
+      participants: response.participants,
+      participantsCount: response.participantsCount,
+      randomizer: response.randomizer,
+    };
+  },
+
+  /**
+   * Предпросмотр распределения рандомайзера задания
+   */
+  previewRandomizerDistribution: async (assignmentId: string, initData: string): Promise<RandomizerDistribution[]> => {
+    const response = await fetchApi<{ success: boolean; distributions: RandomizerDistribution[] }>(
+      `/admin/assignments/${assignmentId}/randomizer/preview`,
+      { method: 'POST', body: JSON.stringify({ initData }) }
+    );
+    return response.distributions;
+  },
+
+  /**
+   * Получение сохраненного предпросмотра
+   */
+  getRandomizerPreview: async (assignmentId: string, initData: string): Promise<{ distributions: RandomizerDistribution[]; randomizer: RandomizerQuestion }> => {
+    const response = await fetchApi<{ success: boolean; distributions: RandomizerDistribution[]; randomizer: RandomizerQuestion }>(
+      `/admin/assignments/${assignmentId}/randomizer/preview/get`,
+      { method: 'POST', body: JSON.stringify({ initData }) }
+    );
+    return { distributions: response.distributions, randomizer: response.randomizer };
+  },
+
+  /**
+   * Обновление стола участника в предпросмотре
+   */
+  updateRandomizerDistribution: async (assignmentId: string, userId: string, tableNumber: number, initData: string): Promise<RandomizerDistribution> => {
+    const response = await fetchApi<{ success: boolean; distribution: RandomizerDistribution }>(
+      `/admin/assignments/${assignmentId}/randomizer/distribution`,
+      { method: 'PATCH', body: JSON.stringify({ initData, userId, tableNumber }) }
+    );
+    return response.distribution;
+  },
+
+  /**
+   * Публикация распределения рандомайзера задания
+   */
+  publishRandomizerDistribution: async (assignmentId: string, initData: string): Promise<{ distributions: RandomizerDistribution[]; awardedCount: number }> => {
+    const response = await fetchApi<{ success: boolean; distributions: RandomizerDistribution[]; awardedCount: number }>(
+      `/admin/assignments/${assignmentId}/randomizer/publish`,
+      { method: 'POST', body: JSON.stringify({ initData }) }
+    );
+    return { distributions: response.distributions, awardedCount: response.awardedCount };
   }
 };

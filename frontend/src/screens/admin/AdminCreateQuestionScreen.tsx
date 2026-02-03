@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CreateTargetedQuestionRequest, QuestionType, Direction, TargetedQuestion } from '../../types';
 import { adminApi } from '../../services/adminApi';
-import { randomizerApi } from '../../services/randomizerApi';
 import { useTelegram } from '../../hooks/useTelegram';
 import { UserSelector } from './UserSelector';
 import './AdminScreens.css';
@@ -32,16 +31,16 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
     status: editingQuestion?.status || 'draft'
   });
   
-  // Состояние для выбора публикации при создании
-  const [publishOnCreate, setPublishOnCreate] = useState(false);
-
-  // Состояние для рандомайзера
-  const [randomizerData, setRandomizerData] = useState({
-    tables_count: 20,
-    participants_per_table: 4,
-    topic: '',
-    description: '',
-  });
+  // Режим публикации: draft, now, scheduled
+  type PublishMode = 'draft' | 'now' | 'scheduled';
+  const [publishMode, setPublishMode] = useState<PublishMode>(
+    editingQuestion?.scheduled_at ? 'scheduled' : 
+    editingQuestion?.status === 'published' ? 'now' : 'draft'
+  );
+  const [scheduledAt, setScheduledAt] = useState(editingQuestion?.scheduled_at || '');
+  
+  // Для обратной совместимости
+  const publishOnCreate = publishMode === 'now';
 
   useEffect(() => {
     const load = async () => {
@@ -99,6 +98,11 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
       return;
     }
 
+    if (publishMode === 'scheduled' && !scheduledAt) {
+      showAlert('Выберите дату и время публикации');
+      return;
+    }
+
     if ((question.type === 'single' || question.type === 'multiple')) {
       const validOptions = question.options?.filter((o: string) => o.trim()) || [];
       if (validOptions.length < 2) {
@@ -107,31 +111,11 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
       }
     }
 
-    if (question.type === 'randomizer') {
-      if (!randomizerData.topic.trim()) {
-        showAlert('Введите тему вопроса');
-        return;
-      }
-      if (randomizerData.tables_count <= 0) {
-        showAlert('Укажите количество столов');
-        return;
-      }
-      if (randomizerData.participants_per_table <= 0) {
-        showAlert('Укажите количество участников на стол');
-        return;
-      }
-    }
-
     setLoading(true);
     try {
-      // Для рандомайзера используем topic как text вопроса
-      const questionText = question.type === 'randomizer' 
-        ? randomizerData.topic || 'Рандомайзер'
-        : question.text;
-      
       // Подготавливаем данные для отправки
       const dataToSend: any = {
-        text: questionText,
+        text: question.text,
         type: question.type,
         target_audience: question.target_audience,
         reflection_points: question.reflection_points || 1,
@@ -140,11 +124,8 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
         question_order: question.question_order || 0,
       };
       
-      // Для рандомайзера не отправляем options
-      if (question.type !== 'randomizer') {
-        const filteredOptions = question.options?.filter((o: string) => o.trim());
-        dataToSend.options = filteredOptions && filteredOptions.length > 0 ? filteredOptions : undefined;
-      }
+      const filteredOptions = question.options?.filter((o: string) => o.trim());
+      dataToSend.options = filteredOptions && filteredOptions.length > 0 ? filteredOptions : undefined;
       
       // Обработка target_values: отправляем только если есть значения
       if (question.target_values && question.target_values.length > 0) {
@@ -156,38 +137,23 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
         dataToSend.char_limit = question.char_limit;
       }
       
+      // Определяем статус и scheduled_at на основе publishMode
+      const status = publishMode === 'now' ? 'published' : 'draft';
+      const scheduled_at = publishMode === 'scheduled' ? new Date(scheduledAt).toISOString() : null;
+      const shouldNotify = publishMode === 'now' && sendNotification;
+
       if (editingQuestion) {
-        await adminApi.updateTargetedQuestion(editingQuestion.id, dataToSend, initData);
-        showAlert('Вопрос обновлен!');
+        await adminApi.updateTargetedQuestion(editingQuestion.id, { ...dataToSend, status, scheduled_at }, initData);
+        showAlert(publishMode === 'scheduled' ? 'Вопрос запланирован!' : 'Вопрос обновлен!');
       } else {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/6ee1941a-785a-4be3-ad48-7432e5d314b9',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AdminCreateQuestionScreen.tsx:153',message:'before createTargetedQuestion',data:{type:dataToSend.type,hasOptions:!!dataToSend.options,optionsLength:dataToSend.options?.length,targetAudience:dataToSend.target_audience,hasTargetValues:!!dataToSend.target_values,targetValuesLength:dataToSend.target_values?.length,reflectionPoints:dataToSend.reflection_points,status:'published'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
-        const createdQuestion = await adminApi.createTargetedQuestion({ 
+        await adminApi.createTargetedQuestion({ 
           ...dataToSend, 
-          status: publishOnCreate ? 'published' : 'draft', 
-          sendNotification: publishOnCreate && sendNotification 
+          status,
+          scheduled_at,
+          sendNotification: shouldNotify 
         }, initData);
         
-        // Если тип рандомайзер, создаем рандомайзер
-        if (question.type === 'randomizer' && createdQuestion?.id) {
-          try {
-            await randomizerApi.createRandomizer(initData, {
-              question_id: createdQuestion.id,
-              tables_count: randomizerData.tables_count,
-              participants_per_table: randomizerData.participants_per_table,
-              topic: randomizerData.topic,
-              description: randomizerData.description || undefined,
-            });
-          } catch (randomizerError: any) {
-            console.error('Error creating randomizer:', randomizerError);
-            showAlert('Вопрос создан, но ошибка создания рандомайзера: ' + (randomizerError.message || 'Неизвестная ошибка'));
-            onSuccess();
-            return;
-          }
-        }
-        
-        showAlert('Вопрос создан!');
+        showAlert(publishMode === 'scheduled' ? 'Вопрос запланирован!' : 'Вопрос создан!');
       }
       onSuccess();
     } catch (error: any) {
@@ -264,80 +230,11 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
             <option value="single">⭕ Выбрать один вариант</option>
             <option value="multiple">☑️ Выбрать несколько вариантов</option>
             <option value="scale">🔢 Ввод числа (1-10)</option>
-            <option value="randomizer">🎲 Рандомайзер</option>
           </select>
+          <small style={{fontSize: 12, opacity: 0.7, display: 'block', marginTop: 4}}>
+            💡 Для создания случайного числа используйте раздел "Задания"
+          </small>
         </div>
-
-        {/* ПОЛЯ ДЛЯ РАНДОМАЙЗЕРА */}
-        {question.type === 'randomizer' && (
-          <>
-            <div className="form-group">
-              <label>Количество столов</label>
-              <input
-                type="number"
-                className="form-input"
-                value={randomizerData.tables_count}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === '') {
-                    setRandomizerData(prev => ({...prev, tables_count: 0}));
-                  } else {
-                    const numValue = parseInt(value, 10);
-                    if (!isNaN(numValue) && numValue > 0) {
-                      setRandomizerData(prev => ({...prev, tables_count: numValue}));
-                    }
-                  }
-                }}
-                min="1"
-                placeholder="20"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Участников на стол</label>
-              <input
-                type="number"
-                className="form-input"
-                value={randomizerData.participants_per_table}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === '') {
-                    setRandomizerData(prev => ({...prev, participants_per_table: 0}));
-                  } else {
-                    const numValue = parseInt(value, 10);
-                    if (!isNaN(numValue) && numValue > 0) {
-                      setRandomizerData(prev => ({...prev, participants_per_table: numValue}));
-                    }
-                  }
-                }}
-                min="1"
-                placeholder="4"
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Тема вопроса *</label>
-              <input
-                type="text"
-                className="form-input"
-                value={randomizerData.topic}
-                onChange={(e) => setRandomizerData(prev => ({...prev, topic: e.target.value}))}
-                placeholder="Введите тему вопроса..."
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Описание вопроса</label>
-              <textarea
-                className="form-textarea"
-                value={randomizerData.description}
-                onChange={(e) => setRandomizerData(prev => ({...prev, description: e.target.value}))}
-                placeholder="Введите описание вопроса..."
-                rows={3}
-              />
-            </div>
-          </>
-        )}
 
         {/* 3. ВАРИАНТЫ ОТВЕТОВ */}
         {(question.type === 'single' || question.type === 'multiple') && (
@@ -457,24 +354,54 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
           </div>
         </div>
 
-        {/* ПУБЛИКАЦИЯ И УВЕДОМЛЕНИЕ */}
-        {!editingQuestion && (
-          <div className="form-group">
-            <label className="checkbox-item" style={{display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer'}}>
+        {/* ПУБЛИКАЦИЯ */}
+        <div className="form-group">
+          <label>Публикация</label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
               <input
-                type="checkbox"
-                checked={publishOnCreate}
-                onChange={(e) => setPublishOnCreate(e.target.checked)}
+                type="radio"
+                name="publishMode"
+                checked={publishMode === 'draft'}
+                onChange={() => setPublishMode('draft')}
               />
-              <span>🚀 Сразу опубликовать вопрос</span>
+              <span>💾 Сохранить как черновик</span>
             </label>
-            <small style={{fontSize: 12, opacity: 0.7, display: 'block', marginTop: 4}}>
-              Если не отмечено, вопрос будет сохранен как черновик
-            </small>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="publishMode"
+                checked={publishMode === 'now'}
+                onChange={() => setPublishMode('now')}
+              />
+              <span>🚀 Опубликовать сейчас</span>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="radio"
+                name="publishMode"
+                checked={publishMode === 'scheduled'}
+                onChange={() => setPublishMode('scheduled')}
+              />
+              <span>⏰ Запланировать публикацию</span>
+            </label>
+          </div>
+        </div>
+
+        {publishMode === 'scheduled' && (
+          <div className="form-group">
+            <label>Дата и время публикации</label>
+            <input
+              type="datetime-local"
+              className="form-input"
+              value={scheduledAt}
+              onChange={(e) => setScheduledAt(e.target.value)}
+              min={new Date().toISOString().slice(0, 16)}
+            />
           </div>
         )}
 
-        {!editingQuestion && publishOnCreate && (
+        {publishMode === 'now' && (
           <div className="form-group">
             <label className="checkbox-item" style={{display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer'}}>
               <input
@@ -492,7 +419,8 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
             ? (editingQuestion ? 'Обновление...' : 'Создание...') 
             : (editingQuestion 
                 ? '✓ Сохранить изменения' 
-                : (publishOnCreate ? '🚀 Создать и опубликовать' : '💾 Сохранить как черновик')
+                : (publishMode === 'scheduled' ? '⏰ Запланировать' :
+                   publishMode === 'now' ? '🚀 Опубликовать' : '💾 Сохранить')
               )
           }
         </button>

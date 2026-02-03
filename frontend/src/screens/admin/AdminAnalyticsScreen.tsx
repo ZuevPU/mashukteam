@@ -107,7 +107,7 @@ export const AdminAnalyticsScreen: React.FC<AdminAnalyticsScreenProps> = ({ onBa
   const tabs = [
     { id: 'activity' as TabType, label: 'Активность', icon: '👥' },
     { id: 'directions' as TabType, label: 'Направления', icon: '📍' },
-    { id: 'events' as TabType, label: 'Мероприятия', icon: '📅' },
+    { id: 'events' as TabType, label: 'Программа', icon: '📅' },
     { id: 'questions' as TabType, label: 'Вопросы', icon: '❓' },
     { id: 'gamification' as TabType, label: 'Баллы', icon: '🏆' },
     { id: 'assignments' as TabType, label: 'Задания', icon: '📋' },
@@ -240,7 +240,7 @@ export const AdminAnalyticsScreen: React.FC<AdminAnalyticsScreenProps> = ({ onBa
                     color="#3E529B"
                   />
                   <MetricCard
-                    title="На мероприятия"
+                    title="На программы"
                     value={activityStats.totalEventAnswers}
                     icon="📅"
                     color="#3E529B"
@@ -316,10 +316,10 @@ export const AdminAnalyticsScreen: React.FC<AdminAnalyticsScreenProps> = ({ onBa
             </div>
           )}
 
-          {/* Вкладка Мероприятия */}
+          {/* Вкладка Программа */}
           {activeTab === 'events' && (
             <div className="analytics-section">
-              <h4>Статистика по мероприятиям</h4>
+              <h4>Статистика по программам</h4>
               {eventStats.length === 0 ? (
                 <p className="no-data">Нет данных</p>
               ) : (
@@ -328,7 +328,7 @@ export const AdminAnalyticsScreen: React.FC<AdminAnalyticsScreenProps> = ({ onBa
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                       <h4>{stat.eventTitle}</h4>
                       <span className={`status-badge ${stat.eventType}`}>
-                        {stat.eventType === 'event' ? 'Мероприятие' : 'Диагностика'}
+                        {stat.eventType === 'event' ? 'Программа' : 'Диагностика'}
                       </span>
                     </div>
                     <div className="analytics-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))' }}>

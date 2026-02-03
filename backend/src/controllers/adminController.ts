@@ -35,7 +35,7 @@ export class AdminController {
       return res.status(201).json({ success: true, event });
     } catch (error) {
       logger.error('Create event error', error instanceof Error ? error : new Error(String(error)));
-      return res.status(500).json({ error: 'Ошибка при создании мероприятия' });
+      return res.status(500).json({ error: 'Ошибка при создании программы' });
     }
   }
 
@@ -70,7 +70,7 @@ export class AdminController {
       return res.json({ success: true, event });
     } catch (error) {
       logger.error('Update event error', error instanceof Error ? error : new Error(String(error)));
-      return res.status(500).json({ error: 'Ошибка при обновлении мероприятия' });
+      return res.status(500).json({ error: 'Ошибка при обновлении программы' });
     }
   }
 
@@ -81,10 +81,10 @@ export class AdminController {
     try {
       const { id } = req.params;
       await EventService.deleteEvent(id);
-      return res.json({ success: true, message: 'Мероприятие удалено' });
+      return res.json({ success: true, message: 'Программа удалена' });
     } catch (error) {
       logger.error('Delete event error', error instanceof Error ? error : new Error(String(error)));
-      return res.status(500).json({ error: 'Ошибка при удалении мероприятия' });
+      return res.status(500).json({ error: 'Ошибка при удалении программы' });
     }
   }
 
@@ -187,7 +187,7 @@ export class AdminController {
       return res.json({ success: true, events });
     } catch (error) {
       logger.error('Get all events error', error instanceof Error ? error : new Error(String(error)));
-      return res.status(500).json({ error: 'Ошибка при получении мероприятий' });
+      return res.status(500).json({ error: 'Ошибка при получении программ' });
     }
   }
 
@@ -205,7 +205,7 @@ export class AdminController {
       // Проверяем, что это диагностика
       const event = await EventService.getEventById(id);
       if (!event) {
-        return res.status(404).json({ error: 'Мероприятие не найдено' });
+        return res.status(404).json({ error: 'Программа не найдена' });
       }
       if (event.type !== 'diagnostic') {
         return res.status(400).json({ error: 'Вопросы можно добавлять только к диагностике' });
@@ -265,7 +265,7 @@ export class AdminController {
       // Проверяем, что это диагностика
       const event = await EventService.getEventById(id);
       if (!event) {
-        return res.status(404).json({ error: 'Мероприятие не найдено' });
+        return res.status(404).json({ error: 'Программа не найдена' });
       }
       if (event.type !== 'diagnostic') {
         return res.status(400).json({ error: 'Аналитика доступна только для диагностики' });

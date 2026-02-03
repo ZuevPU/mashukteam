@@ -139,13 +139,13 @@ export const EventsListScreen: React.FC<EventsListScreenProps> = ({
     return { groups: sortedGroups, ungrouped };
   }, [events]);
 
-  if (loading) return <div className="loading">Загрузка мероприятий...</div>;
+  if (loading) return <div className="loading">Загрузка программы...</div>;
 
   return (
     <div className="events-screen">
       <div className="header">
         <button onClick={onBack} className="back-button">← Назад</button>
-        <h2>{typeFilter === 'diagnostic' ? 'Диагностика' : 'Мероприятия'}</h2>
+        <h2>{typeFilter === 'diagnostic' ? 'Диагностика' : 'Программа обучения'}</h2>
       </div>
 
       {/* Табы для переключения между анонсами и историей */}
@@ -167,7 +167,7 @@ export const EventsListScreen: React.FC<EventsListScreenProps> = ({
       <div className="events-list">
         {events.length === 0 ? (
           <p className="no-events">
-            {typeFilter === 'diagnostic' ? 'Нет доступных тестов' : 'Нет мероприятий'}
+            {typeFilter === 'diagnostic' ? 'Нет доступных тестов' : 'Нет программ'}
           </p>
         ) : (
           <>
@@ -201,9 +201,14 @@ export const EventsListScreen: React.FC<EventsListScreenProps> = ({
                           
                           {event.event_date && (
                             <p className="event-date">
-                              📅 {new Date(event.event_date).toLocaleDateString()} {event.event_time}
+                              📅 {new Date(event.event_date).toLocaleDateString()}
+                              {(event.start_time || event.end_time) 
+                                ? ` 🕐 ${event.start_time?.slice(0, 5) || ''}${event.start_time && event.end_time ? ' - ' : ''}${event.end_time?.slice(0, 5) || ''}`
+                                : event.event_time ? ` ${event.event_time}` : ''
+                              }
                             </p>
                           )}
+                          {event.location && <p className="event-location">📍 {event.location}</p>}
                           {event.speaker && <p className="event-speaker">🎤 {event.speaker}</p>}
                           {event.description && <p className="event-description">{event.description}</p>}
                         </div>

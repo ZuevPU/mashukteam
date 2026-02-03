@@ -157,8 +157,8 @@ export const NotificationsSettingsScreen: React.FC<NotificationsSettingsScreenPr
           </p>
           <div className="toggle-item">
             <div className="toggle-info">
-              <span className="toggle-label">Мероприятия</span>
-              <span className="toggle-description">Уведомления о новых мероприятиях</span>
+              <span className="toggle-label">Программа обучения</span>
+              <span className="toggle-description">Уведомления о новых программах</span>
             </div>
             <label className="toggle-switch">
               <input
@@ -315,7 +315,7 @@ export const NotificationsSettingsScreen: React.FC<NotificationsSettingsScreenPr
           <h4>Информация об уведомлениях</h4>
           <div style={{ fontSize: '13px', lineHeight: '1.6', opacity: 0.8 }}>
             <p style={{ marginBottom: '8px' }}>
-              <strong>Мероприятия:</strong> Анонсы новых мероприятий с прямой ссылкой на событие
+              <strong>Программа обучения:</strong> Анонсы новых программ с прямой ссылкой на событие
             </p>
             <p style={{ marginBottom: '8px' }}>
               <strong>Вопросы:</strong> Персональные вопросы от администраторов с ссылкой на ответ

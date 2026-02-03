@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { TargetedQuestion, RandomizerQuestion } from '../../types';
+import { TargetedQuestion } from '../../types';
 import { useTelegram } from '../../hooks/useTelegram';
 import { buildApiEndpoint } from '../../utils/apiUrl';
 import { adminApi } from '../../services/adminApi';
-import { randomizerApi } from '../../services/randomizerApi';
-import { AdminRandomizerPreviewScreen } from './AdminRandomizerPreviewScreen';
 import './AdminScreens.css';
 
 interface AdminQuestionsListScreenProps {
@@ -15,10 +13,7 @@ interface AdminQuestionsListScreenProps {
 export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> = ({ onBack, onEdit }) => {
   const { initData, showAlert } = useTelegram();
   const [questions, setQuestions] = useState<TargetedQuestion[]>([]);
-  const [randomizers, setRandomizers] = useState<Record<string, RandomizerQuestion & { participantsCount: number }>>({});
   const [loading, setLoading] = useState(true);
-  const [previewRandomizerId, setPreviewRandomizerId] = useState<string | null>(null);
-  const [previewRandomizer, setPreviewRandomizer] = useState<RandomizerQuestion | null>(null);
 
   const loadQuestions = async () => {
     if (!initData) return;
@@ -31,49 +26,9 @@ export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> =
       if (response.ok) {
         const data = await response.json();
         if (data.questions) {
-          setQuestions(data.questions);
-          
-          // Загружаем данные рандомайзеров для вопросов типа randomizer
-          const randomizerQuestions = data.questions.filter((q: TargetedQuestion) => q.type === 'randomizer');
-          const randomizerMap: Record<string, RandomizerQuestion & { participantsCount: number }> = {};
-          
-          for (const q of randomizerQuestions) {
-            try {
-              // Получаем рандомайзер по question_id через бэкенд
-              const randomizerResponse = await fetch(buildApiEndpoint(`/randomizer/by-question/${q.id}`), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ initData })
-              });
-              
-              if (randomizerResponse.ok) {
-                const randomizerData = await randomizerResponse.json();
-                if (randomizerData.randomizer) {
-                  // Получаем количество участников
-                  const participantsResponse = await fetch(buildApiEndpoint(`/randomizer/${randomizerData.randomizer.id}/participants-count`), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ initData })
-                  });
-                  
-                  let participantsCount = 0;
-                  if (participantsResponse.ok) {
-                    const participantsData = await participantsResponse.json();
-                    participantsCount = participantsData.count || 0;
-                  }
-                  
-                  randomizerMap[q.id] = {
-                    ...randomizerData.randomizer,
-                    participantsCount,
-                  };
-                }
-              }
-            } catch (err) {
-              console.error('Error loading randomizer for question:', q.id, err);
-            }
-          }
-          
-          setRandomizers(randomizerMap);
+          // Фильтруем вопросы типа randomizer (они теперь в заданиях)
+          const filteredQuestions = data.questions.filter((q: TargetedQuestion) => q.type !== 'randomizer');
+          setQuestions(filteredQuestions);
         }
       }
     } catch (error) {
@@ -118,23 +73,12 @@ export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> =
     }
   };
 
-  const handleDistribute = async (questionId: string) => {
-    if (!initData) return;
-    const randomizer = randomizers[questionId];
-    if (!randomizer) return;
-    
-    // Открываем экран предпросмотра
-    setPreviewRandomizerId(randomizer.id);
-    setPreviewRandomizer(randomizer);
-  };
-
   const getTypeLabel = (type: string) => {
     switch (type) {
       case 'text': return '📝 Текст';
       case 'single': return '⭕ Один вариант';
       case 'multiple': return '☑️ Несколько';
       case 'scale': return '🔢 Число';
-      case 'randomizer': return '🎲 Рандомайзер';
       default: return type;
     }
   };
@@ -149,26 +93,6 @@ export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> =
   };
 
   if (loading) return <div className="loading">Загрузка...</div>;
-
-  // Если открыт предпросмотр, показываем его
-  if (previewRandomizerId && previewRandomizer) {
-    return (
-      <AdminRandomizerPreviewScreen
-        randomizerId={previewRandomizerId}
-        randomizer={previewRandomizer}
-        onBack={() => {
-          setPreviewRandomizerId(null);
-          setPreviewRandomizer(null);
-          loadQuestions(); // Обновляем список после публикации
-        }}
-        onPublished={() => {
-          setPreviewRandomizerId(null);
-          setPreviewRandomizer(null);
-          loadQuestions();
-        }}
-      />
-    );
-  }
 
   // Группировка вопросов по group_name
   const groupedQuestions = questions.reduce((acc, q) => {
@@ -198,26 +122,6 @@ export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> =
           <span className="status-badge diagnostic">{getAudienceLabel(q.target_audience)}</span>
         </div>
         <h4 style={{marginBottom: 8}}>{q.text}</h4>
-        {q.type === 'randomizer' && randomizers[q.id] && (
-          <div style={{marginBottom: 8, padding: '8px', background: 'var(--color-bg-primary, #F8F8F7)', borderRadius: '6px'}}>
-            <div style={{fontSize: 12, marginBottom: 4}}>
-              <strong>Тема:</strong> {randomizers[q.id].topic}
-            </div>
-            {randomizers[q.id].description && (
-              <div style={{fontSize: 11, opacity: 0.8, marginBottom: 4}}>
-                {randomizers[q.id].description}
-              </div>
-            )}
-            <div style={{fontSize: 11, display: 'flex', gap: '12px', marginTop: 4}}>
-              <span>Столов: {randomizers[q.id].tables_count}</span>
-              <span>На стол: {randomizers[q.id].participants_per_table}</span>
-              <span>Участников: {randomizers[q.id].participantsCount}</span>
-            </div>
-            <div style={{fontSize: 11, marginTop: 4}}>
-              Статус: <strong>{randomizers[q.id].status === 'open' ? 'Открыт' : randomizers[q.id].status === 'distributed' ? 'Распределен' : 'Закрыт'}</strong>
-            </div>
-          </div>
-        )}
         {q.options && q.options.length > 0 && (
           <p style={{fontSize: 12, opacity: 0.7, marginBottom: 4}}>
             Варианты: {q.options.join(', ')}
@@ -233,19 +137,6 @@ export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> =
         </p>
       </div>
       <div className="item-actions">
-        {q.type === 'randomizer' && randomizers[q.id] && (
-          <button
-            className="action-btn"
-            onClick={() => handleDistribute(q.id)}
-            title={randomizers[q.id].status === 'distributed' ? 'Просмотр распределения' : 'Распределить участников'}
-            style={{
-              background: randomizers[q.id].status === 'distributed' ? '#666' : '#28a745',
-              color: '#fff'
-            }}
-          >
-            🎲
-          </button>
-        )}
         <button 
           className="action-btn" 
           onClick={() => handleStatusChange(q)}

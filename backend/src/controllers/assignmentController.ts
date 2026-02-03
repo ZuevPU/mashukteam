@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { AssignmentService } from '../services/assignmentService';
+import { RandomizerService } from '../services/randomizerService';
 import { UserService } from '../services/supabase';
 import { AchievementService } from '../services/gamification';
 import { notifyAssignmentResult, notifyNewAssignment } from '../utils/telegramBot';
@@ -231,6 +232,177 @@ export class AssignmentController {
     } catch (error) {
       logger.error('Recalculate all stars error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка пересчёта звёзд' });
+    }
+  }
+
+  // === User: Randomizer (Random Number) ===
+
+  /**
+   * Участие пользователя в случайном числе задания
+   */
+  static async participateInRandomNumber(req: Request, res: Response) {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        return res.status(401).json({ error: 'Не авторизован' });
+      }
+
+      const { id } = req.params; // assignment_id
+      const result = await AssignmentService.participateInRandomNumber(user.id, id);
+      return res.json({ success: true, ...result });
+    } catch (error: any) {
+      logger.error('Participate in random number error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(400).json({ error: error.message || 'Ошибка при регистрации на случайное число' });
+    }
+  }
+
+  /**
+   * Получение рандомайзера по ID задания (для пользователя)
+   */
+  static async getRandomizerByAssignment(req: Request, res: Response) {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        return res.status(401).json({ error: 'Не авторизован' });
+      }
+
+      const { id } = req.params; // assignment_id
+      const randomizer = await AssignmentService.getRandomizerByAssignmentId(id);
+      
+      if (!randomizer) {
+        return res.status(404).json({ error: 'Случайное число не найдено' });
+      }
+
+      // Получаем данные пользователя для этого рандомайзера
+      const randomizerData = await RandomizerService.getRandomizerForUser(user.id, randomizer.id);
+      return res.json({ success: true, ...randomizerData });
+    } catch (error) {
+      logger.error('Get randomizer by assignment error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ error: 'Ошибка при получении данных случайного числа' });
+    }
+  }
+
+  // === Admin: Randomizer Management ===
+
+  /**
+   * Предпросмотр распределения для задания
+   */
+  static async previewRandomizerDistribution(req: Request, res: Response) {
+    try {
+      const { id } = req.params; // assignment_id
+      const randomizer = await AssignmentService.getRandomizerByAssignmentId(id);
+      
+      if (!randomizer) {
+        return res.status(404).json({ error: 'Случайное число не найдено' });
+      }
+
+      const distributions = await RandomizerService.distributeParticipants(randomizer.id, true);
+      return res.json({ success: true, distributions });
+    } catch (error: any) {
+      logger.error('Preview randomizer distribution error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(400).json({ error: error.message || 'Ошибка при создании предпросмотра' });
+    }
+  }
+
+  /**
+   * Публикация распределения для задания
+   */
+  static async publishRandomizerDistribution(req: Request, res: Response) {
+    try {
+      const { id } = req.params; // assignment_id
+      const randomizer = await AssignmentService.getRandomizerByAssignmentId(id);
+      
+      if (!randomizer) {
+        return res.status(404).json({ error: 'Случайное число не найдено' });
+      }
+
+      const distributions = await RandomizerService.publishDistribution(randomizer.id);
+      
+      // Начисляем звёздочки участникам
+      const awardedCount = await AssignmentService.awardStarsToRandomizerParticipants(id);
+      
+      return res.json({ success: true, distributions, awardedCount });
+    } catch (error: any) {
+      logger.error('Publish randomizer distribution error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(400).json({ error: error.message || 'Ошибка при публикации распределения' });
+    }
+  }
+
+  /**
+   * Получение участников рандомайзера для задания
+   */
+  static async getRandomizerParticipants(req: Request, res: Response) {
+    try {
+      const { id } = req.params; // assignment_id
+      const randomizer = await AssignmentService.getRandomizerByAssignmentId(id);
+      
+      if (!randomizer) {
+        return res.status(404).json({ error: 'Случайное число не найдено' });
+      }
+
+      // Получаем участников с информацией о пользователях
+      const { data: participants, error } = await require('../services/supabase').supabase
+        .from('randomizer_participants')
+        .select('*, user:users(id, first_name, last_name, middle_name, telegram_username)')
+        .eq('randomizer_id', randomizer.id)
+        .order('participated_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Добавляем count для совместимости
+      const participantsCount = participants?.length || 0;
+      
+      return res.json({ 
+        success: true, 
+        participants: participants || [],
+        participantsCount,
+        randomizer
+      });
+    } catch (error) {
+      logger.error('Get randomizer participants error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ error: 'Ошибка при получении участников' });
+    }
+  }
+
+  /**
+   * Получение предпросмотра распределения
+   */
+  static async getPreviewDistribution(req: Request, res: Response) {
+    try {
+      const { id } = req.params; // assignment_id
+      const randomizer = await AssignmentService.getRandomizerByAssignmentId(id);
+      
+      if (!randomizer) {
+        return res.status(404).json({ error: 'Случайное число не найдено' });
+      }
+
+      const distributions = await RandomizerService.getPreviewDistribution(randomizer.id);
+      return res.json({ success: true, distributions, randomizer });
+    } catch (error) {
+      logger.error('Get preview distribution error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ error: 'Ошибка при получении предпросмотра' });
+    }
+  }
+
+  /**
+   * Обновление стола участника в предпросмотре
+   */
+  static async updateDistribution(req: Request, res: Response) {
+    try {
+      const { id } = req.params; // assignment_id
+      const { userId, tableNumber } = req.body;
+
+      const randomizer = await AssignmentService.getRandomizerByAssignmentId(id);
+      
+      if (!randomizer) {
+        return res.status(404).json({ error: 'Случайное число не найдено' });
+      }
+
+      const distribution = await RandomizerService.updateDistribution(randomizer.id, userId, tableNumber);
+      return res.json({ success: true, distribution });
+    } catch (error: any) {
+      logger.error('Update distribution error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(400).json({ error: error.message || 'Ошибка при обновлении распределения' });
     }
   }
 }

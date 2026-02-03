@@ -12,10 +12,11 @@ interface AdminDashboardProps {
   onManageUsers: () => void;
   onExportClick?: () => void;
   onAnalyticsClick?: () => void;
+  onBroadcastsClick?: () => void;
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ 
-  onBack, onManageEvents, onManageDiagnostics, onManageAssignments, onManageQuestions, onManageUsers, onExportClick, onAnalyticsClick
+  onBack, onManageEvents, onManageDiagnostics, onManageAssignments, onManageQuestions, onManageUsers, onExportClick, onAnalyticsClick, onBroadcastsClick
 }) => {
   const { initData, showAlert } = useTelegram();
 
@@ -29,8 +30,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       <div className="admin-list">
         <div className="admin-item-card" onClick={onManageEvents} style={{cursor: 'pointer'}}>
           <div className="item-info">
-            <h4>📅 Мероприятия</h4>
-            <p>Создание и управление мероприятиями</p>
+            <h4>📅 Программа обучения</h4>
+            <p>Создание и управление программой</p>
           </div>
           <span>→</span>
         </div>
@@ -82,6 +83,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="item-info">
               <h4>📈 Аналитика</h4>
               <p>Статистика и аналитика по пользователям и активности</p>
+            </div>
+            <span>→</span>
+          </div>
+        )}
+
+        {onBroadcastsClick && (
+          <div className="admin-item-card" onClick={onBroadcastsClick} style={{cursor: 'pointer'}}>
+            <div className="item-info">
+              <h4>📢 Рассылки</h4>
+              <p>Информационные сообщения пользователям</p>
             </div>
             <span>→</span>
           </div>

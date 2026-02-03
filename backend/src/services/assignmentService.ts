@@ -5,8 +5,10 @@ import {
   CreateAssignmentDto, 
   SubmitAssignmentDto,
   ModerateSubmissionDto,
-  Direction 
+  Direction,
+  RandomizerQuestion 
 } from '../types';
+import { logger } from '../utils/logger';
 
 export class AssignmentService {
   // === Directions ===
@@ -24,13 +26,52 @@ export class AssignmentService {
   // === Assignments CRUD ===
 
   static async createAssignment(data: CreateAssignmentDto): Promise<Assignment> {
+    // Подготавливаем данные для вставки (только поля, которые есть в таблице assignments)
+    const assignmentData: any = {
+      title: data.title,
+      description: data.description,
+      answer_format: data.answer_format,
+      reward: data.reward,
+      target_type: data.target_type,
+      target_values: data.target_values,
+    };
+
     const { data: assignment, error } = await supabase
       .from('assignments')
-      .insert(data)
+      .insert(assignmentData)
       .select()
       .single();
 
     if (error) throw error;
+
+    // Если тип random_number, создаем рандомайзер
+    if (data.answer_format === 'random_number' && assignment) {
+      try {
+        const randomizerData = {
+          assignment_id: assignment.id,
+          tables_count: data.tables_count || 20,
+          participants_per_table: data.participants_per_table || 4,
+          topic: data.title,
+          description: data.description || null,
+          status: 'open',
+          randomizer_mode: data.randomizer_mode || 'tables',
+          number_min: data.number_min || 1,
+          number_max: data.number_max || 100,
+        };
+
+        const { error: randomizerError } = await supabase
+          .from('randomizer_questions')
+          .insert(randomizerData);
+
+        if (randomizerError) {
+          logger.error('Error creating randomizer for assignment', randomizerError);
+          // Не прерываем создание задания, если не удалось создать рандомайзер
+        }
+      } catch (randomizerErr) {
+        logger.error('Error creating randomizer for assignment', randomizerErr instanceof Error ? randomizerErr : new Error(String(randomizerErr)));
+      }
+    }
+
     return assignment as Assignment;
   }
 
@@ -117,14 +158,21 @@ export class AssignmentService {
       throw new Error('Вы уже выполнили это задание');
     }
 
+    const insertData: any = {
+      user_id: userId,
+      assignment_id: assignmentId,
+      content: data.content,
+      status: 'pending'
+    };
+
+    // Добавляем file_url если есть
+    if (data.file_url) {
+      insertData.file_url = data.file_url;
+    }
+
     const { data: submission, error } = await supabase
       .from('assignment_submissions')
-      .insert({
-        user_id: userId,
-        assignment_id: assignmentId,
-        content: data.content,
-        status: 'pending'
-      })
+      .insert(insertData)
       .select()
       .single();
 
@@ -260,6 +308,133 @@ export class AssignmentService {
       .eq('id', userId);
 
     return totalStars;
+  }
+
+  // === Randomizer for Assignments ===
+
+  /**
+   * Получить рандомайзер по ID задания
+   */
+  static async getRandomizerByAssignmentId(assignmentId: string): Promise<RandomizerQuestion | null> {
+    const { data, error } = await supabase
+      .from('randomizer_questions')
+      .select('*')
+      .eq('assignment_id', assignmentId)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') return null;
+      throw error;
+    }
+
+    return data as RandomizerQuestion;
+  }
+
+  /**
+   * Участие пользователя в случайном числе (рандомайзере задания)
+   */
+  static async participateInRandomNumber(userId: string, assignmentId: string): Promise<{ participantId: string; randomizerId: string }> {
+    // Находим рандомайзер для задания
+    const randomizer = await this.getRandomizerByAssignmentId(assignmentId);
+    
+    if (!randomizer) {
+      throw new Error('Случайное число не найдено для этого задания');
+    }
+
+    if (randomizer.status !== 'open') {
+      throw new Error('Регистрация на случайное число закрыта');
+    }
+
+    // Проверяем, не участвует ли уже
+    const { data: existing } = await supabase
+      .from('randomizer_participants')
+      .select('id')
+      .eq('randomizer_id', randomizer.id)
+      .eq('user_id', userId)
+      .single();
+
+    if (existing) {
+      throw new Error('Вы уже зарегистрированы на это случайное число');
+    }
+
+    // Добавляем участника
+    const { data: participant, error } = await supabase
+      .from('randomizer_participants')
+      .insert({
+        randomizer_id: randomizer.id,
+        user_id: userId,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      logger.error('Error participating in random number', error);
+      throw error;
+    }
+
+    return { participantId: participant.id, randomizerId: randomizer.id };
+  }
+
+  /**
+   * Начисление звёздочек участникам рандомайзера после публикации
+   */
+  static async awardStarsToRandomizerParticipants(assignmentId: string): Promise<number> {
+    const assignment = await this.getAssignmentById(assignmentId);
+    if (!assignment || assignment.reward <= 0) {
+      return 0;
+    }
+
+    const randomizer = await this.getRandomizerByAssignmentId(assignmentId);
+    if (!randomizer) {
+      return 0;
+    }
+
+    // Получаем всех участников
+    const { data: participants, error } = await supabase
+      .from('randomizer_participants')
+      .select('user_id')
+      .eq('randomizer_id', randomizer.id);
+
+    if (error || !participants?.length) {
+      return 0;
+    }
+
+    // Начисляем звёздочки каждому участнику
+    let awardedCount = 0;
+    for (const participant of participants) {
+      try {
+        // Добавляем баллы
+        await supabase
+          .from('points_transactions')
+          .insert({
+            user_id: participant.user_id,
+            points: assignment.reward,
+            reason: `Участие в случайном числе: ${assignment.title}`
+          });
+
+        // Обновляем total_points
+        const { data: userData } = await supabase
+          .from('users')
+          .select('total_points')
+          .eq('id', participant.user_id)
+          .single();
+
+        const currentPoints = userData?.total_points || 0;
+        await supabase
+          .from('users')
+          .update({ total_points: currentPoints + assignment.reward })
+          .eq('id', participant.user_id);
+
+        // Пересчитываем звёздочки (учитывая только одобренные задания)
+        await this.recalculateUserStars(participant.user_id);
+
+        awardedCount++;
+      } catch (err) {
+        logger.error(`Error awarding stars to participant ${participant.user_id}`, err instanceof Error ? err : new Error(String(err)));
+      }
+    }
+
+    return awardedCount;
   }
 
   // === Leaderboard ===

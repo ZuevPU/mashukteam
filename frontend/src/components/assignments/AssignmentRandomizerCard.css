@@ -1,0 +1,143 @@
+.assignment-randomizer-card {
+  background: var(--tg-theme-bg-color, #fff);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.assignment-randomizer-card.distributed {
+  opacity: 0.9;
+  border: 2px solid var(--tg-theme-hint-color, #999);
+}
+
+.assignment-randomizer-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.assignment-randomizer-card .reward-badge {
+  background: linear-gradient(135deg, #ffd700, #ffb347);
+  color: #333;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.assignment-randomizer-card .status-badge {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+}
+
+.assignment-randomizer-card .status-badge.open {
+  color: #4caf50;
+}
+
+.assignment-randomizer-card .status-badge.closed {
+  color: #ff9800;
+}
+
+.assignment-randomizer-card .status-badge.distributed {
+  color: #2196f3;
+}
+
+.assignment-randomizer-card .card-title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: var(--tg-theme-text-color, #000);
+}
+
+.assignment-randomizer-card .card-description {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--tg-theme-hint-color, #999);
+  line-height: 1.4;
+}
+
+.assignment-randomizer-card .card-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.assignment-randomizer-card .info-item {
+  font-size: 12px;
+  color: var(--tg-theme-hint-color, #666);
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.assignment-randomizer-card .result-block {
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.assignment-randomizer-card .result-label {
+  display: block;
+  font-size: 13px;
+  color: #1976d2;
+  margin-bottom: 4px;
+}
+
+.assignment-randomizer-card .result-value {
+  display: block;
+  font-size: 32px;
+  font-weight: 700;
+  color: #1565c0;
+}
+
+.assignment-randomizer-card .participate-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, var(--tg-theme-button-color, #3390ec), #1976d2);
+  color: var(--tg-theme-button-text-color, #fff);
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.assignment-randomizer-card .participate-btn:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.assignment-randomizer-card .participate-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.assignment-randomizer-card .participate-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.assignment-randomizer-card .participation-status {
+  text-align: center;
+  padding: 12px;
+  background: var(--tg-theme-secondary-bg-color, #f5f5f5);
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--tg-theme-hint-color, #666);
+}
+
+.assignment-randomizer-card .loading-state {
+  text-align: center;
+  padding: 24px;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.assignment-randomizer-card.error {
+  background: #ffebee;
+  color: #c62828;
+  text-align: center;
+}

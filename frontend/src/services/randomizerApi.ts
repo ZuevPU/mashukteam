@@ -19,12 +19,16 @@ async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise
 
 export interface RandomizerQuestion {
   id: string;
-  question_id: string;
+  question_id?: string; // Deprecated: используйте assignment_id
+  assignment_id?: string; // Новая связь с заданиями
   tables_count: number;
   participants_per_table: number;
   topic: string;
   description: string;
   status: 'open' | 'closed' | 'distributed';
+  randomizer_mode: 'simple' | 'tables';
+  number_min?: number;
+  number_max?: number;
   created_at: string;
   distributed_at?: string;
 }

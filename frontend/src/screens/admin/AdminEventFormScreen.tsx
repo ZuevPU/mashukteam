@@ -23,6 +23,9 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
     audience: editingEvent?.audience || '',
     event_date: editingEvent?.event_date || '',
     event_time: editingEvent?.event_time || '',
+    start_time: editingEvent?.start_time || '',
+    end_time: editingEvent?.end_time || '',
+    location: editingEvent?.location || '',
     group_name: editingEvent?.group_name || '',
     group_order: editingEvent?.group_order || 0,
     event_order: editingEvent?.event_order || 0,
@@ -69,7 +72,7 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
     <div className="admin-screen">
       <div className="header">
         <button onClick={onBack} className="back-button">← Отмена</button>
-        <h3>{editingEvent ? 'Редактирование' : 'Новое мероприятие'}</h3>
+        <h3>{editingEvent ? 'Редактирование' : 'Новая программа'}</h3>
       </div>
 
       <form className="admin-form" onSubmit={handleSubmit}>
@@ -118,13 +121,48 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
         </div>
 
         <div className="form-group">
-          <label>Время</label>
+          <label>Время (старое поле)</label>
           <input 
             type="time"
             className="form-input"
             name="event_time"
             value={formData.event_time}
             onChange={handleChange}
+          />
+        </div>
+
+        <div style={{display: 'flex', gap: 12}}>
+          <div className="form-group" style={{flex: 1}}>
+            <label>Время начала</label>
+            <input 
+              type="time"
+              className="form-input"
+              name="start_time"
+              value={formData.start_time}
+              onChange={handleChange}
+            />
+          </div>
+
+          <div className="form-group" style={{flex: 1}}>
+            <label>Время окончания</label>
+            <input 
+              type="time"
+              className="form-input"
+              name="end_time"
+              value={formData.end_time}
+              onChange={handleChange}
+            />
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label>Место проведения</label>
+          <input 
+            className="form-input"
+            name="location"
+            value={formData.location}
+            onChange={handleChange}
+            placeholder="Например: Конференц-зал А, Аудитория 101..."
           />
         </div>
 
@@ -135,12 +173,12 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
             name="description"
             value={formData.description}
             onChange={handleChange}
-            placeholder="О чем будет мероприятие..."
+            placeholder="О чем будет программа..."
           />
         </div>
 
         <div className="form-group">
-          <label>Группа мероприятия</label>
+          <label>Группа программы</label>
           <input 
             className="form-input"
             name="group_name"
@@ -149,7 +187,7 @@ export const AdminEventFormScreen: React.FC<AdminEventFormScreenProps> = ({
             placeholder="Например: День 1, День 2, Блок 1..."
           />
           <small style={{fontSize: 11, opacity: 0.7, marginTop: 4, display: 'block'}}>
-            Мероприятия с одинаковым названием группы будут сгруппированы вместе
+            Программы с одинаковым названием группы будут сгруппированы вместе
           </small>
         </div>
 

@@ -153,7 +153,7 @@ export const AdminRandomizerPreviewScreen: React.FC<AdminRandomizerPreviewScreen
     <div className="admin-screen">
       <div className="header">
         <button onClick={onBack} className="back-button">← Назад</button>
-        <h3>{viewMode === 'participants' ? 'Участники рандомайзера' : 'Предпросмотр распределения'}</h3>
+        <h3>{viewMode === 'participants' ? 'Участники случайного числа' : 'Предпросмотр распределения'}</h3>
       </div>
 
       <div style={{ marginBottom: 16, padding: 12, background: '#F8F8F7', borderRadius: 8 }}>

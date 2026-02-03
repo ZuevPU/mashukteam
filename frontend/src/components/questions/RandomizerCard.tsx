@@ -31,7 +31,7 @@ export const RandomizerCard: React.FC<RandomizerCardProps> = ({ questionId, rand
       setDistribution(data.distribution || null);
     } catch (error: any) {
       console.error('Error loading randomizer:', error);
-      showAlert('Ошибка загрузки рандомайзера');
+      showAlert('Ошибка загрузки случайного числа');
     } finally {
       setLoading(false);
     }
@@ -42,7 +42,7 @@ export const RandomizerCard: React.FC<RandomizerCardProps> = ({ questionId, rand
     setParticipating(true);
     try {
       await randomizerApi.participate(initData, randomizerId);
-      showAlert('Вы участвуете в рандомайзере!');
+      showAlert('Вы участвуете в распределении!');
       loadRandomizer();
     } catch (error: any) {
       console.error('Error participating:', error);

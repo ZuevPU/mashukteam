@@ -13,16 +13,27 @@ export class RandomizerService {
    */
   static async createRandomizer(data: CreateRandomizerDto): Promise<RandomizerQuestion> {
     try {
+      const insertData: any = {
+        tables_count: data.tables_count,
+        participants_per_table: data.participants_per_table,
+        topic: data.topic,
+        description: data.description || null,
+        status: 'open',
+        randomizer_mode: data.randomizer_mode || 'tables',
+        number_min: data.number_min || 1,
+        number_max: data.number_max || 100,
+      };
+
+      // Поддержка как question_id (deprecated), так и assignment_id
+      if (data.assignment_id) {
+        insertData.assignment_id = data.assignment_id;
+      } else if (data.question_id) {
+        insertData.question_id = data.question_id;
+      }
+
       const { data: randomizer, error } = await supabase
         .from('randomizer_questions')
-        .insert({
-          question_id: data.question_id,
-          tables_count: data.tables_count,
-          participants_per_table: data.participants_per_table,
-          topic: data.topic,
-          description: data.description || null,
-          status: 'open',
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -34,6 +45,29 @@ export class RandomizerService {
       return randomizer as RandomizerQuestion;
     } catch (error) {
       logger.error('Error creating randomizer', error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    }
+  }
+
+  /**
+   * Получение рандомайзера по assignment_id
+   */
+  static async getRandomizerByAssignmentId(assignmentId: string): Promise<RandomizerQuestion | null> {
+    try {
+      const { data: randomizer, error } = await supabase
+        .from('randomizer_questions')
+        .select('*')
+        .eq('assignment_id', assignmentId)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') return null;
+        throw error;
+      }
+
+      return randomizer as RandomizerQuestion;
+    } catch (error) {
+      logger.error('Error getting randomizer by assignment id', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -147,23 +181,42 @@ export class RandomizerService {
         [shuffledParticipants[i], shuffledParticipants[j]] = [shuffledParticipants[j], shuffledParticipants[i]];
       }
 
-      // Распределяем по столам последовательно
-      const distributions: Array<{ randomizer_id: string; user_id: string; table_number: number }> = [];
-      const participantsPerTable = randomizer.participants_per_table;
-      let currentTable = 1;
-      let currentTableCount = 0;
+      // Определяем режим рандомайзера
+      const mode = randomizer.randomizer_mode || 'tables';
+      const distributions: Array<{ randomizer_id: string; user_id: string; table_number: number; random_number?: number }> = [];
 
-      for (const participant of shuffledParticipants) {
-        distributions.push({
-          randomizer_id: randomizerId,
-          user_id: participant.user_id,
-          table_number: currentTable,
-        });
+      if (mode === 'simple') {
+        // Простой режим: генерация случайного числа для каждого участника
+        const numberMin = randomizer.number_min || 1;
+        const numberMax = randomizer.number_max || 100;
 
-        currentTableCount++;
-        if (currentTableCount >= participantsPerTable && currentTable < randomizer.tables_count) {
-          currentTable++;
-          currentTableCount = 0;
+        for (const participant of shuffledParticipants) {
+          const randomNum = Math.floor(Math.random() * (numberMax - numberMin + 1)) + numberMin;
+          distributions.push({
+            randomizer_id: randomizerId,
+            user_id: participant.user_id,
+            table_number: 0, // Не используется в простом режиме
+            random_number: randomNum,
+          });
+        }
+      } else {
+        // Режим столов: распределяем по столам последовательно
+        const participantsPerTable = randomizer.participants_per_table;
+        let currentTable = 1;
+        let currentTableCount = 0;
+
+        for (const participant of shuffledParticipants) {
+          distributions.push({
+            randomizer_id: randomizerId,
+            user_id: participant.user_id,
+            table_number: currentTable,
+          });
+
+          currentTableCount++;
+          if (currentTableCount >= participantsPerTable && currentTable < randomizer.tables_count) {
+            currentTable++;
+            currentTableCount = 0;
+          }
         }
       }
 

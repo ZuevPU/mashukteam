@@ -88,8 +88,8 @@ export class ExportService {
         'Имя': answer.user?.first_name || '',
         'Фамилия': answer.user?.last_name || '',
         'Username': answer.user?.telegram_username || '',
-        'Название мероприятия': answer.event?.title || '',
-        'Тип мероприятия': answer.event?.type === 'diagnostic' ? 'Диагностика' : 'Мероприятие',
+        'Название программы': answer.event?.title || '',
+        'Тип программы': answer.event?.type === 'diagnostic' ? 'Диагностика' : 'Программа',
         'Группа': answer.event?.group_name || '',
         'Текст вопроса': answer.question?.text || '',
         'Тип вопроса': answer.question?.type || '',
@@ -98,7 +98,7 @@ export class ExportService {
       }));
 
     const eventAnswersSheet = XLSX.utils.json_to_sheet(eventAnswersData);
-    XLSX.utils.book_append_sheet(workbook, eventAnswersSheet, 'Мероприятия');
+    XLSX.utils.book_append_sheet(workbook, eventAnswersSheet, 'Программа обучения');
 
     // Лист 2: Ответы на персональные вопросы
     const targetedAnswersData = (targetedAnswers || []).map((answer: any) => ({
@@ -281,7 +281,7 @@ export class ExportService {
 
     const workbook = XLSX.utils.book_new();
     const sheet = XLSX.utils.json_to_sheet(eventsData);
-    XLSX.utils.book_append_sheet(workbook, sheet, 'Мероприятия');
+    XLSX.utils.book_append_sheet(workbook, sheet, 'Программа обучения');
 
     const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
     return excelBuffer;
@@ -578,7 +578,7 @@ export class ExportService {
     }));
 
     const eventQuestionsSheet = XLSX.utils.json_to_sheet(eventQuestionsData);
-    XLSX.utils.book_append_sheet(workbook, eventQuestionsSheet, 'Вопросы мероприятий');
+    XLSX.utils.book_append_sheet(workbook, eventQuestionsSheet, 'Вопросы программ');
 
     // 2. Персональные вопросы
     const { data: targetedQuestions } = await supabase
@@ -1020,7 +1020,7 @@ export class ExportService {
       ).join('; ');
 
       const eventNotesText = userEventNotes.map((note: any) => 
-        `${note.event?.title || 'Мероприятие'} (${note.event?.event_date ? new Date(note.event.event_date).toLocaleDateString('ru-RU') : 'без даты'}): ${note.note_text}`
+        `${note.event?.title || 'Программа'} (${note.event?.event_date ? new Date(note.event.event_date).toLocaleDateString('ru-RU') : 'без даты'}): ${note.note_text}`
       ).join('; ');
 
       return {
@@ -1040,7 +1040,7 @@ export class ExportService {
         'Уровень (геймификация)': userLevel?.level || user.current_level || 1,
         'Опыт': userLevel?.experience_points || 0,
         'Достижения': achievementsList,
-        'Участие в мероприятиях': eventsCount,
+        'Участие в программах': eventsCount,
         'Выполнено заданий': submissionStats.total,
         'Заданий принято': submissionStats.approved,
         'Заданий на проверке': submissionStats.pending,
@@ -1051,10 +1051,10 @@ export class ExportService {
         'Администратор': user.is_admin === 1 ? 'Да' : 'Нет',
         'Дата обновления': new Date(user.updated_at).toLocaleString('ru-RU'),
         'Ответы на диагностики': diagnosticAnswersText,
-        'Ответы на мероприятия': eventAnswersText,
+        'Ответы на программы': eventAnswersText,
         'Ответы на персональные вопросы': targetedAnswersText,
         'Ответы на задания': assignmentAnswersText,
-        'Заметки по мероприятиям': eventNotesText
+        'Заметки по программам': eventNotesText
       };
     });
 
@@ -1083,7 +1083,7 @@ export class ExportService {
       XLSX.utils.book_append_sheet(workbook, usersSheet, 'Пользователи');
     }
 
-    // 2. Мероприятия
+    // 2. Программы обучения
     const { data: events } = await supabase.from('events').select('*').order('created_at', { ascending: false });
     if (events && events.length > 0) {
       const eventsSheet = XLSX.utils.json_to_sheet(events.map((e: any) => ({
@@ -1092,10 +1092,10 @@ export class ExportService {
         updated_at: e.updated_at ? new Date(e.updated_at).toLocaleString('ru-RU') : '',
         event_date: e.event_date ? new Date(e.event_date).toLocaleDateString('ru-RU') : ''
       })));
-      XLSX.utils.book_append_sheet(workbook, eventsSheet, 'Мероприятия');
+      XLSX.utils.book_append_sheet(workbook, eventsSheet, 'Программа обучения');
     }
 
-    // 3. Вопросы к мероприятиям
+    // 3. Вопросы к программам
     const { data: questions } = await supabase.from('questions').select('*').order('created_at', { ascending: false });
     if (questions && questions.length > 0) {
       const questionsSheet = XLSX.utils.json_to_sheet(questions.map((q: any) => ({
@@ -1103,7 +1103,7 @@ export class ExportService {
         created_at: q.created_at ? new Date(q.created_at).toLocaleString('ru-RU') : '',
         options: Array.isArray(q.options) ? q.options.join(', ') : JSON.stringify(q.options)
       })));
-      XLSX.utils.book_append_sheet(workbook, questionsSheet, 'Вопросы мероприятий');
+      XLSX.utils.book_append_sheet(workbook, questionsSheet, 'Вопросы программ');
     }
 
     // 4. Ответы на вопросы

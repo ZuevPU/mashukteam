@@ -10,10 +10,11 @@ interface AdminAssignmentsScreenProps {
   onEdit: (assignment: Assignment) => void;
   onSubmissions: (assignmentId: string) => void;
   onLeaderboard: () => void;
+  onRandomizer?: (assignmentId: string) => void;
 }
 
 export const AdminAssignmentsScreen: React.FC<AdminAssignmentsScreenProps> = ({ 
-  onBack, onCreate, onEdit, onSubmissions, onLeaderboard 
+  onBack, onCreate, onEdit, onSubmissions, onLeaderboard, onRandomizer 
 }) => {
   const { initData, showAlert } = useTelegram();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -130,6 +131,8 @@ function getFormatLabel(format: string) {
     case 'text': return 'Текст';
     case 'number': return 'Число';
     case 'link': return 'Ссылка';
+    case 'photo_upload': return '📷 Загрузка фото';
+    case 'random_number': return '🎲 Случайное число';
     default: return format;
   }
 }

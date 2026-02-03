@@ -50,6 +50,29 @@ import { AssignmentController } from '../controllers/assignmentController';
 import { UserPreferencesController } from '../controllers/userPreferencesController';
 import { AnalyticsController } from '../controllers/analyticsController';
 import { NotificationController } from '../controllers/notificationController';
+import { BroadcastController } from '../controllers/broadcastController';
+import { CronController } from '../controllers/cronController';
+import { UploadController } from '../controllers/uploadController';
+
+// Динамический импорт multer для избежания ошибок типов
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const multer = require('multer');
+
+// Настройка multer для загрузки файлов в память
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+  },
+  fileFilter: (req: any, file: any, cb: any) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Неподдерживаемый тип файла'));
+    }
+  },
+});
 
 // === User Types (public) ===
 router.get('/directions', AssignmentController.getDirections);
@@ -148,6 +171,21 @@ router.post('/assignments/my', requireAuth, AssignmentController.getMyAssignment
 router.post('/assignments/:id/submit', requireAuth, AssignmentController.submitAssignment);
 router.post('/assignments/submissions', requireAuth, AssignmentController.getMySubmissions);
 
+// === File Upload ===
+router.post('/upload/task', requireAuth, upload.single('file'), UploadController.uploadTaskFile);
+router.post('/upload/signed-url', requireAuth, UploadController.getSignedUrl);
+
+// === User Assignment Randomizer (Random Number) ===
+router.post('/assignments/:id/participate', requireAuth, AssignmentController.participateInRandomNumber);
+router.post('/assignments/:id/randomizer', requireAuth, AssignmentController.getRandomizerByAssignment);
+
+// === Admin Assignment Randomizer ===
+router.post('/admin/assignments/:id/randomizer/participants', requireAuth, requireAdmin, AssignmentController.getRandomizerParticipants);
+router.post('/admin/assignments/:id/randomizer/preview', requireAuth, requireAdmin, AssignmentController.previewRandomizerDistribution);
+router.post('/admin/assignments/:id/randomizer/preview/get', requireAuth, requireAdmin, AssignmentController.getPreviewDistribution);
+router.patch('/admin/assignments/:id/randomizer/distribution', requireAuth, requireAdmin, AssignmentController.updateDistribution);
+router.post('/admin/assignments/:id/randomizer/publish', requireAuth, requireAdmin, AssignmentController.publishRandomizerDistribution);
+
 // === Admin Analytics ===
 router.post('/admin/analytics/user-activity', requireAuth, requireAdmin, AnalyticsController.getUserActivity);
 router.post('/admin/analytics/directions', requireAuth, requireAdmin, AnalyticsController.getDirectionStats);
@@ -156,5 +194,17 @@ router.post('/admin/analytics/questions', requireAuth, requireAdmin, AnalyticsCo
 router.post('/admin/analytics/gamification', requireAuth, requireAdmin, AnalyticsController.getGamificationStats);
 router.post('/admin/analytics/assignments', requireAuth, requireAdmin, AnalyticsController.getAssignmentStats);
 router.post('/admin/analytics/registration-trend', requireAuth, requireAdmin, AnalyticsController.getRegistrationTrend);
+
+// === Admin Broadcasts (Рассылки) ===
+router.post('/admin/broadcasts', requireAuth, requireAdmin, BroadcastController.createBroadcast);
+router.post('/admin/broadcasts/list', requireAuth, requireAdmin, BroadcastController.getAllBroadcasts);
+router.post('/admin/broadcasts/:id', requireAuth, requireAdmin, BroadcastController.getBroadcastById);
+router.put('/admin/broadcasts/:id', requireAuth, requireAdmin, BroadcastController.updateBroadcast);
+router.delete('/admin/broadcasts/:id', requireAuth, requireAdmin, BroadcastController.deleteBroadcast);
+router.post('/admin/broadcasts/:id/send', requireAuth, requireAdmin, BroadcastController.sendBroadcast);
+
+// === Cron Jobs ===
+router.get('/cron/publish', CronController.processScheduledContent);
+router.get('/cron/health', CronController.healthCheck);
 
 export default router;

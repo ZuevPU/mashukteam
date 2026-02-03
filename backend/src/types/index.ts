@@ -41,6 +41,9 @@ export interface Event {
   audience?: string;
   event_date?: string;
   event_time?: string;
+  start_time?: string; // Время начала
+  end_time?: string; // Время окончания
+  location?: string; // Место проведения
   status: 'draft' | 'published' | 'completed';
   type: 'event' | 'diagnostic'; // Тип события
   group_name?: string; // Название группы (например, "День 1")
@@ -63,6 +66,7 @@ export interface TargetedQuestion {
   group_name?: string; // Название группы вопросов
   group_order?: number; // Порядок группы для сортировки
   question_order?: number; // Порядок вопроса внутри группы
+  scheduled_at?: string; // Время запланированной публикации
   created_at: string;
 }
 
@@ -86,6 +90,7 @@ export interface CreateTargetedQuestionDto {
   group_name?: string;
   group_order?: number;
   question_order?: number;
+  scheduled_at?: string;
 }
 
 export type QuestionType = 'single' | 'multiple' | 'scale' | 'text' | 'randomizer';
@@ -139,6 +144,9 @@ export interface CreateEventDto {
   audience?: string;
   event_date?: string;
   event_time?: string;
+  start_time?: string;
+  end_time?: string;
+  location?: string;
   group_name?: string;
   group_order?: number;
   event_order?: number;
@@ -287,9 +295,10 @@ export interface ExportFilters {
 
 // === Assignments (Задания) ===
 
-export type AssignmentFormat = 'text' | 'number' | 'link';
+export type AssignmentFormat = 'text' | 'number' | 'link' | 'random_number' | 'photo_upload';
 export type AssignmentTargetType = 'all' | 'direction' | 'individual';
 export type SubmissionStatus = 'pending' | 'approved' | 'rejected';
+export type RandomizerMode = 'simple' | 'tables';
 
 export interface Assignment {
   id: string;
@@ -300,7 +309,14 @@ export interface Assignment {
   target_type: AssignmentTargetType;
   target_values?: string[];
   status: 'draft' | 'published';
+  scheduled_at?: string; // Время запланированной публикации
   created_at: string;
+  // Поля для random_number
+  randomizer_mode?: RandomizerMode;
+  tables_count?: number;
+  participants_per_table?: number;
+  number_min?: number;
+  number_max?: number;
 }
 
 export interface AssignmentSubmission {
@@ -308,6 +324,7 @@ export interface AssignmentSubmission {
   user_id: string;
   assignment_id: string;
   content: string;
+  file_url?: string; // URL загруженного файла в Supabase Storage
   status: SubmissionStatus;
   admin_comment?: string;
   created_at: string;
@@ -324,10 +341,18 @@ export interface CreateAssignmentDto {
   reward: number;
   target_type: AssignmentTargetType;
   target_values?: string[];
+  scheduled_at?: string;
+  // Поля для random_number
+  randomizer_mode?: RandomizerMode;
+  tables_count?: number;
+  participants_per_table?: number;
+  number_min?: number;
+  number_max?: number;
 }
 
 export interface SubmitAssignmentDto {
   content: string;
+  file_url?: string; // URL загруженного файла
 }
 
 export interface ModerateSubmissionDto {
@@ -338,12 +363,16 @@ export interface ModerateSubmissionDto {
 // Рандомайзеры
 export interface RandomizerQuestion {
   id: string;
-  question_id: string;
+  question_id?: string; // Deprecated: используйте assignment_id
+  assignment_id?: string; // Новая связь с заданиями
   tables_count: number;
   participants_per_table: number;
   topic: string;
   description: string;
   status: 'open' | 'closed' | 'distributed';
+  randomizer_mode: RandomizerMode;
+  number_min?: number;
+  number_max?: number;
   created_at: string;
   distributed_at?: string;
 }
@@ -360,8 +389,10 @@ export interface RandomizerDistribution {
   randomizer_id: string;
   user_id: string;
   table_number: number;
+  random_number?: number; // Сгенерированное число для простого режима
   distributed_at: string;
   preview_mode?: boolean;
+  user?: User;
 }
 
 export interface Notification {
@@ -376,9 +407,52 @@ export interface Notification {
 }
 
 export interface CreateRandomizerDto {
-  question_id: string;
+  question_id?: string; // Deprecated: используйте assignment_id
+  assignment_id?: string; // Новая связь с заданиями
   tables_count: number;
   participants_per_table: number;
   topic: string;
   description?: string;
+  randomizer_mode?: RandomizerMode;
+  number_min?: number;
+  number_max?: number;
+}
+
+// === Broadcasts (Рассылки) ===
+
+export type BroadcastTargetType = 'all' | 'by_direction' | 'individual';
+export type BroadcastStatus = 'draft' | 'sent' | 'scheduled';
+
+export interface Broadcast {
+  id: string;
+  title: string;
+  message: string;
+  image_url?: string;
+  target_type: BroadcastTargetType;
+  target_values?: string[];
+  status: BroadcastStatus;
+  scheduled_at?: string;
+  sent_at?: string;
+  sent_count: number;
+  failed_count: number;
+  created_by?: string;
+  created_at: string;
+}
+
+export interface CreateBroadcastDto {
+  title: string;
+  message: string;
+  image_url?: string;
+  target_type: BroadcastTargetType;
+  target_values?: string[];
+  scheduled_at?: string;
+}
+
+export interface UpdateBroadcastDto {
+  title?: string;
+  message?: string;
+  image_url?: string;
+  target_type?: BroadcastTargetType;
+  target_values?: string[];
+  scheduled_at?: string;
 }

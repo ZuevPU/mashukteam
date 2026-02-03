@@ -20,7 +20,7 @@ export const AdminEventsScreen: React.FC<AdminEventsScreenProps> = ({
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const title = typeFilter === 'diagnostic' ? 'Диагностика' : 'Мероприятия';
+  const title = typeFilter === 'diagnostic' ? 'Диагностика' : 'Программа обучения';
 
   const loadEvents = async () => {
     if (!initData) return;

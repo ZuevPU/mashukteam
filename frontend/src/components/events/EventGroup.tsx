@@ -32,9 +32,14 @@ export const EventGroup: React.FC<EventGroupProps> = ({ groupName, events, onEve
                 
                 {event.event_date && (
                   <p className="event-date">
-                    📅 {new Date(event.event_date).toLocaleDateString()} {event.event_time}
+                    📅 {new Date(event.event_date).toLocaleDateString()}
+                    {(event.start_time || event.end_time) 
+                      ? ` 🕐 ${event.start_time?.slice(0, 5) || ''}${event.start_time && event.end_time ? ' - ' : ''}${event.end_time?.slice(0, 5) || ''}`
+                      : event.event_time ? ` ${event.event_time}` : ''
+                    }
                   </p>
                 )}
+                {event.location && <p className="event-location">📍 {event.location}</p>}
                 {event.speaker && <p className="event-speaker">🎤 {event.speaker}</p>}
                 {event.description && <p className="event-description">{event.description}</p>}
               </div>

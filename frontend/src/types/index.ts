@@ -48,6 +48,9 @@ export interface Event {
   audience?: string;
   event_date?: string;
   event_time?: string;
+  start_time?: string; // Время начала
+  end_time?: string; // Время окончания
+  location?: string; // Место проведения
   status: 'draft' | 'published' | 'completed';
   type: 'event' | 'diagnostic'; // Тип события
   group_name?: string; // Название группы (например, "День 1")
@@ -70,17 +73,24 @@ export interface TargetedQuestion {
   group_name?: string; // Название группы вопросов
   group_order?: number; // Порядок группы для сортировки
   question_order?: number; // Порядок вопроса внутри группы
+  scheduled_at?: string; // Время запланированной публикации
   created_at: string;
 }
 
+export type RandomizerMode = 'simple' | 'tables';
+
 export interface RandomizerQuestion {
   id: string;
-  question_id: string;
+  question_id?: string; // Deprecated: используйте assignment_id
+  assignment_id?: string; // Новая связь с заданиями
   tables_count: number;
   participants_per_table: number;
   topic: string;
   description: string;
   status: 'open' | 'closed' | 'distributed';
+  randomizer_mode: RandomizerMode;
+  number_min?: number;
+  number_max?: number;
   created_at: string;
   distributed_at?: string;
 }
@@ -97,6 +107,7 @@ export interface RandomizerDistribution {
   randomizer_id: string;
   user_id: string;
   table_number: number;
+  random_number?: number; // Для простого режима
   distributed_at: string;
   preview_mode?: boolean;
   user?: {
@@ -148,16 +159,25 @@ export interface Answer {
   created_at: string;
 }
 
+export type AssignmentFormat = 'text' | 'number' | 'link' | 'random_number' | 'photo_upload';
+
 export interface Assignment {
   id: string;
   title: string;
   description?: string;
-  answer_format: 'text' | 'number' | 'link';
+  answer_format: AssignmentFormat;
   reward: number;
   target_type: 'all' | 'direction' | 'individual';
   target_values?: string[];
   status: 'draft' | 'published';
+  scheduled_at?: string; // Время запланированной публикации
   created_at: string;
+  // Поля для random_number
+  randomizer_mode?: RandomizerMode;
+  tables_count?: number;
+  participants_per_table?: number;
+  number_min?: number;
+  number_max?: number;
 }
 
 export interface AssignmentSubmission {
@@ -165,6 +185,7 @@ export interface AssignmentSubmission {
   user_id: string;
   assignment_id: string;
   content: string;
+  file_url?: string; // URL загруженного файла
   status: 'pending' | 'approved' | 'rejected';
   admin_comment?: string;
   created_at: string;
@@ -222,10 +243,17 @@ export interface UserAchievement {
 export interface CreateAssignmentRequest {
   title: string;
   description?: string;
-  answer_format: 'text' | 'number' | 'link';
+  answer_format: AssignmentFormat;
   reward: number;
   target_type: 'all' | 'direction' | 'individual';
   target_values?: string[];
+  scheduled_at?: string;
+  // Поля для random_number
+  randomizer_mode?: RandomizerMode;
+  tables_count?: number;
+  participants_per_table?: number;
+  number_min?: number;
+  number_max?: number;
 }
 
 export interface CreateEventRequest {
@@ -235,6 +263,9 @@ export interface CreateEventRequest {
   audience?: string;
   event_date?: string;
   event_time?: string;
+  start_time?: string;
+  end_time?: string;
+  location?: string;
   group_name?: string;
   group_order?: number;
   event_order?: number;
@@ -260,6 +291,7 @@ export interface CreateTargetedQuestionRequest extends CreateTargetedQuestionDto
   group_name?: string;
   group_order?: number;
   question_order?: number;
+  scheduled_at?: string;
 }
 
 export interface Notification {
@@ -271,4 +303,34 @@ export interface Notification {
   deep_link?: string;
   read: boolean;
   created_at: string;
+}
+
+// === Broadcasts (Рассылки) ===
+
+export type BroadcastTargetType = 'all' | 'by_direction' | 'individual';
+export type BroadcastStatus = 'draft' | 'sent' | 'scheduled';
+
+export interface Broadcast {
+  id: string;
+  title: string;
+  message: string;
+  image_url?: string;
+  target_type: BroadcastTargetType;
+  target_values?: string[];
+  status: BroadcastStatus;
+  scheduled_at?: string;
+  sent_at?: string;
+  sent_count: number;
+  failed_count: number;
+  created_by?: string;
+  created_at: string;
+}
+
+export interface CreateBroadcastRequest {
+  title: string;
+  message: string;
+  image_url?: string;
+  target_type: BroadcastTargetType;
+  target_values?: string[];
+  scheduled_at?: string;
 }

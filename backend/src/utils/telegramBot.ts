@@ -458,7 +458,7 @@ export async function notifyNewEvent(
   eventTitle: string,
   eventId: string
 ) {
-  const text = `📅 <b>Анонс нового мероприятия</b>\n\n${eventTitle}`;
+  const text = `📅 <b>Анонс новой программы обучения</b>\n\n${eventTitle}`;
   const deepLink = buildAppLink('event', eventId);
   await broadcastMessage(text, deepLink, 'events');
 }
@@ -473,4 +473,128 @@ export async function notifyNewDiagnostic(
   const text = `🩺 <b>Анонс новой диагностики</b>\n\n${diagnosticTitle}`;
   const deepLink = buildAppLink('diagnostic', diagnosticId);
   await broadcastMessage(text, deepLink, 'diagnostics');
+}
+
+/**
+ * Отправка сообщения с фото пользователю через Telegram Bot API
+ */
+export async function sendPhotoToUser(
+  telegramId: number,
+  photoUrl: string,
+  caption?: string,
+  includeAppLink: boolean = true
+): Promise<boolean> {
+  if (!BOT_TOKEN) {
+    logger.warn('TELEGRAM_BOT_TOKEN не установлен, фото не отправлено');
+    return false;
+  }
+
+  // Добавляем ссылку на мини-апп
+  let captionText = caption || '';
+  if (includeAppLink) {
+    const link = `https://${MINI_APP_URL}`;
+    captionText = captionText ? `${captionText}\n\n👉 <a href="${link}">Открыть в приложении</a>` : `👉 <a href="${link}">Открыть в приложении</a>`;
+  }
+
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        chat_id: telegramId,
+        photo: photoUrl,
+        caption: captionText,
+        parse_mode: 'HTML',
+      }),
+    });
+
+    if (!response.ok) {
+      let errorData: any = {};
+      try {
+        const errorText = await response.text();
+        errorData = JSON.parse(errorText);
+      } catch (parseError) {
+        errorData = { description: 'Unknown error' };
+      }
+      
+      const errorCode = response.status;
+      const errorDescription = errorData.description || 'Unknown error';
+      
+      if (errorCode === 403) {
+        logger.warn('User blocked the bot', { telegramId, errorDescription });
+        return false;
+      } else if (errorCode === 400) {
+        logger.warn('Invalid chat_id or photo URL', { telegramId, errorDescription });
+        return false;
+      } else if (errorCode === 429) {
+        logger.warn('Rate limit exceeded', { telegramId });
+        return false;
+      }
+      
+      logger.error('Telegram send photo error', new Error(`Failed to send photo to ${telegramId}: ${errorDescription}`));
+      return false;
+    }
+    
+    logger.debug('Telegram photo sent successfully', { telegramId });
+    return true;
+  } catch (error) {
+    logger.error('Error sending telegram photo', error instanceof Error ? error : new Error(String(error)));
+    return false;
+  }
+}
+
+/**
+ * Отправка рассылки с фото пользователям
+ */
+export async function sendBroadcastToUsers(
+  users: Array<{ telegram_id: number; id: string; direction?: string }>,
+  message: string,
+  imageUrl?: string,
+  concurrency: number = 10
+): Promise<{ success: number; failed: number }> {
+  const results = { success: 0, failed: 0 };
+  
+  for (let i = 0; i < users.length; i += concurrency) {
+    const batch = users.slice(i, i + concurrency);
+    
+    const promises = batch.map(async (user) => {
+      try {
+        let success: boolean;
+        
+        if (imageUrl) {
+          // Отправляем фото с текстом
+          success = await sendPhotoToUser(user.telegram_id, imageUrl, message, true);
+        } else {
+          // Отправляем только текст
+          success = await sendMessageToUser(user.telegram_id, message, true);
+        }
+        
+        if (success) {
+          results.success++;
+        } else {
+          results.failed++;
+        }
+      } catch (error) {
+        results.failed++;
+        logger.error('Error in broadcast batch', error instanceof Error ? error : new Error(String(error)));
+      }
+    });
+    
+    await Promise.all(promises);
+    
+    // Небольшая задержка между батчами для избежания rate limiting
+    if (i + concurrency < users.length) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+  
+  logger.info('Broadcast to users completed', { 
+    total: users.length, 
+    success: results.success, 
+    failed: results.failed 
+  });
+  
+  return results;
 }

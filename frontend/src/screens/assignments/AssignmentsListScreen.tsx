@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Assignment, AssignmentSubmission } from '../../types';
-import { assignmentApi } from '../../services/assignmentApi';
+import { Assignment, AssignmentSubmission, RandomizerQuestion, RandomizerDistribution } from '../../types';
+import { assignmentApi, RandomizerForUserResponse } from '../../services/assignmentApi';
 import { randomizerApi } from '../../services/randomizerApi';
 import { RandomizerCard } from '../../components/questions/RandomizerCard';
+import { AssignmentRandomizerCard } from '../../components/assignments/AssignmentRandomizerCard';
 import { useTelegram } from '../../hooks/useTelegram';
 import './AssignmentsScreen.css';
 
@@ -15,7 +16,7 @@ export const AssignmentsListScreen: React.FC<AssignmentsListScreenProps> = ({ on
   const { initData } = useTelegram();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [submissions, setSubmissions] = useState<AssignmentSubmission[]>([]);
-  const [randomizers, setRandomizers] = useState<Array<{ randomizer: { id: string; question_id: string; status: string }; isParticipant: boolean; distribution?: any }>>([]);
+  const [randomizers, setRandomizers] = useState<Array<{ randomizer: { id: string; question_id?: string; status: string }; isParticipant: boolean; distribution?: any }>>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,11 +42,18 @@ export const AssignmentsListScreen: React.FC<AssignmentsListScreenProps> = ({ on
 
   if (loading) return <div className="loading">Загрузка...</div>;
 
-  // Разделяем на выполненные и невыполненные
+  // Разделяем на выполненные, невыполненные и random_number
   const submittedIds = new Set(submissions.map(s => s.assignment_id));
-  const available = assignments.filter(a => !submittedIds.has(a.id));
-  const completed = assignments.filter(a => submittedIds.has(a.id));
-  // Рандомайзеры (открытые и с результатом)
+  
+  // Обычные задания (не random_number)
+  const regularAssignments = assignments.filter(a => a.answer_format !== 'random_number');
+  const available = regularAssignments.filter(a => !submittedIds.has(a.id));
+  const completed = regularAssignments.filter(a => submittedIds.has(a.id));
+  
+  // Задания типа random_number
+  const randomNumberAssignments = assignments.filter(a => a.answer_format === 'random_number');
+  
+  // Рандомайзеры из вопросов (устаревший способ, для обратной совместимости)
   const openRandomizers = randomizers.filter(r => r.randomizer.status === 'open');
   const distributedRandomizers = randomizers.filter(r => r.randomizer.status === 'distributed');
 
@@ -77,19 +85,31 @@ export const AssignmentsListScreen: React.FC<AssignmentsListScreenProps> = ({ on
         </>
       )}
 
-      {/* Рандомайзеры */}
+      {/* Случайные числа из заданий (новый способ) */}
+      {randomNumberAssignments.length > 0 && (
+        <>
+          <h4 className="section-title">Случайные числа ({randomNumberAssignments.length})</h4>
+          <div className="assignments-list" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {randomNumberAssignments.map((a) => (
+              <AssignmentRandomizerCard key={a.id} assignment={a} />
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Случайные числа из вопросов (устаревший способ, для обратной совместимости) */}
       {(openRandomizers.length > 0 || distributedRandomizers.length > 0) && (
         <>
-          <h4 className="section-title">Рандомайзеры</h4>
+          <h4 className="section-title">Случайные числа (архив)</h4>
           <div className="assignments-list" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {openRandomizers.map((r) => (
               <div key={r.randomizer.id} className="assignment-card" style={{ padding: 0, overflow: 'hidden' }}>
-                <RandomizerCard questionId={r.randomizer.question_id} randomizerId={r.randomizer.id} />
+                <RandomizerCard questionId={r.randomizer.question_id || ''} randomizerId={r.randomizer.id} />
               </div>
             ))}
             {distributedRandomizers.map((r) => (
               <div key={r.randomizer.id} className="assignment-card completed" style={{ padding: 0, overflow: 'hidden' }}>
-                <RandomizerCard questionId={r.randomizer.question_id} randomizerId={r.randomizer.id} />
+                <RandomizerCard questionId={r.randomizer.question_id || ''} randomizerId={r.randomizer.id} />
               </div>
             ))}
           </div>
@@ -122,7 +142,7 @@ export const AssignmentsListScreen: React.FC<AssignmentsListScreenProps> = ({ on
       )}
 
       {assignments.length === 0 && randomizers.length === 0 && (
-        <p className="no-data">Нет доступных заданий и рандомайзеров</p>
+        <p className="no-data">Нет доступных заданий и случайных чисел</p>
       )}
     </div>
   );
@@ -133,6 +153,8 @@ function getFormatIcon(format: string) {
     case 'text': return '📝';
     case 'number': return '🔢';
     case 'link': return '🔗';
+    case 'photo_upload': return '📷';
+    case 'random_number': return '🎲';
     default: return '📝';
   }
 }
@@ -142,6 +164,8 @@ function getFormatLabel(format: string) {
     case 'text': return 'Текст';
     case 'number': return 'Число';
     case 'link': return 'Ссылка';
+    case 'photo_upload': return 'Загрузка фото';
+    case 'random_number': return 'Случайное число';
     default: return format;
   }
 }

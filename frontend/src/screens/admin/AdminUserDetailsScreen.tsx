@@ -220,7 +220,7 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
             }}
           >
             <option value="all">Все</option>
-            <option value="events">Мероприятия</option>
+            <option value="events">Программа обучения</option>
             <option value="diagnostics">Диагностики</option>
             <option value="questions">Вопросы</option>
             <option value="assignments">Задания</option>
@@ -415,13 +415,13 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
         
         return (
           <>
-            <h3 style={{marginBottom: 12}}>📝 Заметки по мероприятиям ({filteredNotes.length})</h3>
+            <h3 style={{marginBottom: 12}}>📝 Заметки по программам ({filteredNotes.length})</h3>
             <div className="admin-list" style={{marginBottom: 24}}>
               {paginated.length > 0 ? (
                 paginated.map((note: EventNote) => (
                   <div key={note.id} className="admin-item-card block">
                     <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: 8}}>
-                      <span style={{fontWeight: 600}}>{note.event?.title || 'Мероприятие'}</span>
+                      <span style={{fontWeight: 600}}>{note.event?.title || 'Программа'}</span>
                       {note.event?.event_date && (
                         <span style={{fontSize: 12, opacity: 0.6}}>
                           {new Date(note.event.event_date).toLocaleDateString('ru-RU')}
@@ -461,7 +461,7 @@ export const AdminUserDetailsScreen: React.FC<AdminUserDetailsScreenProps> = ({ 
         
         return (
           <>
-            <h3 style={{marginBottom: 12}}>📅 Мероприятия ({filtered.length})</h3>
+            <h3 style={{marginBottom: 12}}>📅 Программа обучения ({filtered.length})</h3>
             <div className="admin-list" style={{marginBottom: 24}}>
               {paginated.length > 0 ? (
                 paginated.map((answer: any) => (

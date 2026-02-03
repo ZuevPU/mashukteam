@@ -64,7 +64,7 @@ export const EventDetailsScreen: React.FC<EventDetailsScreenProps> = ({ eventId,
   };
 
   if (loading) return <div className="loading">Загрузка...</div>;
-  if (!event) return <div className="error">Мероприятие не найдено</div>;
+  if (!event) return <div className="error">Программа не найдена</div>;
 
   return (
     <div className="survey-screen">
@@ -88,14 +88,30 @@ export const EventDetailsScreen: React.FC<EventDetailsScreenProps> = ({ eventId,
           )}
           {event.event_date && (
             <div className="event-info-item">
-              <span className="event-info-label">Дата:</span>
+              <span className="event-info-label">📅 Дата:</span>
               <span className="event-info-value">{new Date(event.event_date).toLocaleDateString('ru-RU')}</span>
             </div>
           )}
-          {event.event_time && (
+          {/* Время: показываем start_time - end_time или fallback на event_time */}
+          {(event.start_time || event.end_time || event.event_time) && (
             <div className="event-info-item">
-              <span className="event-info-label">Время:</span>
-              <span className="event-info-value">{event.event_time}</span>
+              <span className="event-info-label">🕐 Время:</span>
+              <span className="event-info-value">
+                {event.start_time && event.end_time 
+                  ? `${event.start_time.slice(0, 5)} - ${event.end_time.slice(0, 5)}`
+                  : event.start_time 
+                    ? `с ${event.start_time.slice(0, 5)}`
+                    : event.end_time 
+                      ? `до ${event.end_time.slice(0, 5)}`
+                      : event.event_time?.slice(0, 5)
+                }
+              </span>
+            </div>
+          )}
+          {event.location && (
+            <div className="event-info-item">
+              <span className="event-info-label">📍 Место:</span>
+              <span className="event-info-value">{event.location}</span>
             </div>
           )}
           {event.audience && (
@@ -118,7 +134,7 @@ export const EventDetailsScreen: React.FC<EventDetailsScreenProps> = ({ eventId,
               className="form-textarea"
               value={noteText}
               onChange={(e) => setNoteText(e.target.value)}
-              placeholder="Добавьте свои заметки по этому мероприятию..."
+              placeholder="Добавьте свои заметки по этой программе..."
               style={{
                 minHeight: '120px',
                 width: '100%',

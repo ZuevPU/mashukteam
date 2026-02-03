@@ -24,12 +24,14 @@ import { AdminAssignmentsScreen } from './admin/AdminAssignmentsScreen';
 import { AdminAssignmentFormScreen } from './admin/AdminAssignmentFormScreen';
 import { AdminAssignmentSubmissionsScreen } from './admin/AdminAssignmentSubmissionsScreen';
 import { AdminLeaderboardScreen } from './admin/AdminLeaderboardScreen';
+import { AdminAssignmentRandomizerScreen } from './admin/AdminAssignmentRandomizerScreen';
 import { AdminTargetedQuestionsScreen } from './admin/AdminTargetedQuestionsScreen';
 import { AdminQuestionsListScreen } from './admin/AdminQuestionsListScreen';
 import { AdminCreateQuestionScreen } from './admin/AdminCreateQuestionScreen';
 import { AdminQuestionAnswersScreen } from './admin/AdminQuestionAnswersScreen';
 import { AdminExportScreen } from './admin/AdminExportScreen';
 import { AdminAnalyticsScreen } from './admin/AdminAnalyticsScreen';
+import { AdminBroadcastScreen } from './admin/AdminBroadcastScreen';
 import { TargetedQuestionsListScreen } from './TargetedQuestionsListScreen';
 import { AssignmentsListScreen } from './assignments/AssignmentsListScreen';
 import { AssignmentSubmitScreen } from './assignments/AssignmentSubmitScreen';
@@ -60,6 +62,7 @@ type ScreenView =
   | 'admin_assignments'
   | 'admin_assignment_form'
   | 'admin_assignment_submissions'
+  | 'admin_assignment_randomizer'
   | 'admin_leaderboard'
   | 'admin_targeted_questions'
   | 'admin_questions_list'
@@ -67,6 +70,7 @@ type ScreenView =
   | 'admin_review_answers'
   | 'admin_export'
   | 'admin_analytics'
+  | 'admin_broadcasts'
   | 'settings'
   | 'settings_notifications';
 
@@ -284,6 +288,7 @@ export function BentoMenuScreen() {
     return <AdminDashboard
       onExportClick={() => setView('admin_export')}
       onAnalyticsClick={() => setView('admin_analytics')}
+      onBroadcastsClick={() => setView('admin_broadcasts')}
       onBack={() => setView('menu')} 
       onManageEvents={() => setView('admin_events')}
       onManageDiagnostics={() => setView('admin_diagnostics')}
@@ -374,6 +379,12 @@ export function BentoMenuScreen() {
       onBack={() => setView('admin_assignments')}
     />;
   }
+  if (view === 'admin_assignment_randomizer' && selectedAssignmentId) {
+    return <AdminAssignmentRandomizerScreen 
+      assignmentId={selectedAssignmentId}
+      onBack={() => setView('admin_assignments')}
+    />;
+  }
   if (view === 'admin_leaderboard') {
     return <AdminLeaderboardScreen onBack={() => setView('admin_assignments')} />;
   }
@@ -415,6 +426,9 @@ export function BentoMenuScreen() {
   }
   if (view === 'admin_analytics') {
     return <AdminAnalyticsScreen onBack={() => setView('admin')} />;
+  }
+  if (view === 'admin_broadcasts') {
+    return <AdminBroadcastScreen onBack={() => setView('admin')} />;
   }
 
   // === НАСТРОЙКИ ===

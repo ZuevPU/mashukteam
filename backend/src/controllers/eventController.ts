@@ -13,7 +13,7 @@ export class EventController {
       return res.json({ success: true, events });
     } catch (error) {
       logger.error('Get events error', error instanceof Error ? error : new Error(String(error)));
-      return res.status(500).json({ error: 'Ошибка при получении мероприятий' });
+      return res.status(500).json({ error: 'Ошибка при получении программ' });
     }
   }
 
@@ -26,7 +26,7 @@ export class EventController {
       const event = await EventService.getEventById(id);
       
       if (!event) {
-        return res.status(404).json({ error: 'Мероприятие не найдено' });
+        return res.status(404).json({ error: 'Программа не найдена' });
       }
 
       return res.json({ 
@@ -35,7 +35,7 @@ export class EventController {
       });
     } catch (error) {
       logger.error('Get event details error', error instanceof Error ? error : new Error(String(error)));
-      return res.status(500).json({ error: 'Ошибка при получении деталей мероприятия' });
+      return res.status(500).json({ error: 'Ошибка при получении деталей программы' });
     }
   }
 
