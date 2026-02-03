@@ -149,6 +149,7 @@ router.post('/admin/export/assignments', requireAuth, requireAdmin, ExportContro
 router.post('/admin/export/questions', requireAuth, requireAdmin, ExportController.exportQuestions);
 router.post('/admin/export/users', requireAuth, requireAdmin, ExportController.exportUsers);
 router.post('/admin/export/all', requireAuth, requireAdmin, ExportController.exportAll);
+router.post('/admin/export/full', requireAuth, requireAdmin, ExportController.exportFullApplication);
 
 // === Admin Directions ===
 router.post('/admin/directions', requireAuth, requireAdmin, DirectionController.createDirection);
@@ -172,7 +173,8 @@ router.post('/assignments/:id/submit', requireAuth, AssignmentController.submitA
 router.post('/assignments/submissions', requireAuth, AssignmentController.getMySubmissions);
 
 // === File Upload ===
-router.post('/upload/task', requireAuth, upload.single('file'), UploadController.uploadTaskFile);
+// Важно: multer должен быть ПЕРЕД requireAuth, чтобы распарсить FormData и получить initData из body
+router.post('/upload/task', upload.single('file'), requireAuth, UploadController.uploadTaskFile);
 router.post('/upload/signed-url', requireAuth, UploadController.getSignedUrl);
 
 // === User Assignment Randomizer (Random Number) ===

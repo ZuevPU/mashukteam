@@ -1233,7 +1233,669 @@ export class ExportService {
       XLSX.utils.book_append_sheet(workbook, pointsTransactionsSheet, 'Транзакции баллов');
     }
 
+    // 16. Рассылки (broadcasts)
+    const { data: broadcasts } = await supabase.from('broadcasts').select('*').order('created_at', { ascending: false });
+    if (broadcasts && broadcasts.length > 0) {
+      const broadcastsSheet = XLSX.utils.json_to_sheet(broadcasts.map((b: any) => ({
+        ...b,
+        created_at: b.created_at ? new Date(b.created_at).toLocaleString('ru-RU') : '',
+        scheduled_at: b.scheduled_at ? new Date(b.scheduled_at).toLocaleString('ru-RU') : '',
+        sent_at: b.sent_at ? new Date(b.sent_at).toLocaleString('ru-RU') : '',
+        target_values: Array.isArray(b.target_values) ? b.target_values.join(', ') : b.target_values
+      })));
+      XLSX.utils.book_append_sheet(workbook, broadcastsSheet, 'Рассылки');
+    }
+
+    // 17. Заметки по мероприятиям (event_notes)
+    const { data: eventNotes } = await supabase.from('event_notes').select('*').order('created_at', { ascending: false });
+    if (eventNotes && eventNotes.length > 0) {
+      const eventNotesSheet = XLSX.utils.json_to_sheet(eventNotes.map((n: any) => ({
+        ...n,
+        created_at: n.created_at ? new Date(n.created_at).toLocaleString('ru-RU') : '',
+        updated_at: n.updated_at ? new Date(n.updated_at).toLocaleString('ru-RU') : ''
+      })));
+      XLSX.utils.book_append_sheet(workbook, eventNotesSheet, 'Заметки мероприятий');
+    }
+
+    // 18. Рандомайзеры (randomizers)
+    const { data: randomizers } = await supabase.from('randomizers').select('*').order('created_at', { ascending: false });
+    if (randomizers && randomizers.length > 0) {
+      const randomizersSheet = XLSX.utils.json_to_sheet(randomizers.map((r: any) => ({
+        ...r,
+        created_at: r.created_at ? new Date(r.created_at).toLocaleString('ru-RU') : '',
+        distributed_at: r.distributed_at ? new Date(r.distributed_at).toLocaleString('ru-RU') : ''
+      })));
+      XLSX.utils.book_append_sheet(workbook, randomizersSheet, 'Рандомайзеры');
+    }
+
+    // 19. Участники рандомайзеров (randomizer_participants)
+    const { data: randomizerParticipants } = await supabase.from('randomizer_participants').select('*').order('created_at', { ascending: false });
+    if (randomizerParticipants && randomizerParticipants.length > 0) {
+      const randomizerParticipantsSheet = XLSX.utils.json_to_sheet(randomizerParticipants.map((rp: any) => ({
+        ...rp,
+        created_at: rp.created_at ? new Date(rp.created_at).toLocaleString('ru-RU') : ''
+      })));
+      XLSX.utils.book_append_sheet(workbook, randomizerParticipantsSheet, 'Участники рандомайзеров');
+    }
+
+    // 20. Распределения рандомайзеров (randomizer_distributions)
+    const { data: randomizerDistributions } = await supabase.from('randomizer_distributions').select('*').order('created_at', { ascending: false });
+    if (randomizerDistributions && randomizerDistributions.length > 0) {
+      const randomizerDistributionsSheet = XLSX.utils.json_to_sheet(randomizerDistributions.map((rd: any) => ({
+        ...rd,
+        created_at: rd.created_at ? new Date(rd.created_at).toLocaleString('ru-RU') : ''
+      })));
+      XLSX.utils.book_append_sheet(workbook, randomizerDistributionsSheet, 'Распределения рандомайзеров');
+    }
+
+    // 21. Уведомления (notifications)
+    const { data: notifications } = await supabase.from('notifications').select('*').order('created_at', { ascending: false });
+    if (notifications && notifications.length > 0) {
+      const notificationsSheet = XLSX.utils.json_to_sheet(notifications.map((n: any) => ({
+        ...n,
+        created_at: n.created_at ? new Date(n.created_at).toLocaleString('ru-RU') : '',
+        read_at: n.read_at ? new Date(n.read_at).toLocaleString('ru-RU') : ''
+      })));
+      XLSX.utils.book_append_sheet(workbook, notificationsSheet, 'Уведомления');
+    }
+
+    // 22. Настройки пользователей (user_preferences)
+    const { data: userPreferences } = await supabase.from('user_preferences').select('*').order('updated_at', { ascending: false });
+    if (userPreferences && userPreferences.length > 0) {
+      const userPreferencesSheet = XLSX.utils.json_to_sheet(userPreferences.map((up: any) => ({
+        ...up,
+        updated_at: up.updated_at ? new Date(up.updated_at).toLocaleString('ru-RU') : ''
+      })));
+      XLSX.utils.book_append_sheet(workbook, userPreferencesSheet, 'Настройки пользователей');
+    }
+
     const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
     return excelBuffer;
+  }
+
+  /**
+   * Полный экспорт всего приложения в один Excel файл с человекочитаемыми данными
+   * Включает все таблицы со связанными данными
+   */
+  static async exportFullApplication(): Promise<Buffer> {
+    const workbook = XLSX.utils.book_new();
+
+    // ==================== ЛИСТ 1: ПОЛЬЗОВАТЕЛИ С ПОЛНЫМИ ДАННЫМИ ====================
+    const { data: users } = await supabase
+      .from('users')
+      .select(`*, direction:directions(name, slug)`)
+      .order('created_at', { ascending: false });
+
+    const usersData = (users || []).map((u: any) => ({
+      'ID': u.id,
+      'Telegram ID': u.telegram_id || '',
+      'Имя': u.first_name || '',
+      'Фамилия': u.last_name || '',
+      'Отчество': u.middle_name || '',
+      'Username': u.telegram_username || '',
+      'Телефон': u.phone || '',
+      'Email': u.email || '',
+      'Мотивация': u.motivation || '',
+      'Направление (slug)': u.direction || '',
+      'Направление': u.direction?.name || u.direction || '',
+      'Статус': u.status === 'registered' ? 'Зарегистрирован' : 'Новый',
+      'Администратор': u.is_admin === 1 ? 'Да' : 'Нет',
+      'Общие баллы': u.total_points || 0,
+      'Баллы рефлексии': u.reflection_points || 0,
+      'Уровень рефлексии': u.reflection_level || 1,
+      'Текущий уровень': u.current_level || 1,
+      'Дата регистрации': this.formatDate(u.created_at),
+      'Дата обновления': this.formatDate(u.updated_at)
+    }));
+    if (usersData.length > 0) {
+      const usersSheet = XLSX.utils.json_to_sheet(usersData);
+      XLSX.utils.book_append_sheet(workbook, usersSheet, 'Пользователи');
+    }
+
+    // ==================== ЛИСТ 2: ПРОГРАММЫ ОБУЧЕНИЯ ====================
+    const { data: events } = await supabase
+      .from('events')
+      .select('*')
+      .order('group_order', { ascending: true })
+      .order('event_order', { ascending: true });
+
+    const eventsData = (events || []).map((e: any) => ({
+      'ID': e.id,
+      'Название': e.title || '',
+      'Описание': e.description || '',
+      'Спикер': e.speaker || '',
+      'Аудитория': e.audience || '',
+      'Тип': e.type === 'diagnostic' ? 'Диагностика' : 'Мероприятие',
+      'Статус': this.getEventStatusLabel(e.status),
+      'Группа': e.group_name || '',
+      'Порядок группы': e.group_order || 0,
+      'Порядок в группе': e.event_order || 0,
+      'Дата': this.formatDateOnly(e.event_date),
+      'Время': e.event_time || '',
+      'Местоположение': e.location || '',
+      'Запланированная публикация': this.formatDate(e.scheduled_at),
+      'Дата создания': this.formatDate(e.created_at),
+      'Дата обновления': this.formatDate(e.updated_at)
+    }));
+    if (eventsData.length > 0) {
+      const eventsSheet = XLSX.utils.json_to_sheet(eventsData);
+      XLSX.utils.book_append_sheet(workbook, eventsSheet, 'Программы обучения');
+    }
+
+    // ==================== ЛИСТ 3: ВОПРОСЫ К ПРОГРАММАМ ====================
+    const { data: questions } = await supabase
+      .from('questions')
+      .select(`*, event:events(title, type)`)
+      .order('event_id')
+      .order('order_index', { ascending: true });
+
+    const questionsData = (questions || []).map((q: any) => ({
+      'ID': q.id,
+      'Программа': q.event?.title || '',
+      'Тип программы': q.event?.type === 'diagnostic' ? 'Диагностика' : 'Мероприятие',
+      'Текст вопроса': q.text || '',
+      'Тип вопроса': q.type || '',
+      'Варианты ответов': Array.isArray(q.options) ? q.options.join(' | ') : '',
+      'Лимит символов': q.char_limit || '',
+      'Порядок': q.order_index || 0,
+      'Дата создания': this.formatDate(q.created_at)
+    }));
+    if (questionsData.length > 0) {
+      const questionsSheet = XLSX.utils.json_to_sheet(questionsData);
+      XLSX.utils.book_append_sheet(workbook, questionsSheet, 'Вопросы программ');
+    }
+
+    // ==================== ЛИСТ 4: ОТВЕТЫ НА ПРОГРАММЫ/ДИАГНОСТИКИ ====================
+    const { data: answers } = await supabase
+      .from('answers')
+      .select(`
+        *,
+        user:users(first_name, last_name, telegram_username),
+        event:events(title, type, group_name),
+        question:questions(text, type)
+      `)
+      .order('created_at', { ascending: false });
+
+    const answersData = (answers || []).map((a: any) => {
+      const user = Array.isArray(a.user) ? a.user[0] : a.user;
+      const event = Array.isArray(a.event) ? a.event[0] : a.event;
+      const question = Array.isArray(a.question) ? a.question[0] : a.question;
+      
+      return {
+        'ID': a.id,
+        'Пользователь': `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.telegram_username || a.user_id,
+        'Программа': event?.title || '',
+        'Тип': event?.type === 'diagnostic' ? 'Диагностика' : 'Мероприятие',
+        'Группа': event?.group_name || '',
+        'Вопрос': question?.text || '',
+        'Тип вопроса': question?.type || '',
+        'Ответ': this.formatAnswerData(a.answer_data),
+        'Дата ответа': this.formatDate(a.created_at)
+      };
+    });
+    if (answersData.length > 0) {
+      const answersSheet = XLSX.utils.json_to_sheet(answersData);
+      XLSX.utils.book_append_sheet(workbook, answersSheet, 'Ответы на программы');
+    }
+
+    // ==================== ЛИСТ 5: ПЕРСОНАЛЬНЫЕ ВОПРОСЫ ====================
+    const { data: targetedQuestions } = await supabase
+      .from('targeted_questions')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    const targetedQuestionsData = (targetedQuestions || []).map((q: any) => ({
+      'ID': q.id,
+      'Текст вопроса': q.text || '',
+      'Тип вопроса': q.type || '',
+      'Варианты ответов': Array.isArray(q.options) ? q.options.join(' | ') : '',
+      'Лимит символов': q.char_limit || '',
+      'Целевая аудитория': this.getTargetAudienceLabel(q.target_audience),
+      'Целевые значения': Array.isArray(q.target_values) ? q.target_values.join(', ') : '',
+      'Группа': q.group_name || '',
+      'Порядок группы': q.group_order || 0,
+      'Порядок в группе': q.question_order || 0,
+      'Статус': q.status === 'published' ? 'Опубликовано' : q.status === 'draft' ? 'Черновик' : 'Архив',
+      'Запланированная публикация': this.formatDate(q.scheduled_at),
+      'Дата создания': this.formatDate(q.created_at)
+    }));
+    if (targetedQuestionsData.length > 0) {
+      const targetedQuestionsSheet = XLSX.utils.json_to_sheet(targetedQuestionsData);
+      XLSX.utils.book_append_sheet(workbook, targetedQuestionsSheet, 'Персональные вопросы');
+    }
+
+    // ==================== ЛИСТ 6: ОТВЕТЫ НА ПЕРСОНАЛЬНЫЕ ВОПРОСЫ ====================
+    const { data: targetedAnswers } = await supabase
+      .from('targeted_answers')
+      .select(`
+        *,
+        user:users(first_name, last_name, telegram_username),
+        question:targeted_questions(text, type, group_name)
+      `)
+      .order('created_at', { ascending: false });
+
+    const targetedAnswersData = (targetedAnswers || []).map((a: any) => {
+      const user = Array.isArray(a.user) ? a.user[0] : a.user;
+      const question = Array.isArray(a.question) ? a.question[0] : a.question;
+      
+      return {
+        'ID': a.id,
+        'Пользователь': `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.telegram_username || a.user_id,
+        'Вопрос': question?.text || '',
+        'Тип вопроса': question?.type || '',
+        'Группа вопроса': question?.group_name || '',
+        'Ответ': this.formatAnswerData(a.answer_data),
+        'Дата ответа': this.formatDate(a.created_at)
+      };
+    });
+    if (targetedAnswersData.length > 0) {
+      const targetedAnswersSheet = XLSX.utils.json_to_sheet(targetedAnswersData);
+      XLSX.utils.book_append_sheet(workbook, targetedAnswersSheet, 'Ответы персональные');
+    }
+
+    // ==================== ЛИСТ 7: ЗАДАНИЯ ====================
+    const { data: assignments } = await supabase
+      .from('assignments')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    const assignmentsData = (assignments || []).map((a: any) => ({
+      'ID': a.id,
+      'Название': a.title || '',
+      'Описание': a.description || '',
+      'Формат ответа': this.getAnswerFormatLabel(a.answer_format),
+      'Награда (баллы)': a.reward || 0,
+      'Целевая аудитория': this.getTargetTypeLabel(a.target_type),
+      'Целевые значения': Array.isArray(a.target_values) ? a.target_values.join(', ') : '',
+      'Статус': a.status === 'published' ? 'Опубликовано' : 'Черновик',
+      'Запланированная публикация': this.formatDate(a.scheduled_at),
+      'Дата создания': this.formatDate(a.created_at)
+    }));
+    if (assignmentsData.length > 0) {
+      const assignmentsSheet = XLSX.utils.json_to_sheet(assignmentsData);
+      XLSX.utils.book_append_sheet(workbook, assignmentsSheet, 'Задания');
+    }
+
+    // ==================== ЛИСТ 8: ВЫПОЛНЕННЫЕ ЗАДАНИЯ ====================
+    const { data: submissions } = await supabase
+      .from('assignment_submissions')
+      .select(`
+        *,
+        user:users(first_name, last_name, telegram_username),
+        assignment:assignments(title, answer_format, reward)
+      `)
+      .order('created_at', { ascending: false });
+
+    const submissionsData = (submissions || []).map((s: any) => {
+      const user = Array.isArray(s.user) ? s.user[0] : s.user;
+      const assignment = Array.isArray(s.assignment) ? s.assignment[0] : s.assignment;
+      
+      return {
+        'ID': s.id,
+        'Пользователь': `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.telegram_username || s.user_id,
+        'Задание': assignment?.title || '',
+        'Формат': this.getAnswerFormatLabel(assignment?.answer_format),
+        'Ответ': s.content || '',
+        'URL файла': s.file_url || '',
+        'Статус': this.getStatusLabel(s.status),
+        'Комментарий админа': s.admin_comment || '',
+        'Награда': assignment?.reward || 0,
+        'Дата отправки': this.formatDate(s.created_at),
+        'Дата обновления': this.formatDate(s.updated_at)
+      };
+    });
+    if (submissionsData.length > 0) {
+      const submissionsSheet = XLSX.utils.json_to_sheet(submissionsData);
+      XLSX.utils.book_append_sheet(workbook, submissionsSheet, 'Выполненные задания');
+    }
+
+    // ==================== ЛИСТ 9: РАССЫЛКИ ====================
+    const { data: broadcasts } = await supabase
+      .from('broadcasts')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    const broadcastsData = (broadcasts || []).map((b: any) => ({
+      'ID': b.id,
+      'Заголовок': b.title || '',
+      'Текст': b.content || '',
+      'Тип': b.type || '',
+      'Целевая аудитория': this.getTargetTypeLabel(b.target_type),
+      'Целевые значения': Array.isArray(b.target_values) ? b.target_values.join(', ') : '',
+      'URL изображения': b.image_url || '',
+      'URL кнопки': b.button_url || '',
+      'Текст кнопки': b.button_text || '',
+      'Статус': b.status || '',
+      'Запланировано на': this.formatDate(b.scheduled_at),
+      'Отправлено': this.formatDate(b.sent_at),
+      'Дата создания': this.formatDate(b.created_at)
+    }));
+    if (broadcastsData.length > 0) {
+      const broadcastsSheet = XLSX.utils.json_to_sheet(broadcastsData);
+      XLSX.utils.book_append_sheet(workbook, broadcastsSheet, 'Рассылки');
+    }
+
+    // ==================== ЛИСТ 10: ЗАМЕТКИ ПО МЕРОПРИЯТИЯМ ====================
+    const { data: eventNotes } = await supabase
+      .from('event_notes')
+      .select(`
+        *,
+        user:users(first_name, last_name, telegram_username),
+        event:events(title)
+      `)
+      .order('updated_at', { ascending: false });
+
+    const eventNotesData = (eventNotes || []).map((n: any) => {
+      const user = Array.isArray(n.user) ? n.user[0] : n.user;
+      const event = Array.isArray(n.event) ? n.event[0] : n.event;
+      
+      return {
+        'ID': n.id,
+        'Пользователь': `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.telegram_username || n.user_id,
+        'Программа': event?.title || '',
+        'Заметка': n.note_text || '',
+        'Дата создания': this.formatDate(n.created_at),
+        'Дата обновления': this.formatDate(n.updated_at)
+      };
+    });
+    if (eventNotesData.length > 0) {
+      const eventNotesSheet = XLSX.utils.json_to_sheet(eventNotesData);
+      XLSX.utils.book_append_sheet(workbook, eventNotesSheet, 'Заметки пользователей');
+    }
+
+    // ==================== ЛИСТ 11: РАНДОМАЙЗЕРЫ ====================
+    const { data: randomizers } = await supabase
+      .from('randomizers')
+      .select(`
+        *,
+        assignment:assignments(title)
+      `)
+      .order('created_at', { ascending: false });
+
+    const randomizersData = (randomizers || []).map((r: any) => {
+      const assignment = Array.isArray(r.assignment) ? r.assignment[0] : r.assignment;
+      
+      return {
+        'ID': r.id,
+        'Задание': assignment?.title || '',
+        'Режим': r.mode === 'tables' ? 'По столам' : 'Простой',
+        'Мин. число': r.min_number || 1,
+        'Макс. число': r.max_number || 100,
+        'Количество столов': r.tables_count || '',
+        'Статус': r.status || '',
+        'Распределено': this.formatDate(r.distributed_at),
+        'Дата создания': this.formatDate(r.created_at)
+      };
+    });
+    if (randomizersData.length > 0) {
+      const randomizersSheet = XLSX.utils.json_to_sheet(randomizersData);
+      XLSX.utils.book_append_sheet(workbook, randomizersSheet, 'Рандомайзеры');
+    }
+
+    // ==================== ЛИСТ 12: УЧАСТНИКИ РАНДОМАЙЗЕРОВ ====================
+    const { data: randomizerParticipants } = await supabase
+      .from('randomizer_participants')
+      .select(`
+        *,
+        user:users(first_name, last_name, telegram_username),
+        randomizer:randomizers(assignment:assignments(title))
+      `)
+      .order('created_at', { ascending: false });
+
+    const randomizerParticipantsData = (randomizerParticipants || []).map((rp: any) => {
+      const user = Array.isArray(rp.user) ? rp.user[0] : rp.user;
+      const randomizer = Array.isArray(rp.randomizer) ? rp.randomizer[0] : rp.randomizer;
+      const assignment = randomizer?.assignment;
+      const assignmentObj = Array.isArray(assignment) ? assignment[0] : assignment;
+      
+      return {
+        'ID': rp.id,
+        'Пользователь': `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.telegram_username || rp.user_id,
+        'Задание': assignmentObj?.title || '',
+        'Дата участия': this.formatDate(rp.created_at)
+      };
+    });
+    if (randomizerParticipantsData.length > 0) {
+      const randomizerParticipantsSheet = XLSX.utils.json_to_sheet(randomizerParticipantsData);
+      XLSX.utils.book_append_sheet(workbook, randomizerParticipantsSheet, 'Участники рандомайзеров');
+    }
+
+    // ==================== ЛИСТ 13: РАСПРЕДЕЛЕНИЯ РАНДОМАЙЗЕРОВ ====================
+    const { data: randomizerDistributions } = await supabase
+      .from('randomizer_distributions')
+      .select(`
+        *,
+        user:users(first_name, last_name, telegram_username),
+        randomizer:randomizers(assignment:assignments(title))
+      `)
+      .order('created_at', { ascending: false });
+
+    const randomizerDistributionsData = (randomizerDistributions || []).map((rd: any) => {
+      const user = Array.isArray(rd.user) ? rd.user[0] : rd.user;
+      const randomizer = Array.isArray(rd.randomizer) ? rd.randomizer[0] : rd.randomizer;
+      const assignment = randomizer?.assignment;
+      const assignmentObj = Array.isArray(assignment) ? assignment[0] : assignment;
+      
+      return {
+        'ID': rd.id,
+        'Пользователь': `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.telegram_username || rd.user_id,
+        'Задание': assignmentObj?.title || '',
+        'Присвоенное число': rd.assigned_number || '',
+        'Номер стола': rd.table_number || '',
+        'Дата распределения': this.formatDate(rd.created_at)
+      };
+    });
+    if (randomizerDistributionsData.length > 0) {
+      const randomizerDistributionsSheet = XLSX.utils.json_to_sheet(randomizerDistributionsData);
+      XLSX.utils.book_append_sheet(workbook, randomizerDistributionsSheet, 'Распределения');
+    }
+
+    // ==================== ЛИСТ 14: НАПРАВЛЕНИЯ ====================
+    const { data: directions } = await supabase
+      .from('directions')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    const directionsData = (directions || []).map((d: any) => ({
+      'ID': d.id,
+      'Название': d.name || '',
+      'Slug': d.slug || '',
+      'Описание': d.description || '',
+      'Дата создания': this.formatDate(d.created_at),
+      'Дата обновления': this.formatDate(d.updated_at)
+    }));
+    if (directionsData.length > 0) {
+      const directionsSheet = XLSX.utils.json_to_sheet(directionsData);
+      XLSX.utils.book_append_sheet(workbook, directionsSheet, 'Направления');
+    }
+
+    // ==================== ЛИСТ 15: ДОСТИЖЕНИЯ ====================
+    const { data: achievements } = await supabase
+      .from('achievements')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    const achievementsData = (achievements || []).map((a: any) => ({
+      'ID': a.id,
+      'Название': a.name || '',
+      'Описание': a.description || '',
+      'Иконка': a.icon || '',
+      'Очки': a.points || 0,
+      'Дата создания': this.formatDate(a.created_at)
+    }));
+    if (achievementsData.length > 0) {
+      const achievementsSheet = XLSX.utils.json_to_sheet(achievementsData);
+      XLSX.utils.book_append_sheet(workbook, achievementsSheet, 'Достижения');
+    }
+
+    // ==================== ЛИСТ 16: ДОСТИЖЕНИЯ ПОЛЬЗОВАТЕЛЕЙ ====================
+    const { data: userAchievements } = await supabase
+      .from('user_achievements')
+      .select(`
+        *,
+        user:users(first_name, last_name, telegram_username),
+        achievement:achievements(name)
+      `)
+      .order('unlocked_at', { ascending: false });
+
+    const userAchievementsData = (userAchievements || []).map((ua: any) => {
+      const user = Array.isArray(ua.user) ? ua.user[0] : ua.user;
+      const achievement = Array.isArray(ua.achievement) ? ua.achievement[0] : ua.achievement;
+      
+      return {
+        'ID': ua.id,
+        'Пользователь': `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.telegram_username || ua.user_id,
+        'Достижение': achievement?.name || '',
+        'Дата получения': this.formatDate(ua.unlocked_at)
+      };
+    });
+    if (userAchievementsData.length > 0) {
+      const userAchievementsSheet = XLSX.utils.json_to_sheet(userAchievementsData);
+      XLSX.utils.book_append_sheet(workbook, userAchievementsSheet, 'Достижения польз.');
+    }
+
+    // ==================== ЛИСТ 17: УРОВНИ ПОЛЬЗОВАТЕЛЕЙ ====================
+    const { data: userLevels } = await supabase
+      .from('user_levels')
+      .select(`
+        *,
+        user:users(first_name, last_name, telegram_username)
+      `)
+      .order('level', { ascending: false });
+
+    const userLevelsData = (userLevels || []).map((ul: any) => {
+      const user = Array.isArray(ul.user) ? ul.user[0] : ul.user;
+      
+      return {
+        'ID': ul.id,
+        'Пользователь': `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.telegram_username || ul.user_id,
+        'Уровень': ul.level || 1,
+        'Очки опыта': ul.experience_points || 0,
+        'Дата обновления': this.formatDate(ul.updated_at)
+      };
+    });
+    if (userLevelsData.length > 0) {
+      const userLevelsSheet = XLSX.utils.json_to_sheet(userLevelsData);
+      XLSX.utils.book_append_sheet(workbook, userLevelsSheet, 'Уровни пользователей');
+    }
+
+    // ==================== ЛИСТ 18: БАЛЛЫ ПОЛЬЗОВАТЕЛЕЙ ====================
+    const { data: userPoints } = await supabase
+      .from('user_points')
+      .select(`
+        *,
+        user:users(first_name, last_name, telegram_username)
+      `)
+      .order('total_points', { ascending: false });
+
+    const userPointsData = (userPoints || []).map((up: any) => {
+      const user = Array.isArray(up.user) ? up.user[0] : up.user;
+      
+      return {
+        'ID': up.id,
+        'Пользователь': `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.telegram_username || up.user_id,
+        'Всего баллов': up.total_points || 0,
+        'Дата создания': this.formatDate(up.created_at)
+      };
+    });
+    if (userPointsData.length > 0) {
+      const userPointsSheet = XLSX.utils.json_to_sheet(userPointsData);
+      XLSX.utils.book_append_sheet(workbook, userPointsSheet, 'Баллы пользователей');
+    }
+
+    // ==================== ЛИСТ 19: ТРАНЗАКЦИИ БАЛЛОВ ====================
+    const { data: pointsTransactions } = await supabase
+      .from('points_transactions')
+      .select(`
+        *,
+        user:users(first_name, last_name, telegram_username)
+      `)
+      .order('created_at', { ascending: false });
+
+    const pointsTransactionsData = (pointsTransactions || []).map((pt: any) => {
+      const user = Array.isArray(pt.user) ? pt.user[0] : pt.user;
+      
+      return {
+        'ID': pt.id,
+        'Пользователь': `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.telegram_username || pt.user_id,
+        'Баллы': pt.points || 0,
+        'Причина': pt.reason || '',
+        'Дата': this.formatDate(pt.created_at)
+      };
+    });
+    if (pointsTransactionsData.length > 0) {
+      const pointsTransactionsSheet = XLSX.utils.json_to_sheet(pointsTransactionsData);
+      XLSX.utils.book_append_sheet(workbook, pointsTransactionsSheet, 'Транзакции баллов');
+    }
+
+    // ==================== ЛИСТ 20: ДЕЙСТВИЯ РЕФЛЕКСИИ ====================
+    const { data: reflectionActions } = await supabase
+      .from('reflection_actions')
+      .select(`
+        *,
+        user:users(first_name, last_name, telegram_username)
+      `)
+      .order('created_at', { ascending: false });
+
+    const reflectionActionsData = (reflectionActions || []).map((ra: any) => {
+      const user = Array.isArray(ra.user) ? ra.user[0] : ra.user;
+      
+      return {
+        'ID': ra.id,
+        'Пользователь': `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.telegram_username || ra.user_id,
+        'Тип действия': ra.action_type || '',
+        'Баллы за действие': ra.points_awarded || 0,
+        'Дата': this.formatDate(ra.created_at)
+      };
+    });
+    if (reflectionActionsData.length > 0) {
+      const reflectionActionsSheet = XLSX.utils.json_to_sheet(reflectionActionsData);
+      XLSX.utils.book_append_sheet(workbook, reflectionActionsSheet, 'Рефлексия');
+    }
+
+    // ==================== ЛИСТ 21: УВЕДОМЛЕНИЯ ====================
+    const { data: notifications } = await supabase
+      .from('notifications')
+      .select(`
+        *,
+        user:users(first_name, last_name, telegram_username)
+      `)
+      .order('created_at', { ascending: false });
+
+    const notificationsData = (notifications || []).map((n: any) => {
+      const user = Array.isArray(n.user) ? n.user[0] : n.user;
+      
+      return {
+        'ID': n.id,
+        'Пользователь': `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.telegram_username || n.user_id,
+        'Заголовок': n.title || '',
+        'Текст': n.message || '',
+        'Тип': n.type || '',
+        'Прочитано': n.is_read ? 'Да' : 'Нет',
+        'Дата прочтения': this.formatDate(n.read_at),
+        'Дата создания': this.formatDate(n.created_at)
+      };
+    });
+    if (notificationsData.length > 0) {
+      const notificationsSheet = XLSX.utils.json_to_sheet(notificationsData);
+      XLSX.utils.book_append_sheet(workbook, notificationsSheet, 'Уведомления');
+    }
+
+    const excelBuffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    return excelBuffer;
+  }
+
+  /**
+   * Получение читаемого названия формата ответа
+   */
+  private static getAnswerFormatLabel(format: string): string {
+    const labels: Record<string, string> = {
+      'text': 'Текст',
+      'number': 'Число',
+      'link': 'Ссылка',
+      'random_number': 'Случайное число',
+      'photo_upload': 'Загрузка фото'
+    };
+    return labels[format] || format;
   }
 }

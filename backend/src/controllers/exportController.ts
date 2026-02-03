@@ -160,7 +160,7 @@ export class ExportController {
   }
 
   /**
-   * Полный экспорт всех таблиц
+   * Полный экспорт всех таблиц (сырые данные)
    */
   static async exportAll(req: Request, res: Response) {
     try {
@@ -177,6 +177,31 @@ export class ExportController {
       logger.error('Export all tables error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ 
         error: 'Ошибка при полном экспорте данных',
+        message: error.message || 'Неизвестная ошибка'
+      });
+    }
+  }
+
+  /**
+   * Полный экспорт приложения с человекочитаемыми данными
+   */
+  static async exportFullApplication(req: Request, res: Response) {
+    try {
+      logger.info('Starting full application export');
+      const excelBuffer = await ExportService.exportFullApplication();
+      
+      const filename = `mashuk_full_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+      
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+      res.setHeader('Content-Length', excelBuffer.length);
+      
+      logger.info('Full application export completed successfully', { size: excelBuffer.length });
+      return res.send(excelBuffer);
+    } catch (error: any) {
+      logger.error('Full application export error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ 
+        error: 'Ошибка при полном экспорте приложения',
         message: error.message || 'Неизвестная ошибка'
       });
     }

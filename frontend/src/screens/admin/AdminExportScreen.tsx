@@ -193,49 +193,82 @@ export const AdminExportScreen: React.FC<AdminExportScreenProps> = ({ onBack }) 
           </div>
         )}
 
+        <div className="settings-section" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '16px', borderRadius: '12px', marginBottom: '16px' }}>
+          <h4 style={{ color: '#fff', marginBottom: '12px' }}>📦 Полный экспорт приложения</h4>
+          <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.9)', marginBottom: '12px' }}>
+            Экспорт всех данных приложения в один Excel файл с 21 листом: пользователи, программы, задания, ответы, рассылки, рандомайзеры и др.
+          </p>
+          <button
+            className="create-btn"
+            style={{ background: '#fff', color: '#764ba2', fontWeight: 'bold', width: '100%' }}
+            onClick={() => handleExport('/admin/export/full', 'mashuk_full_export', 'Полный экспорт')}
+            disabled={!!exporting}
+          >
+            {exporting === 'Полный экспорт' ? '⏳ Экспорт...' : '📥 Скачать полный экспорт'}
+          </button>
+        </div>
+
         <div className="settings-section">
-          <h4>Экспорт данных</h4>
+          <h4>Экспорт по категориям</h4>
+          <p style={{ fontSize: '12px', opacity: 0.7, marginBottom: '12px' }}>
+            Выборочный экспорт отдельных категорий данных с учетом фильтров
+          </p>
           <button
             className="create-btn"
             onClick={() => handleExport('/admin/export/users', 'users_export', 'Пользователи')}
             disabled={!!exporting}
           >
-            {exporting === 'Пользователи' ? 'Экспорт...' : 'Экспорт пользователей'}
+            {exporting === 'Пользователи' ? 'Экспорт...' : '👥 Экспорт пользователей'}
           </button>
           <button
             className="create-btn"
             onClick={() => handleExport('/admin/export/answers', 'answers_export', 'Ответы')}
             disabled={!!exporting}
           >
-            {exporting === 'Ответы' ? 'Экспорт...' : 'Экспорт ответов'}
+            {exporting === 'Ответы' ? 'Экспорт...' : '💬 Экспорт ответов'}
           </button>
           <button
             className="create-btn"
             onClick={() => handleExport('/admin/export/events', 'events_export', 'Программы')}
             disabled={!!exporting}
           >
-            {exporting === 'Программы' ? 'Экспорт...' : 'Экспорт программ'}
+            {exporting === 'Программы' ? 'Экспорт...' : '📅 Экспорт программ'}
           </button>
           <button
             className="create-btn"
             onClick={() => handleExport('/admin/export/diagnostics', 'diagnostics_export', 'Диагностики')}
             disabled={!!exporting}
           >
-            {exporting === 'Диагностики' ? 'Экспорт...' : 'Экспорт диагностик'}
+            {exporting === 'Диагностики' ? 'Экспорт...' : '📊 Экспорт диагностик'}
           </button>
           <button
             className="create-btn"
             onClick={() => handleExport('/admin/export/assignments', 'assignments_export', 'Задания')}
             disabled={!!exporting}
           >
-            {exporting === 'Задания' ? 'Экспорт...' : 'Экспорт заданий'}
+            {exporting === 'Задания' ? 'Экспорт...' : '📝 Экспорт заданий'}
           </button>
           <button
             className="create-btn"
             onClick={() => handleExport('/admin/export/questions', 'questions_export', 'Вопросы')}
             disabled={!!exporting}
           >
-            {exporting === 'Вопросы' ? 'Экспорт...' : 'Экспорт вопросов'}
+            {exporting === 'Вопросы' ? 'Экспорт...' : '❓ Экспорт вопросов'}
+          </button>
+        </div>
+
+        <div className="settings-section">
+          <h4>Технический экспорт</h4>
+          <p style={{ fontSize: '12px', opacity: 0.7, marginBottom: '12px' }}>
+            Сырой экспорт всех таблиц базы данных (для разработчиков)
+          </p>
+          <button
+            className="create-btn"
+            style={{ background: '#666' }}
+            onClick={() => handleExport('/admin/export/all', 'raw_tables_export', 'Сырые таблицы')}
+            disabled={!!exporting}
+          >
+            {exporting === 'Сырые таблицы' ? 'Экспорт...' : '🗄️ Экспорт сырых таблиц БД'}
           </button>
         </div>
       </div>

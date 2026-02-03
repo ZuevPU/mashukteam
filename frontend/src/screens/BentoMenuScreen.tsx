@@ -56,7 +56,9 @@ type ScreenView =
   | 'admin_event_form'
   | 'admin_diagnostic_form'
   | 'admin_questions'
+  | 'admin_diagnostic_questions'
   | 'admin_event_analytics'
+  | 'admin_diagnostic_analytics'
   | 'admin_users'
   | 'admin_user_details'
   | 'admin_assignments'
@@ -313,8 +315,8 @@ export function BentoMenuScreen() {
       onBack={() => setView('admin')} 
       onCreate={() => { setSelectedDiagnostic(undefined); setView('admin_diagnostic_form'); }}
       onEdit={(event) => { setSelectedDiagnostic(event); setView('admin_diagnostic_form'); }}
-      onAddQuestions={(event) => { setSelectedEvent(event); setView('admin_questions'); }}
-      onAnalytics={(eventId) => { setSelectedEventId(eventId); setView('admin_event_analytics'); }}
+      onAddQuestions={(event) => { setSelectedEvent(event); setView('admin_diagnostic_questions'); }}
+      onAnalytics={(eventId) => { setSelectedEventId(eventId); setView('admin_diagnostic_analytics'); }}
     />;
   }
   if (view === 'admin_diagnostic_form') {
@@ -337,10 +339,22 @@ export function BentoMenuScreen() {
       onBack={() => setView('admin_events')}
     />;
   }
+  if (view === 'admin_diagnostic_questions' && selectedEvent) {
+    return <AdminQuestionsScreen 
+      event={selectedEvent}
+      onBack={() => setView('admin_diagnostics')}
+    />;
+  }
   if (view === 'admin_event_analytics' && selectedEventId) {
     return <AdminEventAnalyticsScreen 
       eventId={selectedEventId}
       onBack={() => setView('admin_events')}
+    />;
+  }
+  if (view === 'admin_diagnostic_analytics' && selectedEventId) {
+    return <AdminEventAnalyticsScreen 
+      eventId={selectedEventId}
+      onBack={() => setView('admin_diagnostics')}
     />;
   }
   if (view === 'admin_users') {
