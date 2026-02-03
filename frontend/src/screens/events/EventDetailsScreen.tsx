@@ -116,7 +116,7 @@ export const EventDetailsScreen: React.FC<EventDetailsScreenProps> = ({ eventId,
           )}
           {event.audience && (
             <div className="event-info-item">
-              <span className="event-info-label">Аудитория:</span>
+              <span className="event-info-label">🎯 Формат:</span>
               <span className="event-info-value">{event.audience}</span>
             </div>
           )}
