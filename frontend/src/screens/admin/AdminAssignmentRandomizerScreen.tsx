@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { RandomizerQuestion, RandomizerDistribution } from '../../types';
+import { RandomizerDistribution } from '../../types';
 import { adminApi } from '../../services/adminApi';
 import { RandomizerParticipantsResponse } from '../../services/assignmentApi';
 import { useTelegram } from '../../hooks/useTelegram';
@@ -21,6 +21,7 @@ export const AdminAssignmentRandomizerScreen: React.FC<AdminAssignmentRandomizer
   const [participantsData, setParticipantsData] = useState<RandomizerParticipantsResponse | null>(null);
   const [distributions, setDistributions] = useState<RandomizerDistribution[]>([]);
   const [publishing, setPublishing] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   const loadData = async () => {
     if (!initData) return;
@@ -48,28 +49,31 @@ export const AdminAssignmentRandomizerScreen: React.FC<AdminAssignmentRandomizer
 
   const handleGeneratePreview = async () => {
     if (!initData) return;
-    setLoading(true);
+    setGenerating(true);
     try {
       const result = await adminApi.previewRandomizerDistribution(assignmentId, initData);
       setDistributions(result);
       setViewMode('preview');
-      showAlert('Предпросмотр создан');
+      showAlert('Распределение сгенерировано! Проверьте и опубликуйте результаты.');
     } catch (error: any) {
       console.error('Error generating preview:', error);
       showAlert(error.message || 'Ошибка генерации');
     } finally {
-      setLoading(false);
+      setGenerating(false);
     }
   };
 
   const handlePublish = async () => {
     if (!initData) return;
-    if (!confirm('Опубликовать результаты и начислить звёздочки участникам?')) return;
+    
+    const confirmMessage = `Подвести итоги?\n\nУчастники получат уведомления с номером стола. Звёздочки будут начислены.`;
+    
+    if (!confirm(confirmMessage)) return;
     
     setPublishing(true);
     try {
       const result = await adminApi.publishRandomizerDistribution(assignmentId, initData);
-      showAlert(`Результаты опубликованы! Начислено звёздочек: ${result.awardedCount} участникам`);
+      showAlert(`Итоги подведены! Участникам отправлены уведомления. Начислено звёздочек: ${result.awardedCount}`);
       await loadData();
     } catch (error: any) {
       console.error('Error publishing:', error);
@@ -199,16 +203,11 @@ export const AdminAssignmentRandomizerScreen: React.FC<AdminAssignmentRandomizer
         <div className="admin-list">
           {distributions.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 24 }}>
-              <p className="no-data">Нет данных</p>
+              <p className="no-data">Распределение ещё не сгенерировано</p>
               {!isDistributed && participants.length > 0 && (
-                <button 
-                  className="create-btn" 
-                  onClick={handleGeneratePreview}
-                  disabled={loading}
-                  style={{ marginTop: 12 }}
-                >
-                  {loading ? 'Генерация...' : '🎲 Сгенерировать распределение'}
-                </button>
+                <p style={{ fontSize: 13, opacity: 0.7, marginBottom: 12 }}>
+                  Нажмите кнопку ниже, чтобы случайно распределить {participants.length} участников по столам
+                </p>
               )}
             </div>
           ) : isSimpleMode ? (
@@ -254,27 +253,75 @@ export const AdminAssignmentRandomizerScreen: React.FC<AdminAssignmentRandomizer
         </div>
       )}
 
-      {/* Кнопки действий */}
-      {!isDistributed && distributions.length > 0 && (
+      {/* Кнопки действий - показываем если есть участники и не завершено */}
+      {!isDistributed && participants.length > 0 && (
         <div style={{ position: 'sticky', bottom: 0, padding: '16px', background: 'var(--tg-theme-bg-color)', borderTop: '1px solid var(--tg-theme-secondary-bg-color)' }}>
-          <div style={{ display: 'flex', gap: 8 }}>
+          {distributions.length === 0 ? (
+            // Нет распределения - показываем кнопку генерации
             <button 
               className="create-btn" 
               onClick={handleGeneratePreview}
-              disabled={loading}
-              style={{ flex: 1, background: '#666' }}
+              disabled={generating}
+              style={{ width: '100%', padding: '14px', fontSize: '16px' }}
             >
-              🔄 Перегенерировать
+              {generating ? '⏳ Генерация...' : '🎲 Сгенерировать распределение'}
             </button>
-            <button 
-              className="create-btn" 
-              onClick={handlePublish}
-              disabled={publishing}
-              style={{ flex: 1 }}
-            >
-              {publishing ? 'Публикация...' : '✅ Опубликовать'}
-            </button>
-          </div>
+          ) : (
+            // Есть распределение - показываем кнопки управления
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <button 
+                className="create-btn" 
+                onClick={handlePublish}
+                disabled={publishing}
+                style={{ 
+                  width: '100%', 
+                  padding: '14px', 
+                  fontSize: '16px',
+                  background: '#28a745'
+                }}
+              >
+                {publishing ? '⏳ Публикация...' : '✅ Подвести итоги и уведомить участников'}
+              </button>
+              <button 
+                className="create-btn" 
+                onClick={handleGeneratePreview}
+                disabled={generating}
+                style={{ width: '100%', background: '#666', fontSize: '14px' }}
+              >
+                {generating ? '⏳ Генерация...' : '🔄 Перегенерировать распределение'}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Предупреждение если нет участников */}
+      {!isDistributed && participants.length === 0 && (
+        <div style={{ 
+          padding: '20px', 
+          textAlign: 'center', 
+          background: '#fff3cd', 
+          borderRadius: '8px',
+          marginTop: '16px'
+        }}>
+          <p style={{ margin: 0, fontSize: '14px', color: '#856404' }}>
+            ⚠️ Нет участников для распределения. Дождитесь, пока пользователи нажмут кнопку "Участвую".
+          </p>
+        </div>
+      )}
+
+      {/* Результаты если уже завершено */}
+      {isDistributed && (
+        <div style={{ 
+          padding: '16px', 
+          textAlign: 'center', 
+          background: '#d4edda', 
+          borderRadius: '8px',
+          marginTop: '16px'
+        }}>
+          <p style={{ margin: 0, fontSize: '14px', color: '#155724' }}>
+            ✅ Распределение завершено. Участники получили уведомления с результатами.
+          </p>
         </div>
       )}
     </div>

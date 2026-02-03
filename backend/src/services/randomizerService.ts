@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { logger } from '../utils/logger';
+import { NotificationService } from './notificationService';
 import {
   RandomizerQuestion,
   RandomizerParticipant,
@@ -252,14 +253,20 @@ export class RandomizerService {
         throw distributionError;
       }
 
-      // Обновляем статус рандомайзера
-      const { error: updateError } = await supabase
-        .from('randomizer_questions')
-        .update({
-          status: 'distributed',
-          distributed_at: new Date().toISOString(),
-        })
-        .eq('id', randomizerId);
+      // Обновляем статус рандомайзера только если это НЕ предпросмотр
+      if (!preview) {
+        const { error: updateError } = await supabase
+          .from('randomizer_questions')
+          .update({
+            status: 'distributed',
+            distributed_at: new Date().toISOString(),
+          })
+          .eq('id', randomizerId);
+
+        if (updateError) {
+          logger.error('Error updating randomizer status', updateError instanceof Error ? updateError : new Error(String(updateError)));
+        }
+      }
 
       return (savedDistributions || []) as RandomizerDistribution[];
     } catch (error) {
@@ -341,6 +348,13 @@ export class RandomizerService {
    */
   static async publishDistribution(randomizerId: string): Promise<RandomizerDistribution[]> {
     try {
+      // Получаем данные рандомайзера для названия
+      const { data: randomizer } = await supabase
+        .from('randomizer_questions')
+        .select('*, assignment:assignments(title)')
+        .eq('id', randomizerId)
+        .single();
+
       // Получаем предпросмотр
       const previewDistributions = await this.getPreviewDistribution(randomizerId);
 
@@ -360,6 +374,7 @@ export class RandomizerService {
         randomizer_id: d.randomizer_id,
         user_id: d.user_id,
         table_number: d.table_number,
+        random_number: d.random_number,
         preview_mode: false
       }));
 
@@ -385,6 +400,31 @@ export class RandomizerService {
       if (updateError) {
         logger.error('Error updating randomizer status', updateError instanceof Error ? updateError : new Error(String(updateError)));
         throw updateError;
+      }
+
+      // Отправляем уведомления всем участникам
+      const assignmentTitle = randomizer?.assignment?.title || 'Случайное число';
+      const isTablesMode = randomizer?.randomizer_mode !== 'simple';
+      
+      for (const distribution of previewDistributions) {
+        try {
+          let message: string;
+          if (isTablesMode) {
+            message = `Результаты распределения по столам готовы! Ваш стол: №${distribution.table_number}`;
+          } else {
+            message = `Результаты готовы! Ваше случайное число: ${distribution.random_number}`;
+          }
+
+          await NotificationService.createNotification(
+            distribution.user_id,
+            'randomizer',
+            `🎲 ${assignmentTitle}`,
+            message
+          );
+        } catch (notifError) {
+          // Логируем ошибку, но не прерываем процесс
+          logger.error('Error sending randomizer notification', notifError instanceof Error ? notifError : new Error(String(notifError)));
+        }
       }
 
       return (saved || []) as RandomizerDistribution[];
