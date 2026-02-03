@@ -11,7 +11,7 @@ export const QuestionsCard: React.FC<QuestionsCardProps> = ({ onClick }) => {
       <div className="card-content">
         <img src="/vop.png" alt="Вопросы" className="card-image" />
         <h3 className="card-title">Вопросы</h3>
-        <p className="card-subtitle">Личные и общие</p>
+        <p className="card-subtitle">Про тебя и про смыслы</p>
       </div>
     </div>
   );

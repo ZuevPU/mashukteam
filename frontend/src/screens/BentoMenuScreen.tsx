@@ -39,6 +39,7 @@ import { DirectionSelectionScreen } from './DirectionSelectionScreen';
 import { SettingsScreen } from './settings/SettingsScreen';
 import { NotificationsSettingsScreen } from './settings/NotificationsSettingsScreen';
 import { SettingsCard } from '../components/bento/SettingsCard';
+import { NeighborCard } from '../components/bento/NeighborCard';
 import './BentoMenuScreen.css';
 
 type ScreenView = 
@@ -513,7 +514,14 @@ export function BentoMenuScreen() {
     });
   }
 
-  // 6. Настройки
+  // 6. Твой дружелюбный сосед
+  bentoItems.push({
+    id: 'neighbor',
+    content: <NeighborCard />,
+    size: '2x1',
+  });
+
+  // 7. Настройки
   bentoItems.push({
     id: 'settings',
     content: (

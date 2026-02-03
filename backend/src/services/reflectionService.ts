@@ -51,8 +51,8 @@ export class ReflectionService {
       if (points <= 20) return 1; // "Начал задумываться"
       if (points <= 50) return 2; // "Поймал смысл"
       if (points <= 100) return 3; // "Опять рефлексирует"
-      if (points <= 200) return 4; // "Уже хватит рефлексировать"
-      return 5; // "Мастер рефлексии"
+      if (points <= 200) return 4; // "Мастер рефлексии"
+      return 5; // "Преисполнился в рефлексии"
     };
 
     const newLevel = calculateLevel(newPoints);
@@ -136,8 +136,8 @@ export class ReflectionService {
       1: 'Начал задумываться',
       2: 'Поймал смысл',
       3: 'Опять рефлексирует',
-      4: 'Уже хватит рефлексировать',
-      5: 'Мастер рефлексии'
+      4: 'Мастер рефлексии',
+      5: 'Преисполнился в рефлексии'
     };
 
     return {

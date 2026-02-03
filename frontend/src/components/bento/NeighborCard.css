@@ -1,0 +1,74 @@
+.neighbor-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.neighbor-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.neighbor-card:active {
+  transform: scale(0.98);
+}
+
+.neighbor-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.neighbor-image {
+  width: 80px;
+  height: auto;
+  flex-shrink: 0;
+  animation: gentle-float 4s ease-in-out infinite;
+}
+
+@keyframes gentle-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+.neighbor-text {
+  flex: 1;
+}
+
+.neighbor-title {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.neighbor-subtitle {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  opacity: 0.9;
+  font-style: italic;
+}
+
+.neighbor-description {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  opacity: 0.95;
+}
+
+@media (max-width: 768px) {
+  .neighbor-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .neighbor-image {
+    width: 70px;
+  }
+}

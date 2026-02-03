@@ -14,6 +14,7 @@ export function WelcomeScreen({ onStartRegistration }: WelcomeScreenProps) {
   return (
     <div className="welcome-screen">
       <div className="welcome-content">
+        <img src="/img/man.png" alt="Персонаж" className="welcome-character" />
         <h1 className="welcome-title">Привет! 👋</h1>
         <div className="welcome-text">
           <p>Я - твой дружелюбный сосед по программе «Команда «Машука».</p>
