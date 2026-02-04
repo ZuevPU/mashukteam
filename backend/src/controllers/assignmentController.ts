@@ -69,14 +69,30 @@ export class AssignmentController {
       const { id } = req.params;
       const { initData, sendNotification, ...data } = req.body;
       
+      logger.info('updateAssignment called', { 
+        id, 
+        sendNotification, 
+        newStatus: data.status,
+        bodyKeys: Object.keys(req.body)
+      });
+      
       // Получаем текущее состояние задания для проверки изменения статуса
       const currentAssignment = await AssignmentService.getAssignmentById(id);
       const wasPublished = currentAssignment?.status === 'published';
       
+      logger.info('Assignment status check', { 
+        wasPublished, 
+        currentStatus: currentAssignment?.status,
+        newStatus: data.status,
+        sendNotification,
+        willNotify: data.status === 'published' && !wasPublished && sendNotification === true
+      });
+      
       const assignment = await AssignmentService.updateAssignment(id, data);
       
-      // Отправка уведомления, если статус изменился на published
-      if (data.status === 'published' && !wasPublished && sendNotification) {
+      // Отправка уведомления, если статус изменился на published (явная проверка === true)
+      if (data.status === 'published' && !wasPublished && sendNotification === true) {
+        logger.info('Sending notification for assignment publish', { assignmentId: assignment.id, title: assignment.title });
         notifyNewAssignment(assignment.title, assignment.reward, assignment.id).catch((err) => 
           logger.error('Error sending assignment notification', err instanceof Error ? err : new Error(String(err)))
         );

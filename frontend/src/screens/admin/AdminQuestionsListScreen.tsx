@@ -94,20 +94,49 @@ export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> =
     }
   };
 
-  const handleStatusChange = async (question: TargetedQuestion) => {
+  const handleStatusChange = async (question: TargetedQuestion, sendNotification: boolean = false) => {
     if (!initData) return;
     const newStatus = question.status === 'draft' ? 'published' : 'draft';
-    const msg = newStatus === 'published' ? 'Опубликовать вопрос?' : 'Снять с публикации?';
+    const shouldNotify = newStatus === 'published' ? sendNotification : false;
     
-    if (confirm(msg)) {
-      try {
-        await adminApi.updateTargetedQuestion(question.id, { status: newStatus }, initData);
-        showAlert(newStatus === 'published' ? 'Опубликовано' : 'Скрыто');
-        loadQuestions();
-      } catch (error) {
-        console.error('Error updating status:', error);
-        showAlert('Ошибка при обновлении');
+    console.log('handleStatusChange called:', { 
+      questionId: question.id, 
+      currentStatus: question.status,
+      newStatus, 
+      sendNotification, 
+      shouldNotify 
+    });
+    
+    try {
+      await adminApi.updateTargetedQuestion(
+        question.id, 
+        { status: newStatus, sendNotification: shouldNotify }, 
+        initData
+      );
+      showAlert(newStatus === 'published' 
+        ? (sendNotification ? 'Опубликовано и уведомления отправлены' : 'Опубликовано') 
+        : 'Скрыто');
+      loadQuestions();
+    } catch (error) {
+      console.error('Error updating status:', error);
+      showAlert('Ошибка при обновлении');
+    }
+  };
+  
+  // Показать диалог публикации с выбором уведомления
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [questionToPublish, setQuestionToPublish] = useState<TargetedQuestion | null>(null);
+  
+  const handlePublishClick = (question: TargetedQuestion) => {
+    if (question.status === 'published') {
+      // Снятие с публикации - без диалога
+      if (confirm('Снять с публикации?')) {
+        handleStatusChange(question, false);
       }
+    } else {
+      // Публикация - показываем диалог с выбором уведомления
+      setQuestionToPublish(question);
+      setShowPublishModal(true);
     }
   };
 
@@ -207,7 +236,7 @@ export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> =
       <div className="item-actions">
         <button 
           className="action-btn" 
-          onClick={() => handleStatusChange(q)}
+          onClick={() => handlePublishClick(q)}
           title={q.status === 'draft' ? 'Опубликовать' : 'Скрыть'}
         >
           {q.status === 'draft' ? '🚀' : '🔒'}
@@ -342,6 +371,51 @@ export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> =
           </>
         )}
       </div>
+
+      {/* Модальное окно публикации */}
+      {showPublishModal && questionToPublish && (
+        <div className="export-modal-overlay" onClick={() => setShowPublishModal(false)}>
+          <div className="export-modal-content" onClick={(e) => e.stopPropagation()}>
+            <h4>Опубликовать вопрос?</h4>
+            <p className="export-modal-desc" style={{fontSize: 13, marginBottom: 16}}>
+              {questionToPublish.text.substring(0, 100)}
+              {questionToPublish.text.length > 100 ? '...' : ''}
+            </p>
+            
+            <button 
+              className="export-modal-btn export-modal-btn-telegram"
+              onClick={() => {
+                handleStatusChange(questionToPublish, true);
+                setShowPublishModal(false);
+                setQuestionToPublish(null);
+              }}
+            >
+              🔔 Опубликовать с уведомлением
+            </button>
+            
+            <button 
+              className="export-modal-btn export-modal-btn-download"
+              onClick={() => {
+                handleStatusChange(questionToPublish, false);
+                setShowPublishModal(false);
+                setQuestionToPublish(null);
+              }}
+            >
+              🚀 Опубликовать без уведомления
+            </button>
+            
+            <button 
+              className="export-modal-btn export-modal-btn-cancel"
+              onClick={() => {
+                setShowPublishModal(false);
+                setQuestionToPublish(null);
+              }}
+            >
+              Отмена
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -50,20 +50,40 @@ export const AdminAssignmentsScreen: React.FC<AdminAssignmentsScreenProps> = ({
     }
   };
 
-  const handleStatusChange = async (assignment: Assignment) => {
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [assignmentToPublish, setAssignmentToPublish] = useState<Assignment | null>(null);
+
+  const handleStatusChange = async (assignment: Assignment, sendNotification: boolean = false) => {
     if (!initData) return;
     const newStatus = assignment.status === 'draft' ? 'published' : 'draft';
-    const msg = newStatus === 'published' ? 'Опубликовать задание?' : 'Снять с публикации?';
     
-    if (confirm(msg)) {
-      try {
-        await adminApi.updateAssignment(assignment.id, { status: newStatus }, initData);
-        showAlert(newStatus === 'published' ? 'Опубликовано' : 'Скрыто');
-        loadAssignments();
-      } catch (error) {
-        console.error('Error updating status:', error);
-        showAlert('Ошибка');
+    try {
+      await adminApi.updateAssignment(
+        assignment.id, 
+        { status: newStatus }, 
+        initData, 
+        newStatus === 'published' ? sendNotification : false
+      );
+      showAlert(newStatus === 'published' 
+        ? (sendNotification ? 'Опубликовано и уведомления отправлены' : 'Опубликовано') 
+        : 'Скрыто');
+      loadAssignments();
+    } catch (error) {
+      console.error('Error updating status:', error);
+      showAlert('Ошибка');
+    }
+  };
+
+  const handlePublishClick = (assignment: Assignment) => {
+    if (assignment.status === 'published') {
+      // Снятие с публикации - без диалога
+      if (confirm('Снять с публикации?')) {
+        handleStatusChange(assignment, false);
       }
+    } else {
+      // Публикация - показываем диалог с выбором уведомления
+      setAssignmentToPublish(assignment);
+      setShowPublishModal(true);
     }
   };
 
@@ -109,7 +129,7 @@ export const AdminAssignmentsScreen: React.FC<AdminAssignmentsScreenProps> = ({
               <div className="item-actions">
                 <button 
                   className="action-btn" 
-                  onClick={() => handleStatusChange(a)}
+                  onClick={() => handlePublishClick(a)}
                   title={a.status === 'draft' ? 'Опубликовать' : 'Скрыть'}
                 >
                   {a.status === 'draft' ? '🚀' : '🔒'}
@@ -136,6 +156,50 @@ export const AdminAssignmentsScreen: React.FC<AdminAssignmentsScreenProps> = ({
           ))
         )}
       </div>
+
+      {/* Модальное окно публикации */}
+      {showPublishModal && assignmentToPublish && (
+        <div className="export-modal-overlay" onClick={() => setShowPublishModal(false)}>
+          <div className="export-modal-content" onClick={(e) => e.stopPropagation()}>
+            <h4>Опубликовать задание?</h4>
+            <p className="export-modal-desc" style={{fontSize: 13, marginBottom: 16}}>
+              {assignmentToPublish.title}
+            </p>
+            
+            <button 
+              className="export-modal-btn export-modal-btn-telegram"
+              onClick={() => {
+                handleStatusChange(assignmentToPublish, true);
+                setShowPublishModal(false);
+                setAssignmentToPublish(null);
+              }}
+            >
+              🔔 Опубликовать с уведомлением
+            </button>
+            
+            <button 
+              className="export-modal-btn export-modal-btn-download"
+              onClick={() => {
+                handleStatusChange(assignmentToPublish, false);
+                setShowPublishModal(false);
+                setAssignmentToPublish(null);
+              }}
+            >
+              🚀 Опубликовать без уведомления
+            </button>
+            
+            <button 
+              className="export-modal-btn export-modal-btn-cancel"
+              onClick={() => {
+                setShowPublishModal(false);
+                setAssignmentToPublish(null);
+              }}
+            >
+              Отмена
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

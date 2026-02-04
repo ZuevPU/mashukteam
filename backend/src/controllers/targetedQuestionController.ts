@@ -205,14 +205,34 @@ export class TargetedQuestionController {
       const { id } = req.params;
       const { initData, sendNotification, ...data } = req.body;
       
+      logger.info('updateQuestion called', { 
+        id, 
+        sendNotification, 
+        newStatus: data.status,
+        bodyKeys: Object.keys(req.body)
+      });
+      
       // Получаем текущее состояние вопроса для проверки изменения статуса
       const currentQuestion = await TargetedQuestionService.getQuestionById(id);
       const wasPublished = currentQuestion?.status === 'published';
       
+      logger.info('Question status check', { 
+        wasPublished, 
+        currentStatus: currentQuestion?.status,
+        newStatus: data.status,
+        sendNotification,
+        willNotify: data.status === 'published' && !wasPublished && sendNotification === true
+      });
+      
       const question = await TargetedQuestionService.updateQuestion(id, data);
       
-      // Отправка уведомлений, если статус изменился на published
-      if (data.status === 'published' && !wasPublished && sendNotification) {
+      // Отправка уведомлений, если статус изменился на published (явная проверка === true)
+      if (data.status === 'published' && !wasPublished && sendNotification === true) {
+        logger.info('Sending notifications for question publish', { 
+          questionId: question.id, 
+          targetAudience: question.target_audience,
+          targetValues: question.target_values
+        });
         try {
           if (question.target_audience === 'all') {
             const users = await UserService.getAllUsers();
