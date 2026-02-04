@@ -86,8 +86,8 @@ export const AdminAssignmentFormScreen: React.FC<AdminAssignmentFormScreenProps>
       const status = publishMode === 'now' ? 'published' : 'draft';
       const scheduled_at = publishMode === 'scheduled' ? new Date(scheduledAt).toISOString() : null;
       
-      // Отправляем уведомление только если публикуем сейчас
-      const shouldNotify = publishMode === 'now' && sendNotification;
+      // Для немедленной публикации и для запланированной - сохраняем флаг sendNotification
+      const shouldNotify = sendNotification;
 
       if (editingAssignment) {
         const updateData = {

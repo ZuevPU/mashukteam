@@ -46,6 +46,11 @@ export class AssignmentService {
       assignmentData.scheduled_at = data.scheduled_at;
     }
 
+    // Сохраняем флаг send_notification для scheduler
+    if (data.send_notification !== undefined) {
+      assignmentData.send_notification = data.send_notification;
+    }
+
     logger.info('Creating assignment with data', { assignmentData, originalStatus: data.status });
 
     const { data: assignment, error } = await supabase

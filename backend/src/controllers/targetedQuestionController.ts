@@ -111,6 +111,9 @@ export class TargetedQuestionController {
         // Поля для шаблонов
         is_template: data.is_template,
         template_name: data.template_name,
+        // Поля для отложенной публикации
+        scheduled_at: data.scheduled_at,
+        send_notification: sendNotification,
       };
 
       // #region agent log
@@ -126,8 +129,8 @@ export class TargetedQuestionController {
         willNotify: sendNotification && question.status === 'published'
       });
       
-      // Отправка уведомлений, если запрошено
-      if (sendNotification && question.status === 'published') {
+      // Отправка уведомлений, если запрошено (явно проверяем === true)
+      if (sendNotification === true && question.status === 'published') {
         logger.info('Sending question notification', { questionId: question.id, targetAudience: data.target_audience });
         try {
           if (data.target_audience === 'all') {

@@ -69,6 +69,7 @@ export interface TargetedQuestion {
   group_order?: number; // Порядок группы для сортировки
   question_order?: number; // Порядок вопроса внутри группы
   scheduled_at?: string; // Время запланированной публикации
+  send_notification?: boolean; // Флаг отправки уведомления при публикации
   created_at: string;
   // Поля для шаблонных вопросов
   is_template?: boolean; // Флаг шаблона
@@ -98,6 +99,7 @@ export interface CreateTargetedQuestionDto {
   group_order?: number;
   question_order?: number;
   scheduled_at?: string;
+  send_notification?: boolean;
   // Поля для шаблонных вопросов
   is_template?: boolean;
   template_name?: string;

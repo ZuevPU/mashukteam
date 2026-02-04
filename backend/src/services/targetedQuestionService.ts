@@ -29,6 +29,11 @@ export class TargetedQuestionService {
       insertData.scheduled_at = data.scheduled_at;
     }
 
+    // Сохраняем флаг send_notification для scheduler
+    if (data.send_notification !== undefined) {
+      insertData.send_notification = data.send_notification;
+    }
+
     // Добавляем поля шаблона если указаны
     if (data.is_template) {
       insertData.is_template = true;
@@ -293,6 +298,11 @@ export class TargetedQuestionService {
     if (data.char_limit !== undefined) updateData.char_limit = data.char_limit || null;
     if (data.reflection_points !== undefined) updateData.reflection_points = data.reflection_points;
     if (data.status !== undefined) updateData.status = data.status;
+    
+    // Обработка полей порядка
+    if (data.group_name !== undefined) updateData.group_name = data.group_name || null;
+    if (data.group_order !== undefined) updateData.group_order = data.group_order ?? 0;
+    if (data.question_order !== undefined) updateData.question_order = data.question_order ?? 0;
 
     // Обработка options: для рандомайзера null, для других типов - массив или null
     if (data.options !== undefined) {

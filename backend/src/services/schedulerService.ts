@@ -108,8 +108,12 @@ export class SchedulerService {
             continue;
           }
 
-          // Отправляем уведомление
-          await notifyNewAssignment(assignment.title, assignment.reward, assignment.id);
+          // Отправляем уведомление только если send_notification = true (явная проверка)
+          if (assignment.send_notification === true) {
+            await notifyNewAssignment(assignment.title, assignment.reward, assignment.id);
+          } else {
+            logger.info('Skipping notification for assignment (send_notification=false)', { assignmentId: assignment.id });
+          }
           
           publishedCount++;
           logger.info('Assignment published by scheduler', { assignmentId: assignment.id, title: assignment.title });
@@ -167,18 +171,22 @@ export class SchedulerService {
             continue;
           }
 
-          // Отправляем уведомления в зависимости от target_audience
-          if (question.target_audience === 'all') {
-            const users = await UserService.getAllUsers();
-            const userIds = users.map(u => u.id);
-            await notifyTargetedQuestionToUsers(userIds, question.text, question.id);
-          } else if (question.target_audience === 'by_direction' && question.target_values) {
-            const users = await UserService.getAllUsers();
-            const targetUsers = users.filter(u => u.direction && question.target_values!.includes(u.direction));
-            const userIds = targetUsers.map(u => u.id);
-            await notifyTargetedQuestionToUsers(userIds, question.text, question.id);
-          } else if (question.target_audience === 'individual' && question.target_values) {
-            await notifyTargetedQuestionToUsers(question.target_values, question.text, question.id);
+          // Отправляем уведомления только если send_notification = true (явная проверка)
+          if (question.send_notification === true) {
+            if (question.target_audience === 'all') {
+              const users = await UserService.getAllUsers();
+              const userIds = users.map(u => u.id);
+              await notifyTargetedQuestionToUsers(userIds, question.text, question.id);
+            } else if (question.target_audience === 'by_direction' && question.target_values) {
+              const users = await UserService.getAllUsers();
+              const targetUsers = users.filter(u => u.direction && question.target_values!.includes(u.direction));
+              const userIds = targetUsers.map(u => u.id);
+              await notifyTargetedQuestionToUsers(userIds, question.text, question.id);
+            } else if (question.target_audience === 'individual' && question.target_values) {
+              await notifyTargetedQuestionToUsers(question.target_values, question.text, question.id);
+            }
+          } else {
+            logger.info('Skipping notification for question (send_notification=false)', { questionId: question.id });
           }
 
           publishedCount++;

@@ -142,6 +142,18 @@ export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> =
     return acc;
   }, {} as Record<string, TargetedQuestion[]>);
 
+  // Сортировка вопросов внутри каждой группы по question_order
+  Object.values(groupedQuestions).forEach(groupQuestions => {
+    groupQuestions.sort((a, b) => {
+      // Для экземпляров шаблонов сортируем по instance_number
+      if (a.instance_number && b.instance_number) {
+        return a.instance_number - b.instance_number;
+      }
+      // Иначе по question_order
+      return (a.question_order ?? 0) - (b.question_order ?? 0);
+    });
+  });
+
   // Сортировка групп по group_order первого вопроса
   const sortedGroups = Object.entries(groupedQuestions).sort(([, a], [, b]) => {
     const orderA = a[0]?.group_order ?? 0;

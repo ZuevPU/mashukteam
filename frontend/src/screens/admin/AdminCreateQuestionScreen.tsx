@@ -152,7 +152,9 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
       // Определяем статус и scheduled_at на основе publishMode
       const status = publishMode === 'now' ? 'published' : 'draft';
       const scheduled_at = publishMode === 'scheduled' ? new Date(scheduledAt).toISOString() : null;
-      const shouldNotify = publishMode === 'now' && sendNotification;
+      // Для немедленной публикации используем текущее значение sendNotification
+      // Для запланированной публикации также сохраняем sendNotification для scheduler
+      const shouldNotify = sendNotification;
 
       console.log('Creating question with:', {
         status,

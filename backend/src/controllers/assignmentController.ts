@@ -32,7 +32,10 @@ export class AssignmentController {
         sendNotification: sendNotification 
       });
       
-      const assignment = await AssignmentService.createAssignment(data);
+      const assignment = await AssignmentService.createAssignment({
+        ...data,
+        send_notification: sendNotification,
+      });
       
       logger.info('Assignment created', { 
         assignmentId: assignment.id, 
@@ -41,8 +44,8 @@ export class AssignmentController {
         willNotify: sendNotification && assignment.status === 'published'
       });
       
-      // Отправка уведомлений, если задание опубликовано и запрошено
-      if (sendNotification && assignment.status === 'published') {
+      // Отправка уведомлений, если задание опубликовано и запрошено (явная проверка === true)
+      if (sendNotification === true && assignment.status === 'published') {
         logger.info('Sending new assignment notification', { 
           title: assignment.title, 
           reward: assignment.reward, 

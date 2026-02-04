@@ -119,6 +119,16 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
     return acc;
   }, {} as Record<string, TargetedQuestion[]>);
 
+  // Сортировка вопросов внутри групп по question_order
+  Object.values(groupedActiveQuestions).forEach(questions => {
+    questions.sort((a, b) => {
+      if (a.instance_number && b.instance_number) {
+        return a.instance_number - b.instance_number;
+      }
+      return (a.question_order ?? 0) - (b.question_order ?? 0);
+    });
+  });
+
   // Сортировка групп по group_order первого вопроса
   const sortedActiveGroups = Object.entries(groupedActiveQuestions).sort(([, a], [, b]) => {
     const orderA = a[0]?.group_order ?? 0;
