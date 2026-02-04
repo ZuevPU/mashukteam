@@ -150,6 +150,13 @@ export const DiagnosticSurveyScreen: React.FC<DiagnosticSurveyScreenProps> = ({ 
         <h3>{event.title}</h3>
       </div>
 
+      {/* Комментарий администратора перед вопросами */}
+      {event.admin_comment && (
+        <div className="admin-comment-card">
+          <p className="admin-comment">{event.admin_comment}</p>
+        </div>
+      )}
+
       {questions.length === 0 ? (
         <div className="no-questions">
           <p>В этой диагностике пока нет вопросов</p>
@@ -230,13 +237,6 @@ export const DiagnosticSurveyScreen: React.FC<DiagnosticSurveyScreenProps> = ({ 
               );
             })}
           </div>
-
-          {/* Комментарий администратора после вопросов */}
-          {event.admin_comment && (
-            <div className="admin-comment-card">
-              <p className="admin-comment">{event.admin_comment}</p>
-            </div>
-          )}
 
           {/* Кнопка сохранения всех ответов */}
           <div className="save-all-container">

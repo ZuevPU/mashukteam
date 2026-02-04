@@ -363,5 +363,50 @@ export const adminApi = {
       { method: 'POST', body: JSON.stringify({ initData }) }
     );
     return { distributions: response.distributions, awardedCount: response.awardedCount };
+  },
+
+  // === Шаблонные вопросы ===
+
+  /**
+   * Получение всех шаблонов вопросов
+   */
+  getQuestionTemplates: async (initData: string): Promise<TargetedQuestion[]> => {
+    const response = await fetchApi<{ success: boolean; templates: TargetedQuestion[] }>(
+      '/admin/questions/templates',
+      { 
+        method: 'GET',
+        headers: {
+          'X-Init-Data': initData
+        }
+      }
+    );
+    return response.templates;
+  },
+
+  /**
+   * Публикация экземпляра шаблона (создаёт новый вопрос с автоматическим номером)
+   */
+  publishTemplateInstance: async (templateId: string, sendNotification: boolean, initData: string): Promise<TargetedQuestion> => {
+    const response = await fetchApi<{ success: boolean; instance: TargetedQuestion }>(
+      `/admin/questions/templates/${templateId}/publish`,
+      { method: 'POST', body: JSON.stringify({ initData, sendNotification }) }
+    );
+    return response.instance;
+  },
+
+  /**
+   * Получение всех экземпляров шаблона
+   */
+  getTemplateInstances: async (templateId: string, initData: string): Promise<TargetedQuestion[]> => {
+    const response = await fetchApi<{ success: boolean; instances: TargetedQuestion[] }>(
+      `/admin/questions/templates/${templateId}/instances`,
+      { 
+        method: 'GET',
+        headers: {
+          'X-Init-Data': initData
+        }
+      }
+    );
+    return response.instances;
   }
 };

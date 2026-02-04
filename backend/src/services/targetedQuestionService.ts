@@ -29,6 +29,18 @@ export class TargetedQuestionService {
       insertData.scheduled_at = data.scheduled_at;
     }
 
+    // Добавляем поля шаблона если указаны
+    if (data.is_template) {
+      insertData.is_template = true;
+      insertData.template_name = data.template_name || null;
+    }
+    if (data.template_id) {
+      insertData.template_id = data.template_id;
+    }
+    if (data.instance_number) {
+      insertData.instance_number = data.instance_number;
+    }
+
     // Обработка options: для рандомайзера null, для других типов - массив или null
     if (data.type === 'randomizer') {
       insertData.options = null;
@@ -79,10 +91,12 @@ export class TargetedQuestionService {
     answeredQuestions: TargetedQuestion[];
   }> {
     // Получаем все опубликованные вопросы, сортируем по группам
+    // Исключаем шаблоны (is_template = true) - они не показываются пользователям
     const { data: questions, error } = await supabase
       .from('targeted_questions')
       .select('*')
       .eq('status', 'published')
+      .or('is_template.is.null,is_template.eq.false') // Исключаем шаблоны
       .order('group_order', { ascending: true })
       .order('question_order', { ascending: true })
       .order('created_at', { ascending: false });
@@ -94,6 +108,9 @@ export class TargetedQuestionService {
 
     // Фильтрация на бэкенде (так как сложная логика JSONB)
     const filteredQuestions = (questions as TargetedQuestion[]).filter(q => {
+      // Дополнительная проверка: не показываем шаблоны
+      if (q.is_template) return false;
+      
       if (q.target_audience === 'all') return true;
       if (q.target_audience === 'by_direction' && userDirection) {
         return q.target_values?.includes(userDirection);
@@ -361,5 +378,134 @@ export class TargetedQuestionService {
       console.error('Error deleting targeted question:', error);
       throw error;
     }
+  }
+
+  // ==================== Методы для шаблонных вопросов ====================
+
+  /**
+   * Получение всех шаблонов (для админа)
+   */
+  static async getTemplates(): Promise<TargetedQuestion[]> {
+    const { data, error } = await supabase
+      .from('targeted_questions')
+      .select('*')
+      .eq('is_template', true)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error getting templates:', error);
+      throw error;
+    }
+
+    return data as TargetedQuestion[];
+  }
+
+  /**
+   * Получение следующего номера экземпляра для шаблона
+   */
+  static async getNextInstanceNumber(templateId: string): Promise<number> {
+    const { data, error } = await supabase
+      .from('targeted_questions')
+      .select('instance_number')
+      .eq('template_id', templateId)
+      .order('instance_number', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.error('Error getting next instance number:', error);
+      throw error;
+    }
+
+    if (data && data.length > 0 && data[0].instance_number) {
+      return data[0].instance_number + 1;
+    }
+
+    return 1;
+  }
+
+  /**
+   * Получение количества экземпляров шаблона
+   */
+  static async getTemplateInstancesCount(templateId: string): Promise<number> {
+    const { count, error } = await supabase
+      .from('targeted_questions')
+      .select('*', { count: 'exact', head: true })
+      .eq('template_id', templateId);
+
+    if (error) {
+      console.error('Error getting template instances count:', error);
+      throw error;
+    }
+
+    return count || 0;
+  }
+
+  /**
+   * Публикация экземпляра шаблона
+   * Создаёт новый вопрос на основе шаблона с автоматическим номером
+   */
+  static async publishTemplateInstance(templateId: string): Promise<TargetedQuestion> {
+    // 1. Получаем шаблон
+    const template = await this.getQuestionById(templateId);
+    if (!template) {
+      throw new Error('Шаблон не найден');
+    }
+    if (!template.is_template) {
+      throw new Error('Указанный вопрос не является шаблоном');
+    }
+
+    // 2. Получаем следующий номер экземпляра
+    const instanceNumber = await this.getNextInstanceNumber(templateId);
+
+    // 3. Создаём новый вопрос-экземпляр
+    const insertData: any = {
+      text: template.text, // Оригинальный текст вопроса
+      type: template.type,
+      target_audience: template.target_audience,
+      char_limit: template.char_limit || null,
+      reflection_points: template.reflection_points || 1,
+      status: 'published', // Сразу публикуем
+      group_name: template.group_name || null,
+      group_order: template.group_order ?? 0,
+      question_order: template.question_order ?? 0,
+      options: template.options || null,
+      target_values: template.target_values || null,
+      // Поля шаблона
+      is_template: false, // Это экземпляр, не шаблон
+      template_id: templateId,
+      template_name: template.template_name,
+      instance_number: instanceNumber,
+    };
+
+    const { data: instance, error } = await supabase
+      .from('targeted_questions')
+      .insert(insertData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating template instance:', error);
+      throw error;
+    }
+
+    return instance as TargetedQuestion;
+  }
+
+  /**
+   * Получение всех экземпляров шаблона
+   */
+  static async getTemplateInstances(templateId: string): Promise<TargetedQuestion[]> {
+    const { data, error } = await supabase
+      .from('targeted_questions')
+      .select('*')
+      .eq('template_id', templateId)
+      .order('instance_number', { ascending: true });
+
+    if (error) {
+      console.error('Error getting template instances:', error);
+      throw error;
+    }
+
+    return data as TargetedQuestion[];
   }
 }

@@ -127,8 +127,10 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
   });
 
   // Группировка архивных вопросов
+  // Приоритет: template_name, потом group_name
   const groupedAnsweredQuestions = answeredQuestions.reduce((acc, q) => {
-    const groupName = q.group_name || 'Общие вопросы';
+    // Если это экземпляр шаблона, группируем по template_name
+    const groupName = q.template_name || q.group_name || 'Общие вопросы';
     if (!acc[groupName]) {
       acc[groupName] = [];
     }
@@ -136,15 +138,39 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
     return acc;
   }, {} as Record<string, TargetedQuestion[]>);
 
+  // Сортировка внутри групп: экземпляры шаблонов по instance_number, остальные по question_order
+  Object.values(groupedAnsweredQuestions).forEach(questions => {
+    questions.sort((a, b) => {
+      if (a.instance_number && b.instance_number) {
+        return a.instance_number - b.instance_number;
+      }
+      return (a.question_order ?? 0) - (b.question_order ?? 0);
+    });
+  });
+
   const sortedAnsweredGroups = Object.entries(groupedAnsweredQuestions).sort(([, a], [, b]) => {
     const orderA = a[0]?.group_order ?? 0;
     const orderB = b[0]?.group_order ?? 0;
     return orderA - orderB;
   });
 
+  // Получение названия вопроса с учётом шаблона
+  const getQuestionDisplayTitle = (q: TargetedQuestion) => {
+    if (q.template_name && q.instance_number) {
+      return `${q.template_name} ${q.instance_number}`;
+    }
+    return q.text;
+  };
+
   // Рендер карточки вопроса (рандомайзеры отображаются в разделе «Задания»)
   const renderQuestionCard = (q: TargetedQuestion) => (
       <div key={q.id} className="question-card">
+        {/* Если это экземпляр шаблона, показываем название с номером */}
+        {q.template_name && q.instance_number && (
+          <p className="question-title" style={{fontWeight: 600, color: '#1976d2', marginBottom: 8}}>
+            {q.template_name} {q.instance_number}
+          </p>
+        )}
         <p className="question-text">{q.text}</p>
         
         <div className="answer-form">
@@ -225,9 +251,20 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
   // Рендер архивной карточки
   const renderAnsweredCard = (q: TargetedQuestion) => {
     const answer = answers.find(a => a.question_id === q.id);
+    const displayTitle = getQuestionDisplayTitle(q);
+    const isTemplateInstance = q.template_name && q.instance_number;
+    
     return (
       <div key={q.id} className="question-card answered">
-        <p className="question-text">{q.text}</p>
+        {/* Если это экземпляр шаблона, показываем название с номером */}
+        {isTemplateInstance && (
+          <p className="question-title" style={{fontWeight: 600, color: '#2e7d32', marginBottom: 8}}>
+            {displayTitle}
+          </p>
+        )}
+        <p className="question-text" style={isTemplateInstance ? {fontSize: 14, opacity: 0.8} : {}}>
+          {q.text}
+        </p>
         <div className="answer-display">
           <span className="check-icon">✓</span>
           <span>{formatAnswer(answer?.answer_data)}</span>
@@ -279,28 +316,37 @@ export const TargetedQuestionsListScreen: React.FC<TargetedQuestionsListScreenPr
       {answeredQuestions.length > 0 && (
         <>
           <h4 className="section-title" style={{marginTop: 24}}>Мои ответы / Архив ({answeredQuestions.length})</h4>
-          {sortedAnsweredGroups.map(([groupName, groupQuestions]) => (
-            <div key={groupName} style={{marginBottom: '20px'}}>
-              {sortedAnsweredGroups.length > 1 && (
-                <div style={{
-                  background: 'linear-gradient(135deg, #28a745 0%, #218838 100%)',
-                  color: '#fff',
-                  padding: '10px 16px',
-                  borderRadius: '8px',
-                  marginBottom: '12px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}>
-                  <span style={{fontWeight: 600}}>✓ {groupName}</span>
-                  <span style={{fontSize: 12, opacity: 0.9}}>{groupQuestions.length} ответ.</span>
+          {sortedAnsweredGroups.map(([groupName, groupQuestions]) => {
+            // Проверяем, является ли группа группой шаблонов
+            const isTemplateGroup = groupQuestions.some(q => q.template_name === groupName);
+            
+            return (
+              <div key={groupName} style={{marginBottom: '20px'}}>
+                {sortedAnsweredGroups.length > 1 && (
+                  <div style={{
+                    background: isTemplateGroup 
+                      ? 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)' 
+                      : 'linear-gradient(135deg, #28a745 0%, #218838 100%)',
+                    color: '#fff',
+                    padding: '10px 16px',
+                    borderRadius: '8px',
+                    marginBottom: '12px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <span style={{fontWeight: 600}}>
+                      {isTemplateGroup ? '🔄' : '✓'} {groupName}
+                    </span>
+                    <span style={{fontSize: 12, opacity: 0.9}}>{groupQuestions.length} ответ.</span>
+                  </div>
+                )}
+                <div className="questions-list">
+                  {groupQuestions.map(renderAnsweredCard)}
                 </div>
-              )}
-              <div className="questions-list">
-                {groupQuestions.map(renderAnsweredCard)}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </>
       )}
 

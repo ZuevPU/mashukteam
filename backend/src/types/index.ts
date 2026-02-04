@@ -70,6 +70,11 @@ export interface TargetedQuestion {
   question_order?: number; // Порядок вопроса внутри группы
   scheduled_at?: string; // Время запланированной публикации
   created_at: string;
+  // Поля для шаблонных вопросов
+  is_template?: boolean; // Флаг шаблона
+  template_name?: string; // Название шаблона (например "Мотивация")
+  template_id?: string; // Ссылка на родительский шаблон
+  instance_number?: number; // Номер экземпляра (1, 2, 3...)
 }
 
 export interface TargetedAnswer {
@@ -93,6 +98,11 @@ export interface CreateTargetedQuestionDto {
   group_order?: number;
   question_order?: number;
   scheduled_at?: string;
+  // Поля для шаблонных вопросов
+  is_template?: boolean;
+  template_name?: string;
+  template_id?: string;
+  instance_number?: number;
 }
 
 export type QuestionType = 'single' | 'multiple' | 'scale' | 'text' | 'randomizer';

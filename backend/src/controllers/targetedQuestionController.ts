@@ -108,6 +108,9 @@ export class TargetedQuestionController {
         group_name: data.group_name,
         group_order: data.group_order,
         question_order: data.question_order,
+        // Поля для шаблонов
+        is_template: data.is_template,
+        template_name: data.template_name,
       };
 
       // #region agent log
@@ -249,6 +252,104 @@ export class TargetedQuestionController {
     } catch (error) {
       logger.error('Delete targeted question error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при удалении вопроса' });
+    }
+  }
+
+  // ==================== Методы для шаблонных вопросов ====================
+
+  /**
+   * Получение всех шаблонов (Админ)
+   */
+  static async getTemplates(req: Request, res: Response) {
+    try {
+      const templates = await TargetedQuestionService.getTemplates();
+      
+      // Добавляем количество экземпляров для каждого шаблона
+      const templatesWithCount = await Promise.all(
+        templates.map(async (template) => {
+          const instancesCount = await TargetedQuestionService.getTemplateInstancesCount(template.id);
+          return {
+            ...template,
+            instances_count: instancesCount
+          };
+        })
+      );
+      
+      return res.json({ success: true, templates: templatesWithCount });
+    } catch (error) {
+      logger.error('Get templates error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ error: 'Ошибка при получении шаблонов' });
+    }
+  }
+
+  /**
+   * Публикация экземпляра шаблона (Админ)
+   * Создаёт новый вопрос на основе шаблона с автоматическим номером
+   */
+  static async publishTemplateInstance(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { sendNotification } = req.body;
+      
+      // Создаём экземпляр шаблона
+      const instance = await TargetedQuestionService.publishTemplateInstance(id);
+      
+      logger.info('Template instance published', {
+        templateId: id,
+        instanceId: instance.id,
+        instanceNumber: instance.instance_number,
+        templateName: instance.template_name
+      });
+      
+      // Отправка уведомлений, если запрошено
+      if (sendNotification) {
+        try {
+          // Формируем текст для уведомления с номером
+          const displayName = instance.template_name 
+            ? `${instance.template_name} ${instance.instance_number}`
+            : instance.text;
+          
+          if (instance.target_audience === 'all') {
+            const users = await UserService.getAllUsers();
+            const userIds = users.map(u => u.id);
+            notifyTargetedQuestionToUsers(userIds, displayName, instance.id).catch((err) => 
+              logger.error('Error sending template instance notification', err instanceof Error ? err : new Error(String(err)))
+            );
+          } else if (instance.target_audience === 'by_direction' && instance.target_values) {
+            const users = await UserService.getAllUsers();
+            const targetUsers = users.filter(u => u.direction && instance.target_values?.includes(u.direction));
+            const userIds = targetUsers.map(u => u.id);
+            notifyTargetedQuestionToUsers(userIds, displayName, instance.id).catch((err) => 
+              logger.error('Error sending template instance notification', err instanceof Error ? err : new Error(String(err)))
+            );
+          } else if (instance.target_audience === 'individual' && instance.target_values) {
+            notifyTargetedQuestionToUsers(instance.target_values, displayName, instance.id).catch((err) => 
+              logger.error('Error sending template instance notification', err instanceof Error ? err : new Error(String(err)))
+            );
+          }
+        } catch (notifError) {
+          logger.error('Error sending notifications', notifError instanceof Error ? notifError : new Error(String(notifError)));
+        }
+      }
+      
+      return res.status(201).json({ success: true, instance });
+    } catch (error) {
+      logger.error('Publish template instance error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ error: error instanceof Error ? error.message : 'Ошибка при публикации шаблона' });
+    }
+  }
+
+  /**
+   * Получение экземпляров шаблона (Админ)
+   */
+  static async getTemplateInstances(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const instances = await TargetedQuestionService.getTemplateInstances(id);
+      return res.json({ success: true, instances });
+    } catch (error) {
+      logger.error('Get template instances error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ error: 'Ошибка при получении экземпляров шаблона' });
     }
   }
 }

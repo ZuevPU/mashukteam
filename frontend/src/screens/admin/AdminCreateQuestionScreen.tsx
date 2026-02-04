@@ -28,7 +28,10 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
     group_name: editingQuestion?.group_name || '',
     group_order: editingQuestion?.group_order || 0,
     question_order: editingQuestion?.question_order || 0,
-    status: editingQuestion?.status || 'draft'
+    status: editingQuestion?.status || 'draft',
+    // Поля для шаблонов
+    is_template: editingQuestion?.is_template || false,
+    template_name: editingQuestion?.template_name || ''
   });
   
   // Режим публикации: draft, now, scheduled
@@ -98,6 +101,12 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
       return;
     }
 
+    // Валидация шаблонов
+    if (question.is_template && !question.template_name?.trim()) {
+      showAlert('Введите название шаблона');
+      return;
+    }
+
     if (publishMode === 'scheduled' && !scheduledAt) {
       showAlert('Выберите дату и время публикации');
       return;
@@ -122,6 +131,9 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
         group_name: question.group_name || null,
         group_order: question.group_order || 0,
         question_order: question.question_order || 0,
+        // Поля шаблона
+        is_template: question.is_template || false,
+        template_name: question.is_template ? question.template_name : null,
       };
       
       const filteredOptions = question.options?.filter((o: string) => o.trim());
@@ -360,6 +372,44 @@ export const AdminCreateQuestionScreen: React.FC<AdminCreateQuestionScreenProps>
               placeholder="0"
             />
           </div>
+        </div>
+
+        {/* ШАБЛОННЫЙ ВОПРОС */}
+        <div className="form-group" style={{ 
+          background: question.is_template ? 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)' : '#f5f5f5',
+          padding: '16px',
+          borderRadius: '12px',
+          border: question.is_template ? '2px solid #2196f3' : '1px solid #e0e0e0'
+        }}>
+          <label className="checkbox-item" style={{display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', marginBottom: question.is_template ? 12 : 0}}>
+            <input
+              type="checkbox"
+              checked={question.is_template || false}
+              onChange={(e) => setQuestion((prev: CreateTargetedQuestionRequest) => ({
+                ...prev, 
+                is_template: e.target.checked,
+                template_name: e.target.checked ? prev.template_name : ''
+              }))}
+            />
+            <span style={{ fontWeight: 600 }}>🔄 Шаблонный вопрос</span>
+          </label>
+          
+          {question.is_template && (
+            <>
+              <input
+                type="text"
+                className="form-input"
+                value={question.template_name || ''}
+                onChange={(e) => setQuestion((prev: CreateTargetedQuestionRequest) => ({...prev, template_name: e.target.value}))}
+                placeholder="Название шаблона (например: Мотивация)"
+                style={{ marginTop: 8 }}
+              />
+              <small style={{fontSize: 12, opacity: 0.7, display: 'block', marginTop: 8}}>
+                Шаблон можно публиковать несколько раз. При каждой публикации создаётся новый вопрос 
+                с автоматическим номером: "{question.template_name || 'Название'} 1", "{question.template_name || 'Название'} 2" и т.д.
+              </small>
+            </>
+          )}
         </div>
 
         {/* ПУБЛИКАЦИЯ */}

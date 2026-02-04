@@ -125,6 +125,12 @@ router.post('/admin/questions', (req, res, next) => {
 }, requireAuth, requireAdmin, TargetedQuestionController.createQuestion);
 router.put('/admin/questions/:id', requireAuth, requireAdmin, TargetedQuestionController.updateQuestion);
 router.delete('/admin/questions/:id', requireAuth, requireAdmin, TargetedQuestionController.deleteQuestion);
+
+// Шаблонные вопросы
+router.get('/admin/questions/templates', requireAuth, requireAdmin, TargetedQuestionController.getTemplates);
+router.post('/admin/questions/templates/:id/publish', requireAuth, requireAdmin, TargetedQuestionController.publishTemplateInstance);
+router.get('/admin/questions/templates/:id/instances', requireAuth, requireAdmin, TargetedQuestionController.getTemplateInstances);
+
 router.patch('/admin/users/:id/direction', requireAuth, requireAdmin, AdminController.setUserDirection);
 
 router.post('/admin/events', requireAuth, requireAdmin, AdminController.createEvent);
