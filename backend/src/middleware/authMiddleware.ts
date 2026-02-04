@@ -17,7 +17,7 @@ declare global {
  */
 export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const initData = req.body?.initData || req.headers['x-telegram-init-data'] || (req.headers['x-telegram-init-data'] as string);
+    const initData = req.body?.initData || req.headers['x-telegram-init-data'] || req.headers['x-init-data'] || req.query?.initData;
 
     if (!initData) {
       // #region agent log
