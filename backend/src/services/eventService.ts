@@ -328,4 +328,78 @@ export class EventService {
     }
   }
 
+  /**
+   * Batch-сохранение всех ответов диагностики
+   */
+  static async submitDiagnosticAnswers(
+    userId: string, 
+    eventId: string, 
+    answers: Array<{ questionId: string; answerData: any }>
+  ): Promise<Answer[]> {
+    // Проверяем, что это диагностика
+    const event = await this.getEventById(eventId);
+    if (!event || event.type !== 'diagnostic') {
+      throw new Error('Диагностика не найдена');
+    }
+
+    const savedAnswers: Answer[] = [];
+
+    for (const { questionId, answerData } of answers) {
+      // Пропускаем пустые ответы
+      if (answerData === undefined || answerData === null || answerData === '') {
+        continue;
+      }
+
+      // Проверяем, не ответил ли уже пользователь на этот вопрос
+      const { data: existingAnswer } = await supabase
+        .from('answers')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('event_id', eventId)
+        .eq('question_id', questionId)
+        .single();
+
+      if (existingAnswer) {
+        // Обновляем существующий ответ
+        const { data: answer, error } = await supabase
+          .from('answers')
+          .update({
+            answer_data: answerData,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingAnswer.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error updating diagnostic answer:', error);
+          throw error;
+        }
+
+        savedAnswers.push(answer as Answer);
+      } else {
+        // Создаем новый ответ
+        const { data: answer, error } = await supabase
+          .from('answers')
+          .insert({
+            user_id: userId,
+            event_id: eventId,
+            question_id: questionId,
+            answer_data: answerData
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error creating diagnostic answer:', error);
+          throw error;
+        }
+
+        savedAnswers.push(answer as Answer);
+      }
+    }
+
+    return savedAnswers;
+  }
+
 }

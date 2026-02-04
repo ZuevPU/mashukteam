@@ -43,6 +43,7 @@ router.post('/events/:id/note/get', requireAuth, EventController.getEventNote); 
 router.post('/events/notes/my', requireAuth, EventController.getUserEventNotes); // POST because we send initData
 router.post('/events/:id/diagnostic/questions', requireAuth, EventController.getDiagnosticQuestions); // POST because we send initData
 router.post('/events/:id/diagnostic/answer', requireAuth, EventController.submitDiagnosticAnswer); // POST because we send initData
+router.post('/events/:id/diagnostic/answers', requireAuth, EventController.submitDiagnosticAnswers); // Batch save all answers
 
 import { TargetedQuestionController } from '../controllers/targetedQuestionController';
 import { RandomizerController } from '../controllers/randomizerController';

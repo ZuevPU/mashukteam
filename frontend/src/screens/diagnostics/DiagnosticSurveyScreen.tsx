@@ -31,7 +31,7 @@ export const DiagnosticSurveyScreen: React.FC<DiagnosticSurveyScreenProps> = ({ 
   const [userAnswers, setUserAnswers] = useState<Map<string, Answer>>(new Map());
   const [loading, setLoading] = useState(true);
   const [inputValues, setInputValues] = useState<Record<string, any>>({});
-  const [submitting, setSubmitting] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -77,36 +77,68 @@ export const DiagnosticSurveyScreen: React.FC<DiagnosticSurveyScreenProps> = ({ 
     setInputValues(prev => ({ ...prev, [questionId]: newValue }));
   };
 
-  const handleSubmit = async (questionId: string) => {
+  const handleSubmitAll = async () => {
     if (!initData) return;
-    const value = inputValues[questionId];
     
-    if (value === undefined || value === null || value === '') {
-      showAlert('Введите ответ');
+    // Собираем все ответы
+    const answersToSubmit: Array<{ questionId: string; answerData: any }> = [];
+    
+    for (const question of questions) {
+      const value = inputValues[question.id];
+      if (value !== undefined && value !== null && value !== '' && 
+          !(Array.isArray(value) && value.length === 0)) {
+        answersToSubmit.push({
+          questionId: question.id,
+          answerData: value
+        });
+      }
+    }
+
+    if (answersToSubmit.length === 0) {
+      showAlert('Ответьте хотя бы на один вопрос');
       return;
     }
 
-    setSubmitting(questionId);
+    setSubmitting(true);
     try {
-      const answer = await eventApi.submitDiagnosticAnswer(eventId, questionId, value, initData);
-      setUserAnswers(prev => {
-        const newMap = new Map(prev);
-        newMap.set(questionId, answer as any);
-        return newMap;
+      const result = await eventApi.submitDiagnosticAnswers(eventId, answersToSubmit, initData);
+      
+      // Обновляем карту сохраненных ответов
+      const newAnswersMap = new Map(userAnswers);
+      result.answers.forEach((answer: any) => {
+        newAnswersMap.set(answer.question_id, answer);
       });
-      showAlert('Ответ сохранен!');
+      setUserAnswers(newAnswersMap);
+      
+      showAlert(`Сохранено ${result.count} ответов!`);
     } catch (error) {
-      console.error('Error submitting answer:', error);
-      showAlert('Ошибка отправки ответа');
+      console.error('Error submitting answers:', error);
+      showAlert('Ошибка сохранения ответов');
     } finally {
-      setSubmitting(null);
+      setSubmitting(false);
     }
   };
 
-  const formatAnswer = (answer: any) => {
-    if (Array.isArray(answer)) return answer.join(', ');
-    return String(answer);
-  };
+  // Подсчет заполненных ответов
+  const filledAnswersCount = questions.filter(q => {
+    const value = inputValues[q.id];
+    return value !== undefined && value !== null && value !== '' && 
+           !(Array.isArray(value) && value.length === 0);
+  }).length;
+
+  // Проверяем, есть ли изменения по сравнению с сохраненными ответами
+  const hasChanges = questions.some(q => {
+    const currentValue = inputValues[q.id];
+    const savedAnswer = userAnswers.get(q.id);
+    
+    if (!savedAnswer && currentValue !== undefined && currentValue !== null && currentValue !== '') {
+      return true; // Новый ответ
+    }
+    if (savedAnswer && JSON.stringify(currentValue) !== JSON.stringify(savedAnswer.answer_data)) {
+      return true; // Изменённый ответ
+    }
+    return false;
+  });
 
   if (loading) return <div className="loading">Загрузка...</div>;
   if (!event) return <div className="error">Диагностика не найдена</div>;
@@ -118,120 +150,118 @@ export const DiagnosticSurveyScreen: React.FC<DiagnosticSurveyScreenProps> = ({ 
         <h3>{event.title}</h3>
       </div>
 
-      {(event.description || event.admin_comment) && (
-        <div className="event-info-card" style={{ marginBottom: '20px' }}>
-          {event.description && (
-            <p className="event-info-description">{event.description}</p>
-          )}
-          {event.admin_comment && (
-            <p className="admin-comment">{event.admin_comment}</p>
-          )}
-        </div>
-      )}
-
       {questions.length === 0 ? (
         <div className="no-questions">
           <p>В этой диагностике пока нет вопросов</p>
         </div>
       ) : (
-        <div className="questions-list">
-          {questions.map((question, index) => {
-            const savedAnswer = userAnswers.get(question.id);
-            const currentValue = inputValues[question.id] ?? savedAnswer?.answer_data;
-            const isAnswered = !!savedAnswer;
+        <>
+          <div className="questions-list">
+            {questions.map((question, index) => {
+              const currentValue = inputValues[question.id];
 
-            return (
-              <div key={question.id} className="question-card">
-                <div className="question-header">
-                  <span className="question-number">Вопрос {index + 1}</span>
-                  {isAnswered && <span className="answered-badge">✓ Отвечено</span>}
-                </div>
-                <h4 className="question-text">{question.text}</h4>
-
-                {question.type === 'single' && question.options && (
-                  <div className="options-list">
-                    {question.options.map((option) => (
-                      <label key={option} className="option-label">
-                        <input
-                          type="radio"
-                          name={`question_${question.id}`}
-                          value={option}
-                          checked={currentValue === option}
-                          onChange={(e) => handleInputChange(question.id, e.target.value)}
-                        />
-                        <span>{option}</span>
-                      </label>
-                    ))}
+              return (
+                <div key={question.id} className="question-card">
+                  <div className="question-header">
+                    <span className="question-number">Вопрос {index + 1}</span>
                   </div>
-                )}
+                  <h4 className="question-text">{question.text}</h4>
 
-                {question.type === 'multiple' && question.options && (
-                  <div className="options-list">
-                    {question.options.map((option) => (
-                      <label key={option} className="option-label">
-                        <input
-                          type="checkbox"
-                          checked={(currentValue || []).includes(option)}
-                          onChange={(e) => handleMultipleChange(question.id, option, e.target.checked)}
-                        />
-                        <span>{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-
-                {question.type === 'scale' && (
-                  <div className="scale-input">
-                    <input
-                      type="range"
-                      min="1"
-                      max="10"
-                      value={currentValue || 5}
-                      onChange={(e) => handleInputChange(question.id, parseInt(e.target.value))}
-                    />
-                    <div className="scale-labels">
-                      <span>1</span>
-                      <span className="scale-value">{currentValue || 5}</span>
-                      <span>10</span>
+                  {question.type === 'single' && question.options && (
+                    <div className="options-list">
+                      {question.options.map((option) => (
+                        <label key={option} className="option-label">
+                          <input
+                            type="radio"
+                            name={`question_${question.id}`}
+                            value={option}
+                            checked={currentValue === option}
+                            onChange={(e) => handleInputChange(question.id, e.target.value)}
+                          />
+                          <span>{option}</span>
+                        </label>
+                      ))}
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {question.type === 'text' && (
-                  <textarea
-                    className="form-textarea"
-                    value={currentValue || ''}
-                    onChange={(e) => handleInputChange(question.id, e.target.value)}
-                    placeholder="Введите ваш ответ..."
-                    maxLength={question.char_limit}
-                    rows={4}
-                  />
-                )}
+                  {question.type === 'multiple' && question.options && (
+                    <div className="options-list">
+                      {question.options.map((option) => (
+                        <label key={option} className="option-label">
+                          <input
+                            type="checkbox"
+                            checked={(currentValue || []).includes(option)}
+                            onChange={(e) => handleMultipleChange(question.id, option, e.target.checked)}
+                          />
+                          <span>{option}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
 
-                <button
-                  onClick={() => handleSubmit(question.id)}
-                  disabled={submitting === question.id || !currentValue}
-                  className="submit-btn"
-                >
-                  {submitting === question.id ? 'Сохранение...' : isAnswered ? 'Обновить ответ' : 'Сохранить ответ'}
-                </button>
+                  {question.type === 'scale' && (
+                    <div className="scale-input">
+                      <input
+                        type="range"
+                        min="1"
+                        max="10"
+                        value={currentValue || 5}
+                        onChange={(e) => handleInputChange(question.id, parseInt(e.target.value))}
+                      />
+                      <div className="scale-labels">
+                        <span>1</span>
+                        <span className="scale-value">{currentValue || 5}</span>
+                        <span>10</span>
+                      </div>
+                    </div>
+                  )}
 
-                {isAnswered && (
-                  <div className="saved-answer">
-                    <strong>Сохраненный ответ:</strong> {formatAnswer(savedAnswer.answer_data)}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+                  {question.type === 'text' && (
+                    <textarea
+                      className="form-textarea"
+                      value={currentValue || ''}
+                      onChange={(e) => handleInputChange(question.id, e.target.value)}
+                      placeholder="Введите ваш ответ..."
+                      maxLength={question.char_limit}
+                      rows={4}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
-      {/* Текст в конце диагностики */}
-      {event.footer_text && (
-        <div className="footer-text-card">
-          <p className="footer-text">{event.footer_text}</p>
-        </div>
+          {/* Комментарий администратора после вопросов */}
+          {event.admin_comment && (
+            <div className="admin-comment-card">
+              <p className="admin-comment">{event.admin_comment}</p>
+            </div>
+          )}
+
+          {/* Кнопка сохранения всех ответов */}
+          <div className="save-all-container">
+            <div className="answers-count">
+              Заполнено: {filledAnswersCount} из {questions.length}
+            </div>
+            <button
+              onClick={handleSubmitAll}
+              disabled={submitting || filledAnswersCount === 0}
+              className="save-all-btn"
+            >
+              {submitting ? 'Сохранение...' : 'Сохранить все ответы'}
+            </button>
+            {userAnswers.size > 0 && !hasChanges && (
+              <p className="saved-status">✓ Все ответы сохранены</p>
+            )}
+          </div>
+
+          {/* Текст в конце диагностики */}
+          {event.footer_text && (
+            <div className="footer-text-card">
+              <p className="footer-text">{event.footer_text}</p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

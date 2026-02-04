@@ -91,19 +91,41 @@ export async function verifyAuth(req: AuthRequest, res: Response) {
       logger.info('User created', { userId: user.id, status: user.status });
     }
 
-    // Нормализуем статус: если не 'registered', считаем 'new'
-    // Это важно для старых пользователей, у которых статус может быть NULL или другим значением
-    const normalizedStatus = user.status === 'registered' ? 'registered' : 'new';
+    // Определяем статус пользователя
+    // Если статус 'registered' - оставляем как есть
+    // Если статус не 'registered', но есть first_name и last_name - значит регистрация была пройдена, 
+    // восстанавливаем статус 'registered'
+    // В остальных случаях - статус 'new'
+    let normalizedStatus: 'new' | 'registered' = 'new';
     
-    // Если статус был не 'registered', но пользователь существует, обновляем статус на 'new'
-    if (user.status !== 'registered' && user.status !== 'new') {
-      logger.info('Normalizing user status', { from: user.status, to: 'new', userId: user.id });
+    if (user.status === 'registered') {
+      normalizedStatus = 'registered';
+    } else if (user.first_name && user.last_name && user.first_name.trim() && user.last_name.trim()) {
+      // Пользователь прошёл регистрацию ранее, но статус сбился - восстанавливаем
+      logger.info('Restoring registered status for user with completed profile', { 
+        userId: user.id, 
+        from: user.status, 
+        to: 'registered',
+        first_name: user.first_name,
+        last_name: user.last_name
+      });
+      try {
+        await UserService.updateUserStatus(user.telegram_id, 'registered');
+        user.status = 'registered';
+        normalizedStatus = 'registered';
+      } catch (error) {
+        logger.error('Error restoring user status', error instanceof Error ? error : new Error(String(error)));
+        // Всё равно считаем его зарегистрированным на фронтенде
+        normalizedStatus = 'registered';
+      }
+    } else if (user.status !== 'new') {
+      // Статус был NULL или другим, обновляем на 'new'
+      logger.info('Normalizing user status to new', { from: user.status, to: 'new', userId: user.id });
       try {
         await UserService.updateUserStatus(user.telegram_id, 'new');
         user.status = 'new';
       } catch (error) {
         logger.error('Error updating user status', error instanceof Error ? error : new Error(String(error)));
-        // Продолжаем с текущим статусом
       }
     }
 

@@ -125,4 +125,25 @@ export class EventController {
       return res.status(500).json({ error: 'Ошибка при отправке ответа' });
     }
   }
+
+  /**
+   * Batch-сохранение всех ответов диагностики
+   */
+  static async submitDiagnosticAnswers(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
+      const { answers } = req.body;
+
+      if (!answers || !Array.isArray(answers)) {
+        return res.status(400).json({ error: 'answers должен быть массивом' });
+      }
+
+      const savedAnswers = await EventService.submitDiagnosticAnswers(userId, id, answers);
+      return res.json({ success: true, answers: savedAnswers, count: savedAnswers.length });
+    } catch (error) {
+      logger.error('Submit diagnostic answers error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ error: 'Ошибка при сохранении ответов' });
+    }
+  }
 }

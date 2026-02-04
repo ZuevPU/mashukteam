@@ -122,4 +122,23 @@ export const eventApi = {
     });
     return response.answer;
   },
+
+  /**
+   * Batch-сохранение всех ответов диагностики
+   */
+  submitDiagnosticAnswers: async (
+    eventId: string,
+    answers: Array<{ questionId: string; answerData: any }>,
+    initData: string
+  ): Promise<{ answers: Array<{ id: string; answer_data: any }>; count: number }> => {
+    const response = await fetchApi<{
+      success: boolean;
+      answers: Array<{ id: string; answer_data: any }>;
+      count: number;
+    }>(`/events/${eventId}/diagnostic/answers`, {
+      method: 'POST',
+      body: JSON.stringify({ initData, answers }),
+    });
+    return { answers: response.answers, count: response.count };
+  },
 };
