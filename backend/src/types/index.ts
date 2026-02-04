@@ -326,6 +326,7 @@ export interface Assignment {
   target_values?: string[];
   status: 'draft' | 'published';
   scheduled_at?: string; // Время запланированной публикации
+  send_notification?: boolean; // Флаг отправки уведомления при публикации
   created_at: string;
   // Поля для random_number
   randomizer_mode?: RandomizerMode;
@@ -358,6 +359,7 @@ export interface CreateAssignmentDto {
   target_type: AssignmentTargetType;
   target_values?: string[];
   scheduled_at?: string;
+  send_notification?: boolean; // Флаг отправки уведомления при публикации
   // Поля для random_number
   randomizer_mode?: RandomizerMode;
   tables_count?: number;
