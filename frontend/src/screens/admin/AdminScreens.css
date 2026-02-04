@@ -342,3 +342,87 @@
   min-height: 200px;
   color: var(--color-text-primary, #2C2B2B);
 }
+
+/* Export Modal Styles */
+.export-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.export-modal-content {
+  background: var(--color-bg-card, #FFFFFF);
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 320px;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.export-modal-content h4 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: var(--color-text-primary, #2C2B2B);
+}
+
+.export-modal-desc {
+  margin: 0 0 20px 0;
+  font-size: 14px;
+  color: var(--color-text-secondary, #666);
+}
+
+.export-modal-btn {
+  display: block;
+  width: 100%;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 10px;
+}
+
+.export-modal-btn:last-child {
+  margin-bottom: 0;
+}
+
+.export-modal-btn-download {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+}
+
+.export-modal-btn-download:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.export-modal-btn-telegram {
+  background: linear-gradient(135deg, #0088cc 0%, #00a2e8 100%);
+  color: #fff;
+}
+
+.export-modal-btn-telegram:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 136, 204, 0.4);
+}
+
+.export-modal-btn-cancel {
+  background: var(--color-bg-primary, #F8F8F7);
+  color: var(--color-text-secondary, #666);
+  border: 1px solid var(--color-border, #e0e0e0);
+}
+
+.export-modal-btn-cancel:hover {
+  background: var(--color-bg-card, #eee);
+}

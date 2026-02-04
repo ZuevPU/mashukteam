@@ -156,6 +156,7 @@ router.post('/admin/export/questions', requireAuth, requireAdmin, ExportControll
 router.post('/admin/export/users', requireAuth, requireAdmin, ExportController.exportUsers);
 router.post('/admin/export/all', requireAuth, requireAdmin, ExportController.exportAll);
 router.post('/admin/export/full', requireAuth, requireAdmin, ExportController.exportFullApplication);
+router.post('/admin/export/send-telegram', requireAuth, requireAdmin, ExportController.sendExportToTelegram);
 
 // === Admin Directions ===
 router.post('/admin/directions', requireAuth, requireAdmin, DirectionController.createDirection);

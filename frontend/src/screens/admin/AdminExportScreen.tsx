@@ -15,12 +15,21 @@ interface ExportFilters {
   eventId?: string;
 }
 
+interface ExportOption {
+  endpoint: string;
+  filename: string;
+  label: string;
+  exportType: string;
+}
+
 export const AdminExportScreen: React.FC<AdminExportScreenProps> = ({ onBack }) => {
   const { initData, showAlert } = useTelegram();
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState<string | null>(null);
   const [directions, setDirections] = useState<Direction[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [selectedExport, setSelectedExport] = useState<ExportOption | null>(null);
   
   const [filters, setFilters] = useState<ExportFilters>({
     dateFrom: '',
@@ -51,28 +60,34 @@ export const AdminExportScreen: React.FC<AdminExportScreenProps> = ({ onBack }) 
     }
   };
 
-  const handleExport = async (endpoint: string, filename: string, label: string) => {
-    if (!initData) {
-      showAlert('Ошибка авторизации');
-      return;
-    }
-
+  // Открывает popup с выбором способа экспорта
+  const openExportModal = (endpoint: string, filename: string, label: string, exportType: string) => {
     if (exporting) {
       showAlert('Экспорт уже выполняется, подождите...');
       return;
     }
+    setSelectedExport({ endpoint, filename, label, exportType });
+    setShowExportModal(true);
+  };
 
-    setExporting(label);
+  // Скачивание файла (старый функционал)
+  const handleDownload = async () => {
+    if (!initData || !selectedExport) {
+      showAlert('Ошибка авторизации');
+      return;
+    }
+
+    setShowExportModal(false);
+    setExporting(selectedExport.label);
 
     try {
-      // Формируем фильтры для отправки
       const filtersToSend: any = {};
       if (filters.dateFrom) filtersToSend.dateFrom = filters.dateFrom;
       if (filters.dateTo) filtersToSend.dateTo = filters.dateTo;
       if (filters.direction) filtersToSend.direction = filters.direction;
       if (filters.eventId) filtersToSend.eventId = filters.eventId;
 
-      const response = await fetch(buildApiEndpoint(endpoint), {
+      const response = await fetch(buildApiEndpoint(selectedExport.endpoint), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -89,18 +104,64 @@ export const AdminExportScreen: React.FC<AdminExportScreenProps> = ({ onBack }) 
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${filename}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.download = `${selectedExport.filename}_${new Date().toISOString().split('T')[0]}.xlsx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
       
-      showAlert(`Экспорт "${label}" завершен`);
+      showAlert(`Экспорт "${selectedExport.label}" завершен`);
     } catch (error: any) {
       console.error('Export error:', error);
       showAlert(`Ошибка экспорта: ${error.message || 'Неизвестная ошибка'}`);
     } finally {
       setExporting(null);
+      setSelectedExport(null);
+    }
+  };
+
+  // Отправка в Telegram (новый функционал)
+  const handleSendToTelegram = async () => {
+    if (!initData || !selectedExport) {
+      showAlert('Ошибка авторизации');
+      return;
+    }
+
+    setShowExportModal(false);
+    setExporting(selectedExport.label);
+
+    try {
+      const filtersToSend: any = {};
+      if (filters.dateFrom) filtersToSend.dateFrom = filters.dateFrom;
+      if (filters.dateTo) filtersToSend.dateTo = filters.dateTo;
+      if (filters.direction) filtersToSend.direction = filters.direction;
+      if (filters.eventId) filtersToSend.eventId = filters.eventId;
+
+      const response = await fetch(buildApiEndpoint('/admin/export/send-telegram'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          initData, 
+          exportType: selectedExport.exportType,
+          ...filtersToSend 
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || data.error || 'Ошибка отправки');
+      }
+      
+      showAlert('Отчёт отправлен в Telegram');
+    } catch (error: any) {
+      console.error('Send to Telegram error:', error);
+      showAlert(`Ошибка: ${error.message || 'Не удалось отправить в Telegram'}`);
+    } finally {
+      setExporting(null);
+      setSelectedExport(null);
     }
   };
 
@@ -201,10 +262,10 @@ export const AdminExportScreen: React.FC<AdminExportScreenProps> = ({ onBack }) 
           <button
             className="create-btn"
             style={{ background: '#fff', color: '#764ba2', fontWeight: 'bold', width: '100%' }}
-            onClick={() => handleExport('/admin/export/full', 'mashuk_full_export', 'Полный экспорт')}
+            onClick={() => openExportModal('/admin/export/full', 'mashuk_full_export', 'Полный экспорт', 'full')}
             disabled={!!exporting}
           >
-            {exporting === 'Полный экспорт' ? '⏳ Экспорт...' : '📥 Скачать полный экспорт'}
+            {exporting === 'Полный экспорт' ? '⏳ Экспорт...' : '📥 Экспорт'}
           </button>
         </div>
 
@@ -215,42 +276,42 @@ export const AdminExportScreen: React.FC<AdminExportScreenProps> = ({ onBack }) 
           </p>
           <button
             className="create-btn"
-            onClick={() => handleExport('/admin/export/users', 'users_export', 'Пользователи')}
+            onClick={() => openExportModal('/admin/export/users', 'users_export', 'Пользователи', 'users')}
             disabled={!!exporting}
           >
             {exporting === 'Пользователи' ? 'Экспорт...' : '👥 Экспорт пользователей'}
           </button>
           <button
             className="create-btn"
-            onClick={() => handleExport('/admin/export/answers', 'answers_export', 'Ответы')}
+            onClick={() => openExportModal('/admin/export/answers', 'answers_export', 'Ответы', 'answers')}
             disabled={!!exporting}
           >
             {exporting === 'Ответы' ? 'Экспорт...' : '💬 Экспорт ответов'}
           </button>
           <button
             className="create-btn"
-            onClick={() => handleExport('/admin/export/events', 'events_export', 'Программы')}
+            onClick={() => openExportModal('/admin/export/events', 'events_export', 'Программы', 'events')}
             disabled={!!exporting}
           >
             {exporting === 'Программы' ? 'Экспорт...' : '📅 Экспорт программ'}
           </button>
           <button
             className="create-btn"
-            onClick={() => handleExport('/admin/export/diagnostics', 'diagnostics_export', 'Диагностики')}
+            onClick={() => openExportModal('/admin/export/diagnostics', 'diagnostics_export', 'Диагностики', 'diagnostics')}
             disabled={!!exporting}
           >
             {exporting === 'Диагностики' ? 'Экспорт...' : '📊 Экспорт диагностик'}
           </button>
           <button
             className="create-btn"
-            onClick={() => handleExport('/admin/export/assignments', 'assignments_export', 'Задания')}
+            onClick={() => openExportModal('/admin/export/assignments', 'assignments_export', 'Задания', 'assignments')}
             disabled={!!exporting}
           >
             {exporting === 'Задания' ? 'Экспорт...' : '📝 Экспорт заданий'}
           </button>
           <button
             className="create-btn"
-            onClick={() => handleExport('/admin/export/questions', 'questions_export', 'Вопросы')}
+            onClick={() => openExportModal('/admin/export/questions', 'questions_export', 'Вопросы', 'questions')}
             disabled={!!exporting}
           >
             {exporting === 'Вопросы' ? 'Экспорт...' : '❓ Экспорт вопросов'}
@@ -265,13 +326,44 @@ export const AdminExportScreen: React.FC<AdminExportScreenProps> = ({ onBack }) 
           <button
             className="create-btn"
             style={{ background: '#666' }}
-            onClick={() => handleExport('/admin/export/all', 'raw_tables_export', 'Сырые таблицы')}
+            onClick={() => openExportModal('/admin/export/all', 'raw_tables_export', 'Сырые таблицы', 'all')}
             disabled={!!exporting}
           >
             {exporting === 'Сырые таблицы' ? 'Экспорт...' : '🗄️ Экспорт сырых таблиц БД'}
           </button>
         </div>
       </div>
+
+      {/* Popup выбора способа экспорта */}
+      {showExportModal && selectedExport && (
+        <div className="export-modal-overlay" onClick={() => setShowExportModal(false)}>
+          <div className="export-modal-content" onClick={(e) => e.stopPropagation()}>
+            <h4>Экспорт: {selectedExport.label}</h4>
+            <p className="export-modal-desc">Выберите способ получения отчёта</p>
+            
+            <button 
+              className="export-modal-btn export-modal-btn-download"
+              onClick={handleDownload}
+            >
+              📥 Скачать файл
+            </button>
+            
+            <button 
+              className="export-modal-btn export-modal-btn-telegram"
+              onClick={handleSendToTelegram}
+            >
+              📨 Отправить в Telegram
+            </button>
+            
+            <button 
+              className="export-modal-btn export-modal-btn-cancel"
+              onClick={() => setShowExportModal(false)}
+            >
+              Отмена
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

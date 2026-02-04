@@ -607,3 +607,71 @@ export async function sendBroadcastToUsers(
   
   return results;
 }
+
+/**
+ * Отправка документа (файла) пользователю через Telegram Bot API
+ */
+export async function sendDocumentToUser(
+  telegramId: number,
+  fileBuffer: Buffer,
+  filename: string,
+  caption?: string
+): Promise<boolean> {
+  if (!BOT_TOKEN) {
+    logger.warn('TELEGRAM_BOT_TOKEN не установлен, документ не отправлен');
+    return false;
+  }
+
+  try {
+    // Создаём FormData для отправки файла
+    const formData = new FormData();
+    formData.append('chat_id', telegramId.toString());
+    
+    // Создаём Blob из Buffer для отправки файла
+    const blob = new Blob([fileBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    formData.append('document', blob, filename);
+    
+    if (caption) {
+      formData.append('caption', caption);
+      formData.append('parse_mode', 'HTML');
+    }
+
+    const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      let errorData: any = {};
+      try {
+        const errorText = await response.text();
+        errorData = JSON.parse(errorText);
+      } catch (parseError) {
+        errorData = { description: 'Unknown error' };
+      }
+      
+      const errorCode = response.status;
+      const errorDescription = errorData.description || 'Unknown error';
+      
+      if (errorCode === 403) {
+        logger.warn('User blocked the bot', { telegramId, errorDescription });
+        return false;
+      } else if (errorCode === 400) {
+        logger.warn('Invalid chat_id or document', { telegramId, errorDescription });
+        return false;
+      } else if (errorCode === 429) {
+        logger.warn('Rate limit exceeded', { telegramId });
+        return false;
+      }
+      
+      logger.error('Telegram send document error', new Error(`Failed to send document to ${telegramId}: ${errorDescription}`));
+      return false;
+    }
+    
+    logger.debug('Telegram document sent successfully', { telegramId, filename });
+    return true;
+  } catch (error) {
+    logger.error('Error sending telegram document', error instanceof Error ? error : new Error(String(error)));
+    return false;
+  }
+}

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { ExportService } from '../services/exportService';
 import { logger } from '../utils/logger';
 import { ExportFilters } from '../types';
+import { sendDocumentToUser } from '../utils/telegramBot';
 
 export class ExportController {
   /**
@@ -202,6 +203,105 @@ export class ExportController {
       logger.error('Full application export error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ 
         error: 'Ошибка при полном экспорте приложения',
+        message: error.message || 'Неизвестная ошибка'
+      });
+    }
+  }
+
+  /**
+   * Отправка экспорта в Telegram администратору
+   */
+  static async sendExportToTelegram(req: Request, res: Response) {
+    try {
+      const { exportType } = req.body;
+      const user = (req as any).user;
+      
+      if (!user || !user.telegram_id) {
+        return res.status(401).json({ error: 'Не удалось получить данные пользователя' });
+      }
+      
+      logger.info('Starting export to Telegram', { exportType, userId: user.id, telegramId: user.telegram_id });
+      
+      // Получаем фильтры из body запроса
+      const filters: ExportFilters = {
+        dateFrom: req.body.dateFrom,
+        dateTo: req.body.dateTo,
+        direction: req.body.direction,
+        eventId: req.body.eventId,
+      };
+      
+      // Удаляем undefined значения
+      Object.keys(filters).forEach(key => {
+        if (filters[key as keyof ExportFilters] === undefined) {
+          delete filters[key as keyof ExportFilters];
+        }
+      });
+      
+      let excelBuffer: Buffer;
+      let filename: string;
+      let label: string;
+      
+      // Генерируем Excel в зависимости от типа экспорта
+      switch (exportType) {
+        case 'full':
+          excelBuffer = await ExportService.exportFullApplication();
+          filename = `mashuk_full_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+          label = 'Полный экспорт';
+          break;
+        case 'users':
+          excelBuffer = await ExportService.exportUsersFull(Object.keys(filters).length > 0 ? filters : undefined);
+          filename = `users_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+          label = 'Пользователи';
+          break;
+        case 'answers':
+          excelBuffer = await ExportService.exportAnswersToExcel();
+          filename = `answers_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+          label = 'Ответы';
+          break;
+        case 'events':
+          excelBuffer = await ExportService.exportEvents();
+          filename = `events_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+          label = 'Программы';
+          break;
+        case 'diagnostics':
+          excelBuffer = await ExportService.exportDiagnosticsWithResults();
+          filename = `diagnostics_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+          label = 'Диагностики';
+          break;
+        case 'assignments':
+          excelBuffer = await ExportService.exportAssignmentsWithResults();
+          filename = `assignments_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+          label = 'Задания';
+          break;
+        case 'questions':
+          excelBuffer = await ExportService.exportQuestionsWithAnswers();
+          filename = `questions_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+          label = 'Вопросы';
+          break;
+        case 'all':
+          excelBuffer = await ExportService.exportAllTables();
+          filename = `raw_tables_export_${new Date().toISOString().split('T')[0]}.xlsx`;
+          label = 'Сырые таблицы БД';
+          break;
+        default:
+          return res.status(400).json({ error: 'Неизвестный тип экспорта' });
+      }
+      
+      // Отправляем документ в Telegram
+      const caption = `📊 <b>Экспорт: ${label}</b>\n\nДата: ${new Date().toLocaleDateString('ru-RU')}`;
+      const success = await sendDocumentToUser(user.telegram_id, excelBuffer, filename, caption);
+      
+      if (success) {
+        logger.info('Export sent to Telegram successfully', { exportType, filename, telegramId: user.telegram_id });
+        return res.json({ success: true, message: 'Отчёт отправлен в Telegram' });
+      } else {
+        logger.error('Failed to send export to Telegram', new Error(`Failed for user ${user.telegram_id}`));
+        return res.status(500).json({ error: 'Не удалось отправить файл в Telegram' });
+      }
+    } catch (error: any) {
+      logger.error('Send export to Telegram error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ 
+        error: 'Ошибка при отправке экспорта в Telegram',
         message: error.message || 'Неизвестная ошибка'
       });
     }
