@@ -195,7 +195,7 @@ export const adminApi = {
    */
   updateTargetedQuestion: async (
     id: string,
-    data: Partial<CreateTargetedQuestionRequest & { status: string }>,
+    data: Partial<CreateTargetedQuestionRequest & { status: string; sendNotification?: boolean }>,
     initData: string
   ): Promise<TargetedQuestion> => {
     const response = await fetchApi<{ success: boolean; question: TargetedQuestion }>(
