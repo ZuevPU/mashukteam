@@ -3,7 +3,7 @@ import { UserService } from './supabase';
 import { BroadcastService } from './broadcastService';
 import { notifyNewAssignment, notifyTargetedQuestionToUsers, sendBroadcastToUsers } from '../utils/telegramBot';
 import { logger } from '../utils/logger';
-import { Assignment, TargetedQuestion, Broadcast } from '../types';
+import { Assignment, TargetedQuestion, Broadcast, User } from '../types';
 import { SchedulerThrottle } from '../utils/schedulerThrottle';
 
 export class SchedulerService {
@@ -36,6 +36,7 @@ export class SchedulerService {
 
   /**
    * Обрабатывает весь запланированный контент
+   * Использует параллельную обработку для повышения производительности
    */
   static async processScheduledContent(): Promise<{
     assignments: number;
@@ -49,14 +50,20 @@ export class SchedulerService {
     };
 
     try {
-      // Обрабатываем задания
-      results.assignments = await this.processScheduledAssignments();
+      // Кэшируем пользователей один раз для всех операций
+      const cachedUsers = await UserService.getAllUsers();
+      logger.debug('Users cached for scheduler', { userCount: cachedUsers.length });
       
-      // Обрабатываем вопросы
-      results.questions = await this.processScheduledQuestions();
-      
-      // Обрабатываем рассылки
-      results.broadcasts = await this.processScheduledBroadcasts();
+      // Параллельная обработка всех типов контента
+      const [assignmentsCount, questionsCount, broadcastsCount] = await Promise.all([
+        this.processScheduledAssignments(),
+        this.processScheduledQuestions(cachedUsers),
+        this.processScheduledBroadcasts(cachedUsers)
+      ]);
+
+      results.assignments = assignmentsCount;
+      results.questions = questionsCount;
+      results.broadcasts = broadcastsCount;
 
       logger.info('Scheduled content processed', results);
     } catch (error) {
@@ -108,9 +115,10 @@ export class SchedulerService {
             continue;
           }
 
-          // Отправляем уведомление только если send_notification = true (явная проверка)
+          // Отправляем уведомление только если send_notification = true (fire-and-forget)
           if (assignment.send_notification === true) {
-            await notifyNewAssignment(assignment.title, assignment.reward, assignment.id);
+            notifyNewAssignment(assignment.title, assignment.reward, assignment.id)
+              .catch(err => logger.error('Error sending assignment notification', err instanceof Error ? err : new Error(String(err))));
           } else {
             logger.info('Skipping notification for assignment (send_notification=false)', { assignmentId: assignment.id });
           }
@@ -131,8 +139,9 @@ export class SchedulerService {
 
   /**
    * Публикует запланированные вопросы
+   * @param cachedUsers - кэшированный список пользователей для избежания повторных запросов к БД
    */
-  static async processScheduledQuestions(): Promise<number> {
+  static async processScheduledQuestions(cachedUsers: User[]): Promise<number> {
     const now = new Date().toISOString();
 
     try {
@@ -171,19 +180,22 @@ export class SchedulerService {
             continue;
           }
 
-          // Отправляем уведомления только если send_notification = true (явная проверка)
+          // Отправляем уведомления только если send_notification = true (fire-and-forget)
           if (question.send_notification === true) {
             if (question.target_audience === 'all') {
-              const users = await UserService.getAllUsers();
-              const userIds = users.map(u => u.id);
-              await notifyTargetedQuestionToUsers(userIds, question.text, question.id);
+              // Используем кэшированных пользователей
+              const userIds = cachedUsers.map(u => u.id);
+              notifyTargetedQuestionToUsers(userIds, question.text, question.id)
+                .catch(err => logger.error('Error sending question notification', err instanceof Error ? err : new Error(String(err))));
             } else if (question.target_audience === 'by_direction' && question.target_values) {
-              const users = await UserService.getAllUsers();
-              const targetUsers = users.filter(u => u.direction && question.target_values!.includes(u.direction));
+              // Используем кэшированных пользователей
+              const targetUsers = cachedUsers.filter(u => u.direction && question.target_values!.includes(u.direction));
               const userIds = targetUsers.map(u => u.id);
-              await notifyTargetedQuestionToUsers(userIds, question.text, question.id);
+              notifyTargetedQuestionToUsers(userIds, question.text, question.id)
+                .catch(err => logger.error('Error sending question notification', err instanceof Error ? err : new Error(String(err))));
             } else if (question.target_audience === 'individual' && question.target_values) {
-              await notifyTargetedQuestionToUsers(question.target_values, question.text, question.id);
+              notifyTargetedQuestionToUsers(question.target_values, question.text, question.id)
+                .catch(err => logger.error('Error sending question notification', err instanceof Error ? err : new Error(String(err))));
             }
           } else {
             logger.info('Skipping notification for question (send_notification=false)', { questionId: question.id });
@@ -205,8 +217,9 @@ export class SchedulerService {
 
   /**
    * Отправляет запланированные рассылки
+   * @param cachedUsers - кэшированный список пользователей для избежания повторных запросов к БД
    */
-  static async processScheduledBroadcasts(): Promise<number> {
+  static async processScheduledBroadcasts(cachedUsers: User[]): Promise<number> {
     try {
       const broadcasts = await BroadcastService.getScheduledBroadcastsToSend();
 
@@ -218,14 +231,13 @@ export class SchedulerService {
 
       for (const broadcast of broadcasts) {
         try {
-          // Получаем получателей
-          const users = await UserService.getAllUsers();
-          let targetUsers = users;
+          // Используем кэшированных пользователей
+          let targetUsers = cachedUsers;
 
           if (broadcast.target_type === 'by_direction' && broadcast.target_values) {
-            targetUsers = users.filter(u => u.direction && broadcast.target_values!.includes(u.direction));
+            targetUsers = cachedUsers.filter(u => u.direction && broadcast.target_values!.includes(u.direction));
           } else if (broadcast.target_type === 'individual' && broadcast.target_values) {
-            targetUsers = users.filter(u => broadcast.target_values!.includes(u.id));
+            targetUsers = cachedUsers.filter(u => broadcast.target_values!.includes(u.id));
           }
 
           // Отправляем рассылку

@@ -7,10 +7,19 @@ import './AdminScreens.css';
 
 interface AdminQuestionsListScreenProps {
   onBack: () => void;
+  onCreate: () => void;
   onEdit?: (question: TargetedQuestion) => void;
+  onRating: () => void;
+  onAnswers: (questionId: string) => void;
 }
 
-export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> = ({ onBack, onEdit }) => {
+export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> = ({ 
+  onBack, 
+  onCreate,
+  onEdit,
+  onRating,
+  onAnswers
+}) => {
   const { initData, showAlert } = useTelegram();
   const [questions, setQuestions] = useState<TargetedQuestion[]>([]);
   const [templates, setTemplates] = useState<TargetedQuestion[]>([]);
@@ -98,14 +107,6 @@ export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> =
     if (!initData) return;
     const newStatus = question.status === 'draft' ? 'published' : 'draft';
     const shouldNotify = newStatus === 'published' ? sendNotification : false;
-    
-    console.log('handleStatusChange called:', { 
-      questionId: question.id, 
-      currentStatus: question.status,
-      newStatus, 
-      sendNotification, 
-      shouldNotify 
-    });
     
     try {
       await adminApi.updateTargetedQuestion(
@@ -244,6 +245,14 @@ export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> =
         {onEdit && (
           <button className="action-btn" onClick={() => onEdit(q)} title="Редактировать">✏️</button>
         )}
+        <button 
+          className="action-btn" 
+          onClick={() => onAnswers(q.id)} 
+          title="Просмотр ответов"
+          style={{background: '#e8f5e9'}}
+        >
+          📊
+        </button>
         <button className="action-btn" onClick={() => handleDelete(q.id, q.text)} title="Удалить">🗑️</button>
       </div>
     </div>
@@ -310,7 +319,25 @@ export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> =
     <div className="admin-screen">
       <div className="header">
         <button onClick={onBack} className="back-button">← Назад</button>
-        <h3>Список вопросов</h3>
+        <h3>Вопросы</h3>
+      </div>
+
+      {/* Панель действий как в Assignments */}
+      <div style={{display: 'flex', gap: '12px', padding: '0 16px', marginBottom: '16px'}}>
+        <button 
+          className="create-btn" 
+          onClick={onCreate}
+          style={{flex: 1}}
+        >
+          + Создать вопрос
+        </button>
+        <button 
+          className="create-btn" 
+          onClick={onRating}
+          style={{flex: 1, background: 'linear-gradient(135deg, #ffd54f 0%, #ffb300 100%)', color: '#333'}}
+        >
+          🏆 Рейтинг
+        </button>
       </div>
 
       <div className="admin-list">
@@ -347,7 +374,7 @@ export const AdminQuestionsListScreen: React.FC<AdminQuestionsListScreenProps> =
                 borderRadius: '8px',
                 marginBottom: '16px',
               }}>
-                <span style={{fontWeight: 600}}>📋 Опубликованные вопросы</span>
+                <span style={{fontWeight: 600}}>📋 Список вопросов</span>
               </div>
             )}
             {sortedGroups.map(([groupName, groupQuestions]) => (

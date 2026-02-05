@@ -54,6 +54,7 @@ import { NotificationController } from '../controllers/notificationController';
 import { BroadcastController } from '../controllers/broadcastController';
 import { CronController } from '../controllers/cronController';
 import { UploadController } from '../controllers/uploadController';
+import { SocialController } from '../controllers/socialController';
 
 // Динамический импорт multer для избежания ошибок типов
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -117,6 +118,7 @@ router.post('/notifications/read-all', requireAuth, NotificationController.markA
 // === Admin System ===
 router.post('/admin/targeted-questions', requireAuth, requireAdmin, TargetedQuestionController.getAllQuestions);
 router.post('/admin/targeted-answers', requireAuth, requireAdmin, TargetedQuestionController.getAllAnswers);
+router.post('/admin/questions/rating', requireAuth, requireAdmin, TargetedQuestionController.getQuestionsRating);
 router.post('/admin/questions', (req, res, next) => {
   // #region agent log
   try{const fs=require('fs');const path=require('path');const logPath=path.join(process.cwd(),'.cursor','debug.log');const logEntry={id:`log_${Date.now()}_${Math.random().toString(36).substr(2,9)}`,timestamp:Date.now(),location:'routes/index.ts:95',message:'route handler entry',data:{path:req.path,method:req.method,bodyKeys:Object.keys(req.body)},sessionId:'debug-session',runId:'run1',hypothesisId:'D'};fs.appendFileSync(logPath,JSON.stringify(logEntry)+'\n');}catch(e){}
@@ -125,6 +127,7 @@ router.post('/admin/questions', (req, res, next) => {
 }, requireAuth, requireAdmin, TargetedQuestionController.createQuestion);
 router.put('/admin/questions/:id', requireAuth, requireAdmin, TargetedQuestionController.updateQuestion);
 router.delete('/admin/questions/:id', requireAuth, requireAdmin, TargetedQuestionController.deleteQuestion);
+router.post('/admin/questions/:id/answers', requireAuth, requireAdmin, TargetedQuestionController.getAnswersForQuestion);
 
 // Шаблонные вопросы
 router.get('/admin/questions/templates', requireAuth, requireAdmin, TargetedQuestionController.getTemplates);
@@ -203,6 +206,10 @@ router.post('/admin/analytics/questions', requireAuth, requireAdmin, AnalyticsCo
 router.post('/admin/analytics/gamification', requireAuth, requireAdmin, AnalyticsController.getGamificationStats);
 router.post('/admin/analytics/assignments', requireAuth, requireAdmin, AnalyticsController.getAssignmentStats);
 router.post('/admin/analytics/registration-trend', requireAuth, requireAdmin, AnalyticsController.getRegistrationTrend);
+router.post('/admin/analytics/funnel', requireAuth, requireAdmin, AnalyticsController.getConversionFunnel);
+router.post('/admin/analytics/cohorts', requireAuth, requireAdmin, AnalyticsController.getCohortAnalysis);
+router.post('/admin/analytics/dashboard', requireAuth, requireAdmin, AnalyticsController.getDashboardOverview);
+router.post('/admin/analytics/hourly', requireAuth, requireAdmin, AnalyticsController.getHourlyActivity);
 
 // === Admin Broadcasts (Рассылки) ===
 router.post('/admin/broadcasts', requireAuth, requireAdmin, BroadcastController.createBroadcast);
@@ -215,5 +222,13 @@ router.post('/admin/broadcasts/:id/send', requireAuth, requireAdmin, BroadcastCo
 // === Cron Jobs ===
 router.get('/cron/publish', CronController.processScheduledContent);
 router.get('/cron/health', CronController.healthCheck);
+
+// === Social (Лента активности, профили) ===
+router.post('/social/feed', requireAuth, SocialController.getActivityFeed);
+router.post('/social/team-feed', requireAuth, SocialController.getTeamFeed);
+router.post('/social/user-activity', requireAuth, SocialController.getUserActivity);
+router.post('/social/profile/:userId', requireAuth, SocialController.getUserProfile);
+router.patch('/social/profile/settings', requireAuth, SocialController.updateProfileSettings);
+router.post('/social/team-members', requireAuth, SocialController.getTeamMembers);
 
 export default router;

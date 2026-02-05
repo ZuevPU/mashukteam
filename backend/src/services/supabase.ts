@@ -4,6 +4,7 @@ import '../config/env';
 import { createClient } from '@supabase/supabase-js';
 import { User, CreateUserDto, UpdateUserStatusDto } from '../types';
 import { logger } from '../utils/logger';
+import { cacheService, CacheKeys, CacheTTL, withCache } from './cacheService';
 
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
   throw new Error('SUPABASE_URL и SUPABASE_SERVICE_KEY должны быть установлены в переменных окружения');
@@ -38,9 +39,17 @@ export class UserService {
   }
 
   /**
-   * Получение пользователя по telegram_id
+   * Получение пользователя по telegram_id (с кэшированием)
    */
   static async getUserByTelegramId(telegramId: number): Promise<User | null> {
+    const cacheKey = CacheKeys.userByTelegramId(telegramId);
+    
+    // Попытка получить из кэша
+    const cached = await cacheService.get<User | null>(cacheKey);
+    if (cached !== null) {
+      return cached;
+    }
+
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -53,6 +62,11 @@ export class UserService {
       }
       logger.error('Error getting user', error instanceof Error ? error : new Error(String(error)));
       throw error;
+    }
+
+    // Кэшируем результат
+    if (data) {
+      cacheService.set(cacheKey, data, CacheTTL.USER).catch(() => {});
     }
 
     return data as User;
@@ -100,7 +114,11 @@ export class UserService {
       throw error;
     }
 
-    return data as User;
+    // Инвалидируем кэш пользователя
+    const user = data as User;
+    cacheService.invalidateUser(user.id, telegramId).catch(() => {});
+
+    return user;
   }
 
   /**
@@ -152,26 +170,40 @@ export class UserService {
   }
 
   /**
-   * Получение всех пользователей (для админ-панели)
+   * Получение всех пользователей (для админ-панели, с кэшированием)
    */
   static async getAllUsers(): Promise<User[]> {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .order('created_at', { ascending: false });
+    return withCache(
+      CacheKeys.allUsers(),
+      CacheTTL.USER,
+      async () => {
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-    if (error) {
-      logger.error('Error getting all users', error instanceof Error ? error : new Error(String(error)));
-      throw error;
-    }
+        if (error) {
+          logger.error('Error getting all users', error instanceof Error ? error : new Error(String(error)));
+          throw error;
+        }
 
-    return data as User[];
+        return data as User[];
+      }
+    );
   }
 
   /**
-   * Получение пользователя по ID (UUID)
+   * Получение пользователя по ID (UUID, с кэшированием)
    */
   static async getUserById(id: string): Promise<User | null> {
+    const cacheKey = CacheKeys.user(id);
+    
+    // Попытка получить из кэша
+    const cached = await cacheService.get<User | null>(cacheKey);
+    if (cached !== null) {
+      return cached;
+    }
+
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -182,6 +214,11 @@ export class UserService {
       if (error.code === 'PGRST116') return null;
       logger.error('Error getting user by ID', error instanceof Error ? error : new Error(String(error)));
       throw error;
+    }
+
+    // Кэшируем результат
+    if (data) {
+      cacheService.set(cacheKey, data, CacheTTL.USER).catch(() => {});
     }
 
     return data as User;
@@ -203,7 +240,11 @@ export class UserService {
       throw error;
     }
 
-    return data as User;
+    // Инвалидируем кэш пользователя
+    const user = data as User;
+    cacheService.invalidateUser(userId, user.telegram_id).catch(() => {});
+
+    return user;
   }
   
   /**
@@ -222,7 +263,11 @@ export class UserService {
       throw error;
     }
 
-    return data as User;
+    // Инвалидируем кэш пользователя
+    const user = data as User;
+    cacheService.invalidateUser(id, user.telegram_id).catch(() => {});
+
+    return user;
   }
 
   /**

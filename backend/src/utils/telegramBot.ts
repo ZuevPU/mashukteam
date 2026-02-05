@@ -74,7 +74,129 @@ async function getUserPreferencesBatch(userIds: string[]): Promise<Map<string, U
 }
 
 /**
+ * Fetch с таймаутом для предотвращения зависаний
+ */
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  timeoutMs: number = 10000
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`Telegram API timeout after ${timeoutMs}ms`);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Отправка с retry при rate limit (429) ошибке
+ * Экспоненциальная задержка: 1с, 2с, 4с
+ */
+async function sendWithRetry<T>(
+  sendFn: () => Promise<{ success: boolean; shouldRetry?: boolean; result?: T }>,
+  maxRetries: number = 3
+): Promise<{ success: boolean; result?: T }> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const response = await sendFn();
+    
+    if (response.success) {
+      return { success: true, result: response.result };
+    }
+    
+    // Retry только если shouldRetry=true (429 ошибка)
+    if (!response.shouldRetry) {
+      return { success: false };
+    }
+    
+    // Экспоненциальная задержка: 1с, 2с, 4с
+    const delayMs = 1000 * Math.pow(2, attempt);
+    logger.warn(`Rate limit hit, retrying in ${delayMs}ms`, { attempt: attempt + 1, maxRetries });
+    await new Promise(resolve => setTimeout(resolve, delayMs));
+  }
+  
+  logger.error('Max retries exceeded for Telegram API');
+  return { success: false };
+}
+
+/**
+ * Внутренняя функция отправки сообщения (с таймаутом)
+ */
+async function sendMessageInternal(
+  telegramId: number,
+  messageText: string
+): Promise<{ success: boolean; shouldRetry?: boolean }> {
+  try {
+    const response = await fetchWithTimeout(
+      `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: telegramId,
+          text: messageText,
+          parse_mode: 'HTML',
+          disable_web_page_preview: false
+        }),
+      },
+      10000 // 10 секунд таймаут
+    );
+
+    if (!response.ok) {
+      let errorData: any = {};
+      try {
+        const errorText = await response.text();
+        errorData = JSON.parse(errorText);
+      } catch (parseError) {
+        errorData = { description: 'Unknown error' };
+      }
+      
+      const errorCode = response.status;
+      const errorDescription = errorData.description || errorData.error_code || 'Unknown error';
+      
+      // Обработка специфичных ошибок Telegram API
+      if (errorCode === 403) {
+        logger.warn('User blocked the bot', { telegramId, errorDescription });
+        return { success: false, shouldRetry: false };
+      } else if (errorCode === 400) {
+        logger.warn('Invalid chat_id or request', { telegramId, errorDescription });
+        return { success: false, shouldRetry: false };
+      } else if (errorCode === 429) {
+        logger.warn('Rate limit exceeded', { telegramId });
+        return { success: false, shouldRetry: true }; // Нужен retry
+      }
+      
+      logger.error('Telegram send message error', new Error(`Failed to send message to ${telegramId}: ${errorDescription}`));
+      return { success: false, shouldRetry: false };
+    }
+    
+    return { success: true };
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('timeout')) {
+      logger.warn('Telegram API timeout', { telegramId });
+      return { success: false, shouldRetry: true }; // Таймаут - можно retry
+    }
+    logger.error('Error sending telegram message', error instanceof Error ? error : new Error(String(error)));
+    return { success: false, shouldRetry: false };
+  }
+}
+
+/**
  * Отправка сообщения пользователю через Telegram Bot API
+ * С retry при rate limit и таймаутом
  */
 export async function sendMessageToUser(
   telegramId: number, 
@@ -97,50 +219,10 @@ export async function sendMessageToUser(
     messageText = `${text}\n\n👉 <a href="${link}">Открыть в приложении</a>`;
   }
 
-  try {
-    const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        chat_id: telegramId,
-        text: messageText,
-        parse_mode: 'HTML',
-        disable_web_page_preview: false
-      }),
-    });
-
-    if (!response.ok) {
-      let errorData: any = {};
-      try {
-        const errorText = await response.text();
-        errorData = JSON.parse(errorText);
-      } catch (parseError) {
-        // Если не удалось распарсить JSON, используем текст ошибки
-        errorData = { description: 'Unknown error' };
-      }
-      
-      const errorCode = response.status;
-      const errorDescription = errorData.description || errorData.error_code || 'Unknown error';
-      
-      // Обработка специфичных ошибок Telegram API
-      if (errorCode === 403) {
-        logger.warn('User blocked the bot', { telegramId, errorDescription });
-        return false; // Пользователь заблокировал бота
-      } else if (errorCode === 400) {
-        logger.warn('Invalid chat_id or request', { telegramId, errorDescription });
-        return false; // Невалидный chat_id
-      } else if (errorCode === 429) {
-        logger.warn('Rate limit exceeded', { telegramId });
-        // Можно добавить retry logic здесь
-        return false;
-      }
-      
-      logger.error('Telegram send message error', new Error(`Failed to send message to ${telegramId}: ${errorDescription}`));
-      return false;
-    }
-    
+  // Используем retry логику для обработки rate limit
+  const result = await sendWithRetry(() => sendMessageInternal(telegramId, messageText), 3);
+  
+  if (result.success) {
     logger.debug('Telegram message sent successfully', { telegramId });
     
     // Сохраняем уведомление в БД, если передан userId
@@ -155,23 +237,21 @@ export async function sendMessageToUser(
         );
       } catch (notifError) {
         logger.error('Error saving notification to DB', notifError instanceof Error ? notifError : new Error(String(notifError)));
-        // Не прерываем выполнение, если ошибка сохранения уведомления
       }
     }
-    
-    return true;
-  } catch (error) {
-    logger.error('Error sending telegram message', error instanceof Error ? error : new Error(String(error)));
-    return false;
   }
+  
+  return result.success;
 }
 
 /**
  * Параллельная отправка уведомлений с ограничением concurrency
+ * Оптимизировано для соблюдения rate limit Telegram API (30 сообщений/сек)
+ * При concurrency=5 и задержке 200мс = 25 сообщений/сек
  */
 async function sendNotificationsBatch(
   notifications: Array<{ telegramId: number; text: string; deepLink?: string; userId?: string; notificationType?: string; notificationTitle?: string }>,
-  concurrency: number = 10
+  concurrency: number = 5  // Уменьшено с 10 до 5 для соблюдения rate limit
 ): Promise<{ success: number; failed: number }> {
   const results = { success: 0, failed: 0 };
   
@@ -190,9 +270,9 @@ async function sendNotificationsBatch(
     );
     
     await Promise.all(promises);
-    // Небольшая задержка между батчами для избежания rate limiting
+    // Задержка между батчами для соблюдения rate limit Telegram API
     if (i + concurrency < notifications.length) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 200));  // Увеличено с 100 до 200мс
     }
   }
   
@@ -415,11 +495,19 @@ export async function notifyTargetedQuestionToUsers(
     const users = await UserService.getAllUsers();
     const targetUsers = users.filter(u => userIds.includes(u.id));
     
+    // Батч-загрузка настроек уведомлений для всех пользователей
+    const preferencesMap = await getUserPreferencesBatch(targetUsers.map(u => u.id));
+    
     // Фильтруем пользователей по настройкам уведомлений
     const notifications: Array<{ telegramId: number; text: string; deepLink?: string; userId?: string; notificationType?: string; notificationTitle?: string }> = [];
     
     for (const user of targetUsers) {
-      const shouldSend = await shouldSendNotification(user.id, 'questions');
+      const preferences = preferencesMap.get(user.id);
+      // Проверяем, включены ли уведомления о вопросах
+      const shouldSend = preferences 
+        ? (preferences.notifications_enabled && preferences.notification_questions)
+        : true; // По умолчанию отправляем, если настройки не найдены
+      
       if (shouldSend) {
         const text = `❓ <b>Анонс нового вопроса</b>\n\n${questionText}`;
         const deepLink = buildAppLink('question', questionId);
@@ -611,35 +699,22 @@ export async function sendBroadcastToUsers(
 /**
  * Отправка документа (файла) пользователю через Telegram Bot API
  */
-export async function sendDocumentToUser(
+/**
+ * Внутренняя функция отправки документа (с таймаутом)
+ */
+async function sendDocumentInternal(
   telegramId: number,
-  fileBuffer: Buffer,
-  filename: string,
-  caption?: string
-): Promise<boolean> {
-  if (!BOT_TOKEN) {
-    logger.warn('TELEGRAM_BOT_TOKEN не установлен, документ не отправлен');
-    return false;
-  }
-
+  formData: FormData
+): Promise<{ success: boolean; shouldRetry?: boolean }> {
   try {
-    // Создаём FormData для отправки файла
-    const formData = new FormData();
-    formData.append('chat_id', telegramId.toString());
-    
-    // Создаём Blob из Buffer для отправки файла
-    const blob = new Blob([fileBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    formData.append('document', blob, filename);
-    
-    if (caption) {
-      formData.append('caption', caption);
-      formData.append('parse_mode', 'HTML');
-    }
-
-    const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, {
-      method: 'POST',
-      body: formData,
-    });
+    const response = await fetchWithTimeout(
+      `https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`,
+      {
+        method: 'POST',
+        body: formData,
+      },
+      10000 // 10 секунд таймаут
+    );
 
     if (!response.ok) {
       let errorData: any = {};
@@ -655,23 +730,60 @@ export async function sendDocumentToUser(
       
       if (errorCode === 403) {
         logger.warn('User blocked the bot', { telegramId, errorDescription });
-        return false;
+        return { success: false, shouldRetry: false };
       } else if (errorCode === 400) {
         logger.warn('Invalid chat_id or document', { telegramId, errorDescription });
-        return false;
+        return { success: false, shouldRetry: false };
       } else if (errorCode === 429) {
         logger.warn('Rate limit exceeded', { telegramId });
-        return false;
+        return { success: false, shouldRetry: true };
       }
       
       logger.error('Telegram send document error', new Error(`Failed to send document to ${telegramId}: ${errorDescription}`));
-      return false;
+      return { success: false, shouldRetry: false };
     }
     
-    logger.debug('Telegram document sent successfully', { telegramId, filename });
-    return true;
+    return { success: true };
   } catch (error) {
+    if (error instanceof Error && error.message.includes('timeout')) {
+      logger.warn('Telegram API timeout', { telegramId });
+      return { success: false, shouldRetry: true };
+    }
     logger.error('Error sending telegram document', error instanceof Error ? error : new Error(String(error)));
+    return { success: false, shouldRetry: false };
+  }
+}
+
+export async function sendDocumentToUser(
+  telegramId: number,
+  fileBuffer: Buffer,
+  filename: string,
+  caption?: string
+): Promise<boolean> {
+  if (!BOT_TOKEN) {
+    logger.warn('TELEGRAM_BOT_TOKEN не установлен, документ не отправлен');
     return false;
   }
+
+  // Создаём FormData для отправки файла
+  const formData = new FormData();
+  formData.append('chat_id', telegramId.toString());
+  
+  // Создаём Blob из Buffer для отправки файла
+  const blob = new Blob([fileBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  formData.append('document', blob, filename);
+  
+  if (caption) {
+    formData.append('caption', caption);
+    formData.append('parse_mode', 'HTML');
+  }
+
+  // Используем retry логику для обработки rate limit
+  const result = await sendWithRetry(() => sendDocumentInternal(telegramId, formData), 3);
+  
+  if (result.success) {
+    logger.debug('Telegram document sent successfully', { telegramId, filename });
+  }
+  
+  return result.success;
 }

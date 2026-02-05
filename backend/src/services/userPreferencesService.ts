@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { logger } from '../utils/logger';
+import { cacheService, CacheKeys, CacheTTL } from './cacheService';
 
 export interface UserPreferences {
   id: string;
@@ -28,10 +29,18 @@ export interface CreateUserPreferencesDto {
  */
 export class UserPreferencesService {
   /**
-   * Получение настроек пользователя
+   * Получение настроек пользователя (с кэшированием)
    * Если настроек нет, возвращает дефолтные значения
    */
   static async getUserPreferences(userId: string): Promise<UserPreferences> {
+    const cacheKey = CacheKeys.userPreferences(userId);
+    
+    // Попытка получить из кэша
+    const cached = await cacheService.get<UserPreferences>(cacheKey);
+    if (cached !== null) {
+      return cached;
+    }
+
     const { data, error } = await supabase
       .from('user_preferences')
       .select('*')
@@ -44,22 +53,25 @@ export class UserPreferencesService {
     }
 
     // Если настроек нет, возвращаем дефолтные значения
-    if (!data) {
-      return {
-        id: '',
-        user_id: userId,
-        theme: 'auto',
-        notifications_enabled: true,
-        notification_events: true,
-        notification_questions: true,
-        notification_assignments: true,
-        notification_diagnostics: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-    }
+    const defaultPrefs: UserPreferences = {
+      id: '',
+      user_id: userId,
+      theme: 'auto',
+      notifications_enabled: true,
+      notification_events: true,
+      notification_questions: true,
+      notification_assignments: true,
+      notification_diagnostics: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
 
-    return data as UserPreferences;
+    const result = data ? (data as UserPreferences) : defaultPrefs;
+    
+    // Кэшируем результат
+    cacheService.set(cacheKey, result, CacheTTL.USER_PREFERENCES).catch(() => {});
+
+    return result;
   }
 
   /**
@@ -115,6 +127,9 @@ export class UserPreferencesService {
 
       result = data;
     }
+
+    // Инвалидируем кэш настроек
+    cacheService.delete(CacheKeys.userPreferences(userId)).catch(() => {});
 
     return result as UserPreferences;
   }

@@ -6,6 +6,12 @@ import cors from 'cors';
 import routes from './routes';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { apiRateLimiter } from './middleware/rateLimiter';
+import { cacheService } from './services/cacheService';
+import { queueService } from './services/queueService';
+import { initSentry, sentryRequestHandler, sentryErrorHandler } from './utils/sentry';
+
+// Инициализация Sentry (должна быть до создания app)
+initSentry();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -37,6 +43,9 @@ app.options('*', (req, res) => {
 });
 
 app.use(cors(corsOptions));
+
+// Sentry request handler - должен быть первым middleware после CORS
+app.use(sentryRequestHandler);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -72,13 +81,28 @@ app.use((req, res, next) => {
 // API маршруты
 app.use('/api', routes);
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+// Health check с информацией о кэше и очередях
+app.get('/health', async (req, res) => {
+  const cacheStats = await cacheService.getStats();
+  const queueStats = await queueService.getStats();
+  
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    cache: cacheStats ? { 
+      available: true, 
+      keys: cacheStats.keys,
+      memory: cacheStats.memory 
+    } : { available: false },
+    queues: queueService.isAvailable() ? queueStats : { available: false }
+  });
 });
 
 // Обработка 404
 app.use(notFoundHandler);
+
+// Sentry error handler - должен быть перед другими error handlers
+app.use(sentryErrorHandler);
 
 // Централизованная обработка ошибок
 app.use(errorHandler);
@@ -88,10 +112,27 @@ export default app;
 
 // Запуск сервера только в development
 if (process.env.NODE_ENV !== 'production' || process.env.VERCEL !== '1') {
-  app.listen(PORT, () => {
-    // Логи запуска сервера всегда показываем
-    console.log(`🚀 Backend сервер запущен на порту ${PORT}`);
-    console.log(`📡 API доступен по адресу: http://localhost:${PORT}/api`);
-    console.log(`🏥 Health check: http://localhost:${PORT}/health`);
+  // Инициализация сервисов перед запуском сервера
+  Promise.all([
+    cacheService.connect(),
+    queueService.initialize()
+  ]).then(async () => {
+    // Запускаем воркеры очередей (не в Vercel, т.к. serverless)
+    await queueService.startWorkers();
+    
+    app.listen(PORT, () => {
+      // Логи запуска сервера всегда показываем
+      console.log(`🚀 Backend сервер запущен на порту ${PORT}`);
+      console.log(`📡 API доступен по адресу: http://localhost:${PORT}/api`);
+      console.log(`🏥 Health check: http://localhost:${PORT}/health`);
+      console.log(`📦 Кэширование: ${cacheService.isAvailable() ? 'включено' : 'отключено'}`);
+      console.log(`📋 Очереди задач: ${queueService.isAvailable() ? 'включены' : 'отключены'}`);
+    });
   });
+} else {
+  // Для Vercel - инициализация при старте (без воркеров)
+  Promise.all([
+    cacheService.connect(),
+    queueService.initialize()
+  ]).catch(() => {});
 }

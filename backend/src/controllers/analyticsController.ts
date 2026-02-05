@@ -163,4 +163,94 @@ export class AnalyticsController {
       });
     }
   }
+
+  /**
+   * POST /api/admin/analytics/funnel
+   * Воронка конверсии
+   */
+  static async getConversionFunnel(req: Request, res: Response) {
+    try {
+      const funnel = await AnalyticsService.getConversionFunnel();
+
+      return res.json({
+        success: true,
+        funnel,
+      });
+    } catch (error: any) {
+      logger.error('Get conversion funnel error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({
+        success: false,
+        error: 'Ошибка при получении воронки конверсии',
+        message: error.message || 'Неизвестная ошибка',
+      });
+    }
+  }
+
+  /**
+   * POST /api/admin/analytics/cohorts
+   * Когортный анализ
+   */
+  static async getCohortAnalysis(req: Request, res: Response) {
+    try {
+      const { weeks } = req.body;
+      const cohorts = await AnalyticsService.getCohortAnalysis(weeks || 8);
+
+      return res.json({
+        success: true,
+        cohorts,
+      });
+    } catch (error: any) {
+      logger.error('Get cohort analysis error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({
+        success: false,
+        error: 'Ошибка при получении когортного анализа',
+        message: error.message || 'Неизвестная ошибка',
+      });
+    }
+  }
+
+  /**
+   * POST /api/admin/analytics/dashboard
+   * Обзорная статистика для дашборда
+   */
+  static async getDashboardOverview(req: Request, res: Response) {
+    try {
+      const overview = await AnalyticsService.getDashboardOverview();
+
+      return res.json({
+        success: true,
+        overview,
+      });
+    } catch (error: any) {
+      logger.error('Get dashboard overview error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({
+        success: false,
+        error: 'Ошибка при получении обзорной статистики',
+        message: error.message || 'Неизвестная ошибка',
+      });
+    }
+  }
+
+  /**
+   * POST /api/admin/analytics/hourly
+   * Активность по часам
+   */
+  static async getHourlyActivity(req: Request, res: Response) {
+    try {
+      const { days } = req.body;
+      const hourly = await AnalyticsService.getHourlyActivity(days || 7);
+
+      return res.json({
+        success: true,
+        hourly,
+      });
+    } catch (error: any) {
+      logger.error('Get hourly activity error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({
+        success: false,
+        error: 'Ошибка при получении активности по часам',
+        message: error.message || 'Неизвестная ошибка',
+      });
+    }
+  }
 }

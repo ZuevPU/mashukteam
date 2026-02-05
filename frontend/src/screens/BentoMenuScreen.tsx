@@ -29,6 +29,7 @@ import { AdminTargetedQuestionsScreen } from './admin/AdminTargetedQuestionsScre
 import { AdminQuestionsListScreen } from './admin/AdminQuestionsListScreen';
 import { AdminCreateQuestionScreen } from './admin/AdminCreateQuestionScreen';
 import { AdminQuestionAnswersScreen } from './admin/AdminQuestionAnswersScreen';
+import { AdminQuestionsRatingScreen } from './admin/AdminQuestionsRatingScreen';
 import { AdminExportScreen } from './admin/AdminExportScreen';
 import { AdminAnalyticsScreen } from './admin/AdminAnalyticsScreen';
 import { AdminBroadcastScreen } from './admin/AdminBroadcastScreen';
@@ -71,6 +72,8 @@ type ScreenView =
   | 'admin_questions_list'
   | 'admin_create_question'
   | 'admin_review_answers'
+  | 'admin_question_answers'
+  | 'admin_questions_rating'
   | 'admin_export'
   | 'admin_analytics'
   | 'admin_broadcasts'
@@ -93,6 +96,7 @@ export function BentoMenuScreen() {
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null);
   const [selectedDiagnostic, setSelectedDiagnostic] = useState<Event | undefined>(undefined);
   const [editingQuestion, setEditingQuestion] = useState<any>(undefined);
+  const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(null);
 
   // Обработка deep links из Telegram (start параметр)
   useEffect(() => {
@@ -409,15 +413,21 @@ export function BentoMenuScreen() {
       onBack={() => setView('admin')}
       onCreateQuestion={() => setView('admin_create_question')}
       onViewQuestions={() => setView('admin_questions_list')}
-      onReviewAnswers={() => setView('admin_review_answers')}
+      onReviewAnswers={() => setView('admin_questions_list')}
     />;
   }
   if (view === 'admin_questions_list') {
     return <AdminQuestionsListScreen 
       onBack={() => setView('admin_targeted_questions')}
+      onCreate={() => setView('admin_create_question')}
       onEdit={(question) => {
         setEditingQuestion(question);
         setView('admin_create_question');
+      }}
+      onRating={() => setView('admin_questions_rating')}
+      onAnswers={(questionId) => {
+        setSelectedQuestionId(questionId);
+        setView('admin_question_answers');
       }}
     />;
   }
@@ -434,8 +444,14 @@ export function BentoMenuScreen() {
       editingQuestion={editingQuestion}
     />;
   }
-  if (view === 'admin_review_answers') {
-    return <AdminQuestionAnswersScreen onBack={() => setView('admin_targeted_questions')} />;
+  if (view === 'admin_question_answers' && selectedQuestionId) {
+    return <AdminQuestionAnswersScreen 
+      questionId={selectedQuestionId} 
+      onBack={() => setView('admin_questions_list')} 
+    />;
+  }
+  if (view === 'admin_questions_rating') {
+    return <AdminQuestionsRatingScreen onBack={() => setView('admin_questions_list')} />;
   }
   if (view === 'admin_export') {
     return <AdminExportScreen onBack={() => setView('admin')} />;

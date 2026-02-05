@@ -1,22 +1,29 @@
 import { supabase } from './supabase';
 import { Direction, CreateDirectionDto } from '../types';
+import { cacheService, CacheKeys, CacheTTL, withCache } from './cacheService';
 
 export class DirectionService {
   /**
-   * Получение всех направлений
+   * Получение всех направлений (с кэшированием)
    */
   static async getAllDirections(): Promise<Direction[]> {
-    const { data, error } = await supabase
-      .from('directions')
-      .select('*')
-      .order('name', { ascending: true });
+    return withCache(
+      CacheKeys.directions(),
+      CacheTTL.DIRECTIONS,
+      async () => {
+        const { data, error } = await supabase
+          .from('directions')
+          .select('*')
+          .order('name', { ascending: true });
 
-    if (error) {
-      console.error('Error getting directions:', error);
-      throw error;
-    }
+        if (error) {
+          console.error('Error getting directions:', error);
+          throw error;
+        }
 
-    return data as Direction[];
+        return data as Direction[];
+      }
+    );
   }
 
   /**
@@ -52,6 +59,9 @@ export class DirectionService {
       throw error;
     }
 
+    // Инвалидируем кэш направлений
+    cacheService.invalidateDirections().catch(() => {});
+
     return direction as Direction;
   }
 
@@ -71,6 +81,9 @@ export class DirectionService {
       throw error;
     }
 
+    // Инвалидируем кэш направлений
+    cacheService.invalidateDirections().catch(() => {});
+
     return direction as Direction;
   }
 
@@ -87,6 +100,9 @@ export class DirectionService {
       console.error('Error deleting direction:', error);
       throw error;
     }
+
+    // Инвалидируем кэш направлений
+    cacheService.invalidateDirections().catch(() => {});
 
     return true;
   }

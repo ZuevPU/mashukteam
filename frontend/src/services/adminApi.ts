@@ -408,5 +408,27 @@ export const adminApi = {
       }
     );
     return response.instances;
+  },
+
+  /**
+   * Получение ответов на конкретный вопрос (Админ)
+   */
+  getQuestionAnswers: async (questionId: string, initData: string): Promise<{ question: TargetedQuestion; answers: any[] }> => {
+    const response = await fetchApi<{ success: boolean; question: TargetedQuestion; answers: any[] }>(
+      `/admin/questions/${questionId}/answers`,
+      { method: 'POST', body: JSON.stringify({ initData }) }
+    );
+    return { question: response.question, answers: response.answers };
+  },
+
+  /**
+   * Получение рейтинга пользователей по вопросам (Админ)
+   */
+  getQuestionsRating: async (initData: string): Promise<any[]> => {
+    const response = await fetchApi<{ success: boolean; rating: any[] }>(
+      '/admin/questions/rating',
+      { method: 'POST', body: JSON.stringify({ initData }) }
+    );
+    return response.rating;
   }
 };

@@ -1,0 +1,102 @@
+.pwa-prompt {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--tg-theme-bg-color, #ffffff);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 9999;
+  max-width: calc(100vw - 32px);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.pwa-prompt--offline {
+  background: var(--tg-theme-destructive-text-color, #ff3b30);
+  color: white;
+}
+
+.pwa-prompt--update {
+  background: var(--tg-theme-button-color, #2481cc);
+  color: var(--tg-theme-button-text-color, #ffffff);
+}
+
+.pwa-prompt--ready {
+  background: var(--tg-theme-bg-color, #ffffff);
+  color: var(--tg-theme-text-color, #000000);
+  border: 1px solid var(--tg-theme-hint-color, #999999);
+}
+
+.pwa-prompt__icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.pwa-prompt__text {
+  font-size: 14px;
+  font-weight: 500;
+  flex: 1;
+}
+
+.pwa-prompt__actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pwa-prompt__button {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.pwa-prompt__button:active {
+  opacity: 0.8;
+}
+
+.pwa-prompt__button--primary {
+  background: white;
+  color: var(--tg-theme-button-color, #2481cc);
+}
+
+.pwa-prompt__button--secondary {
+  background: transparent;
+  color: inherit;
+  opacity: 0.8;
+}
+
+.pwa-prompt--ready .pwa-prompt__button--secondary {
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  opacity: 1;
+}
+
+/* Адаптация для темной темы */
+@media (prefers-color-scheme: dark) {
+  .pwa-prompt--ready {
+    background: var(--tg-theme-bg-color, #1c1c1e);
+    border-color: var(--tg-theme-hint-color, #48484a);
+  }
+  
+  .pwa-prompt--ready .pwa-prompt__button--secondary {
+    background: var(--tg-theme-secondary-bg-color, #2c2c2e);
+  }
+}

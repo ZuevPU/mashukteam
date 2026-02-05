@@ -4,6 +4,7 @@ import { verifyAuth } from './services/api';
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { RegistrationScreen } from './screens/RegistrationScreen';
 import { BentoMenuScreen } from './screens/BentoMenuScreen';
+import { PWAPrompt } from './components/pwa/PWAPrompt';
 import './App.css';
 
 type AppScreen = 'loading' | 'welcome' | 'registration' | 'bento';
@@ -90,6 +91,9 @@ function App() {
         <RegistrationScreen onComplete={handleRegistrationComplete} />
       )}
       {screen === 'bento' && <BentoMenuScreen />}
+      
+      {/* PWA промпты */}
+      <PWAPrompt />
     </div>
   );
 }

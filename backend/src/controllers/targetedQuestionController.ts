@@ -198,6 +198,40 @@ export class TargetedQuestionController {
   }
 
   /**
+   * Получение ответов на конкретный вопрос (Админ)
+   */
+  static async getAnswersForQuestion(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      
+      // Получаем вопрос для заголовка
+      const question = await TargetedQuestionService.getQuestionById(id);
+      if (!question) {
+        return res.status(404).json({ error: 'Вопрос не найден' });
+      }
+      
+      const answers = await TargetedQuestionService.getAnswersForQuestion(id);
+      return res.json({ success: true, question, answers });
+    } catch (error) {
+      logger.error('Get answers for question error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ error: 'Ошибка при получении ответов' });
+    }
+  }
+
+  /**
+   * Получение рейтинга пользователей по вопросам (Админ)
+   */
+  static async getQuestionsRating(req: Request, res: Response) {
+    try {
+      const rating = await TargetedQuestionService.getQuestionsRating();
+      return res.json({ success: true, rating });
+    } catch (error) {
+      logger.error('Get questions rating error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ error: 'Ошибка при получении рейтинга' });
+    }
+  }
+
+  /**
    * Обновление вопроса (Админ)
    */
   static async updateQuestion(req: Request, res: Response) {
@@ -375,4 +409,5 @@ export class TargetedQuestionController {
       return res.status(500).json({ error: 'Ошибка при получении экземпляров шаблона' });
     }
   }
+
 }

@@ -1,7 +1,10 @@
 /**
  * Структурированное логирование
  * Использует простой формат для начала, можно расширить до winston/pino
+ * Интегрирован с Sentry для автоматического захвата ошибок
  */
+
+import * as Sentry from '@sentry/node';
 
 export enum LogLevel {
   INFO = 'INFO',
@@ -66,9 +69,26 @@ class Logger {
     switch (level) {
       case LogLevel.ERROR:
         console.error(formattedLog);
+        // Отправляем ошибки в Sentry
+        if (error) {
+          Sentry.captureException(error, {
+            extra: data ? { data } : undefined,
+          });
+        } else {
+          Sentry.captureMessage(message, {
+            level: 'error',
+            extra: data ? { data } : undefined,
+          });
+        }
         break;
       case LogLevel.WARN:
         console.warn(formattedLog);
+        // Добавляем breadcrumb для предупреждений
+        Sentry.addBreadcrumb({
+          message,
+          level: 'warning',
+          data,
+        });
         break;
       case LogLevel.DEBUG:
         if (isDevelopment) {
@@ -80,6 +100,12 @@ class Logger {
         if (isDevelopment) {
           console.log(formattedLog);
         }
+        // Добавляем breadcrumb для info
+        Sentry.addBreadcrumb({
+          message,
+          level: 'info',
+          data,
+        });
     }
   }
 

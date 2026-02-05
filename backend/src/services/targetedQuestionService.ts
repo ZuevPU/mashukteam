@@ -286,6 +286,69 @@ export class TargetedQuestionService {
   }
 
   /**
+   * Получение рейтинга пользователей по вопросам (для админа)
+   * Возвращает список пользователей с количеством ответов и баллами рефлексии
+   */
+  static async getQuestionsRating(): Promise<any[]> {
+    // Получаем все ответы с информацией о пользователях и баллах за вопросы
+    const { data: answers, error: answersError } = await supabase
+      .from('targeted_answers')
+      .select(`
+        user_id,
+        question:targeted_questions(reflection_points),
+        user:users(id, first_name, last_name, telegram_username, reflection_points, reflection_level)
+      `);
+
+    if (answersError) {
+      console.error('Error getting questions rating:', answersError);
+      throw answersError;
+    }
+
+    // Группируем по пользователям и считаем статистику
+    const userStats: Record<string, {
+      user_id: string;
+      first_name: string;
+      last_name: string;
+      telegram_username?: string;
+      answers_count: number;
+      questions_reflection_points: number;
+      total_reflection_points: number;
+      reflection_level: number;
+    }> = {};
+
+    for (const answer of answers || []) {
+      const userId = answer.user_id;
+      const user = answer.user as any;
+      const question = answer.question as any;
+      
+      if (!user) continue;
+
+      if (!userStats[userId]) {
+        userStats[userId] = {
+          user_id: userId,
+          first_name: user.first_name || '',
+          last_name: user.last_name || '',
+          telegram_username: user.telegram_username,
+          answers_count: 0,
+          questions_reflection_points: 0,
+          total_reflection_points: user.reflection_points || 0,
+          reflection_level: user.reflection_level || 1,
+        };
+      }
+
+      userStats[userId].answers_count++;
+      userStats[userId].questions_reflection_points += question?.reflection_points || 1;
+    }
+
+    // Преобразуем в массив и сортируем по баллам рефлексии за вопросы
+    const rating = Object.values(userStats).sort((a, b) => 
+      b.questions_reflection_points - a.questions_reflection_points
+    );
+
+    return rating;
+  }
+
+  /**
    * Обновление вопроса
    */
   static async updateQuestion(id: string, data: Partial<CreateTargetedQuestionDto>): Promise<TargetedQuestion> {
