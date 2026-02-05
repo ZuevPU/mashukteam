@@ -86,34 +86,25 @@
 }
 
 .randomizer-result {
-  margin-top: 12px;
-  padding: 16px;
+  margin-top: 16px;
+  padding: 24px;
   background: linear-gradient(135deg, #3E529B 0%, #2d3d7a 100%);
-  border-radius: 8px;
+  border-radius: 16px;
   text-align: center;
 }
 
-.randomizer-result-badge {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
+.randomizer-result-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
   color: #FFFFFF;
 }
 
-.randomizer-result-icon {
-  font-size: 32px;
-}
-
-.randomizer-result-label {
-  font-size: 12px;
-  opacity: 0.9;
-}
-
-.randomizer-result-table {
-  font-size: 24px;
+.randomizer-result-value {
+  font-size: 48px;
   font-weight: 700;
-  margin-top: 4px;
+  display: block;
+  margin-top: 8px;
 }
 
 .randomizer-participate-btn {

@@ -86,13 +86,9 @@ export const RandomizerCard: React.FC<RandomizerCardProps> = ({ questionId, rand
 
       {randomizer.status === 'distributed' && distribution && (
         <div className="randomizer-result">
-          <div className="randomizer-result-badge">
-            <span className="randomizer-result-icon">🎲</span>
-            <div>
-              <div className="randomizer-result-label">Ваш стол</div>
-              <div className="randomizer-result-table">№{distribution.table_number}</div>
-            </div>
-          </div>
+          <h3 className="randomizer-result-title">
+            Ваш стол: <span className="randomizer-result-value">№{distribution.table_number}</span>
+          </h3>
         </div>
       )}
 

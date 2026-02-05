@@ -105,17 +105,13 @@ export const AssignmentRandomizerCard: React.FC<AssignmentRandomizerCardProps> =
       {/* Показываем результат, если распределение завершено */}
       {isDistributed && distribution && (
         <div className="result-block">
-          {isSimpleMode ? (
-            <>
-              <span className="result-label">Ваше число:</span>
-              <span className="result-value">{distribution.random_number}</span>
-            </>
-          ) : (
-            <>
-              <span className="result-label">Ваш стол:</span>
-              <span className="result-value">{distribution.table_number}</span>
-            </>
-          )}
+          <h3 className="result-title">
+            {isSimpleMode ? (
+              <>Ваше число: <span className="result-value">{distribution.random_number}</span></>
+            ) : (
+              <>Ваш стол: <span className="result-value">{distribution.table_number}</span></>
+            )}
+          </h3>
         </div>
       )}
 
