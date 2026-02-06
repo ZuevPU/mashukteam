@@ -226,7 +226,12 @@ export class AssignmentController {
         .in('id', submissionIds);
       
       if (fetchError) {
+        logger.error('Error fetching submissions for bulk moderation', fetchError instanceof Error ? fetchError : new Error(String(fetchError)));
         return res.status(500).json({ error: 'Ошибка при получении данных submissions' });
+      }
+      
+      if (!subDataBefore || subDataBefore.length === 0) {
+        return res.status(404).json({ error: 'Submissions не найдены' });
       }
       
       // Выполняем массовую модерацию
@@ -236,15 +241,19 @@ export class AssignmentController {
       });
       
       // Отправляем уведомления пользователям (fire-and-forget)
-      if (subDataBefore) {
+      if (subDataBefore && subDataBefore.length > 0) {
         subDataBefore.forEach((subData: any) => {
-          if (subData.user?.telegram_id && subData.assignment && subData.user_id) {
+          const userId = subData.user_id;
+          const user = Array.isArray(subData.user) ? subData.user[0] : subData.user;
+          const assignment = Array.isArray(subData.assignment) ? subData.assignment[0] : subData.assignment;
+          
+          if (user?.telegram_id && assignment && userId) {
             notifyAssignmentResult(
-              subData.user_id,
-              subData.user.telegram_id,
-              subData.assignment.title,
+              userId,
+              user.telegram_id,
+              assignment.title,
               status === 'approved',
-              subData.assignment.reward || 0,
+              assignment.reward || 0,
               admin_comment
             ).catch((err) => logger.error('Error sending bulk assignment result notification', err instanceof Error ? err : new Error(String(err))));
           }

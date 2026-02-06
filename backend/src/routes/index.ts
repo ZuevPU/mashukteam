@@ -174,8 +174,8 @@ router.put('/admin/assignments/:id', requireAuth, requireAdmin, AssignmentContro
 router.delete('/admin/assignments/:id', requireAuth, requireAdmin, AssignmentController.deleteAssignment);
 router.post('/admin/assignments/:id/submissions', requireAuth, requireAdmin, AssignmentController.getSubmissionsForAssignment);
 router.post('/admin/submissions', requireAuth, requireAdmin, AssignmentController.getAllSubmissions);
-router.patch('/admin/submissions/:id', requireAuth, requireAdmin, AssignmentController.moderateSubmission);
 router.patch('/admin/submissions/bulk', requireAuth, requireAdmin, AssignmentController.bulkModerateSubmissions);
+router.patch('/admin/submissions/:id', requireAuth, requireAdmin, AssignmentController.moderateSubmission);
 router.post('/admin/leaderboard', requireAuth, requireAdmin, AssignmentController.getLeaderboard);
 
 // === User Assignments ===

@@ -396,8 +396,12 @@ export class AssignmentService {
       .select('*, assignment:assignments(reward)')
       .in('id', submissionIds);
 
-    if (fetchError) throw fetchError;
+    if (fetchError) {
+      logger.error('Error fetching submissions in bulkModerateSubmissions', fetchError instanceof Error ? fetchError : new Error(String(fetchError)));
+      throw fetchError;
+    }
     if (!existingSubmissions || existingSubmissions.length === 0) {
+      logger.warn('No submissions found for bulk moderation', { submissionIds });
       throw new Error('Submissions не найдены');
     }
 
