@@ -204,6 +204,64 @@ export class AssignmentController {
     }
   }
 
+  /**
+   * Массовая модерация нескольких submissions
+   */
+  static async bulkModerateSubmissions(req: Request, res: Response) {
+    try {
+      const { submissionIds, status, admin_comment } = req.body;
+      
+      if (!Array.isArray(submissionIds) || submissionIds.length === 0) {
+        return res.status(400).json({ error: 'Необходимо указать массив submissionIds' });
+      }
+      
+      if (!status || !['approved', 'rejected'].includes(status)) {
+        return res.status(400).json({ error: 'Необходимо указать статус: approved или rejected' });
+      }
+      
+      // Получаем данные submissions ДО модерации для отправки уведомлений
+      const { data: subDataBefore, error: fetchError } = await require('../services/supabase').supabase
+        .from('assignment_submissions')
+        .select('*, user:users(id, telegram_id), assignment:assignments(title, reward)')
+        .in('id', submissionIds);
+      
+      if (fetchError) {
+        return res.status(500).json({ error: 'Ошибка при получении данных submissions' });
+      }
+      
+      // Выполняем массовую модерацию
+      const submissions = await AssignmentService.bulkModerateSubmissions(submissionIds, {
+        status,
+        admin_comment: admin_comment || undefined
+      });
+      
+      // Отправляем уведомления пользователям (fire-and-forget)
+      if (subDataBefore) {
+        subDataBefore.forEach((subData: any) => {
+          if (subData.user?.telegram_id && subData.assignment && subData.user_id) {
+            notifyAssignmentResult(
+              subData.user_id,
+              subData.user.telegram_id,
+              subData.assignment.title,
+              status === 'approved',
+              subData.assignment.reward || 0,
+              admin_comment
+            ).catch((err) => logger.error('Error sending bulk assignment result notification', err instanceof Error ? err : new Error(String(err))));
+          }
+        });
+      }
+      
+      return res.json({ 
+        success: true, 
+        submissions,
+        count: submissions.length 
+      });
+    } catch (error) {
+      logger.error('Bulk moderate submissions error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ error: 'Ошибка при массовой модерации ответов' });
+    }
+  }
+
   static async getLeaderboard(req: Request, res: Response) {
     try {
       const leaderboard = await AssignmentService.getLeaderboard();
@@ -268,6 +326,25 @@ export class AssignmentController {
     } catch (error) {
       logger.error('Get my submissions error', error instanceof Error ? error : new Error(String(error)));
       return res.status(500).json({ error: 'Ошибка при получении моих ответов' });
+    }
+  }
+
+  /**
+   * Получить историю попыток выполнения конкретного задания пользователем
+   */
+  static async getSubmissionHistory(req: Request, res: Response) {
+    try {
+      const user = (req as any).user;
+      if (!user) {
+        return res.status(401).json({ error: 'Не авторизован' });
+      }
+
+      const { id } = req.params; // assignment_id
+      const history = await AssignmentService.getSubmissionHistory(user.id, id);
+      return res.json({ success: true, submissions: history });
+    } catch (error) {
+      logger.error('Get submission history error', error instanceof Error ? error : new Error(String(error)));
+      return res.status(500).json({ error: 'Ошибка при получении истории попыток' });
     }
   }
 

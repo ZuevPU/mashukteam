@@ -175,12 +175,14 @@ router.delete('/admin/assignments/:id', requireAuth, requireAdmin, AssignmentCon
 router.post('/admin/assignments/:id/submissions', requireAuth, requireAdmin, AssignmentController.getSubmissionsForAssignment);
 router.post('/admin/submissions', requireAuth, requireAdmin, AssignmentController.getAllSubmissions);
 router.patch('/admin/submissions/:id', requireAuth, requireAdmin, AssignmentController.moderateSubmission);
+router.patch('/admin/submissions/bulk', requireAuth, requireAdmin, AssignmentController.bulkModerateSubmissions);
 router.post('/admin/leaderboard', requireAuth, requireAdmin, AssignmentController.getLeaderboard);
 
 // === User Assignments ===
 router.post('/assignments/my', requireAuth, AssignmentController.getMyAssignments);
 router.post('/assignments/:id/submit', requireAuth, AssignmentController.submitAssignment);
 router.post('/assignments/submissions', requireAuth, AssignmentController.getMySubmissions);
+router.post('/assignments/:id/submissions', requireAuth, AssignmentController.getSubmissionHistory);
 
 // === File Upload ===
 // Важно: multer должен быть ПЕРЕД requireAuth, чтобы распарсить FormData и получить initData из body

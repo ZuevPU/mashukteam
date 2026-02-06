@@ -286,6 +286,14 @@ export const adminApi = {
     return response.submission;
   },
 
+  bulkModerateSubmissions: async (submissionIds: string[], status: 'approved' | 'rejected', comment: string | undefined, initData: string): Promise<{ submissions: AssignmentSubmission[]; count: number }> => {
+    const response = await fetchApi<{ success: boolean; submissions: AssignmentSubmission[]; count: number }>(
+      `/admin/submissions/bulk`,
+      { method: 'PATCH', body: JSON.stringify({ initData, submissionIds, status, admin_comment: comment }) }
+    );
+    return { submissions: response.submissions, count: response.count };
+  },
+
   getLeaderboard: async (initData: string): Promise<{ user_id: string; user: any; approved_count: number; total_reward: number }[]> => {
     const response = await fetchApi<{ success: boolean; leaderboard: any[] }>(
       '/admin/leaderboard',

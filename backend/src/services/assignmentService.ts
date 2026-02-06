@@ -223,17 +223,7 @@ export class AssignmentService {
   // === Submissions ===
 
   static async submitAssignment(userId: string, assignmentId: string, data: SubmitAssignmentDto): Promise<AssignmentSubmission> {
-    // Check if already submitted
-    const { data: existing } = await supabase
-      .from('assignment_submissions')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('assignment_id', assignmentId)
-      .single();
-
-    if (existing) {
-      throw new Error('Вы уже выполнили это задание');
-    }
+    // Разрешаем множественные попытки - убрана проверка на существование
 
     const insertData: any = {
       user_id: userId,
@@ -247,6 +237,8 @@ export class AssignmentService {
       insertData.file_url = data.file_url;
     }
 
+    // attempt_number будет установлен автоматически триггером в БД
+
     const { data: submission, error } = await supabase
       .from('assignment_submissions')
       .insert(insertData)
@@ -255,6 +247,44 @@ export class AssignmentService {
 
     if (error) throw error;
     return submission as AssignmentSubmission;
+  }
+
+  /**
+   * Получить последнюю попытку выполнения задания пользователем
+   */
+  static async getLatestSubmission(userId: string, assignmentId: string): Promise<AssignmentSubmission | null> {
+    const { data, error } = await supabase
+      .from('assignment_submissions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('assignment_id', assignmentId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // Запись не найдена
+        return null;
+      }
+      throw error;
+    }
+    return data as AssignmentSubmission;
+  }
+
+  /**
+   * Получить историю всех попыток выполнения задания пользователем
+   */
+  static async getSubmissionHistory(userId: string, assignmentId: string): Promise<AssignmentSubmission[]> {
+    const { data, error } = await supabase
+      .from('assignment_submissions')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('assignment_id', assignmentId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return (data || []) as AssignmentSubmission[];
   }
 
   static async getUserSubmissions(userId: string): Promise<AssignmentSubmission[]> {
@@ -287,6 +317,149 @@ export class AssignmentService {
 
     if (error) throw error;
     return data as AssignmentSubmission[];
+  }
+
+  static async moderateSubmission(submissionId: string, data: ModerateSubmissionDto): Promise<AssignmentSubmission> {
+    // Сначала получаем submission с данными задания
+    const { data: existingSubmission, error: fetchError } = await supabase
+      .from('assignment_submissions')
+      .select('*, assignment:assignments(reward)')
+      .eq('id', submissionId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // Обновляем статус
+    const { data: submission, error } = await supabase
+      .from('assignment_submissions')
+      .update({
+        status: data.status,
+        admin_comment: data.admin_comment,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', submissionId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Если статус approved — начисляем баллы и звездочки
+    if (data.status === 'approved' && existingSubmission) {
+      const reward = (existingSubmission as any).assignment?.reward || 0;
+      if (reward > 0) {
+        // Добавляем баллы пользователю
+        await supabase
+          .from('points_transactions')
+          .insert({
+            user_id: existingSubmission.user_id,
+            points: reward,
+            reason: `Задание выполнено`
+          });
+
+        // Обновляем total_points в users
+        const { data: userData } = await supabase
+          .from('users')
+          .select('total_points')
+          .eq('id', existingSubmission.user_id)
+          .single();
+
+        const currentPoints = userData?.total_points || 0;
+        await supabase
+          .from('users')
+          .update({ total_points: currentPoints + reward })
+          .eq('id', existingSubmission.user_id);
+      }
+
+      // Обновляем звездочки пользователя: получаем сумму reward из всех одобренных заданий
+      await this.recalculateUserStars(existingSubmission.user_id);
+    }
+    
+    // Если статус изменился с approved на другой — пересчитываем звездочки
+    if (existingSubmission && existingSubmission.status === 'approved' && data.status !== 'approved') {
+      await this.recalculateUserStars(existingSubmission.user_id);
+    }
+
+    return submission as AssignmentSubmission;
+  }
+
+  /**
+   * Массовая модерация нескольких submissions
+   */
+  static async bulkModerateSubmissions(submissionIds: string[], data: ModerateSubmissionDto): Promise<AssignmentSubmission[]> {
+    if (submissionIds.length === 0) {
+      return [];
+    }
+
+    // Получаем все submissions с данными заданий для начисления баллов
+    const { data: existingSubmissions, error: fetchError } = await supabase
+      .from('assignment_submissions')
+      .select('*, assignment:assignments(reward)')
+      .in('id', submissionIds);
+
+    if (fetchError) throw fetchError;
+    if (!existingSubmissions || existingSubmissions.length === 0) {
+      throw new Error('Submissions не найдены');
+    }
+
+    // Обновляем статусы всех submissions
+    const { data: updatedSubmissions, error: updateError } = await supabase
+      .from('assignment_submissions')
+      .update({
+        status: data.status,
+        admin_comment: data.admin_comment,
+        updated_at: new Date().toISOString()
+      })
+      .in('id', submissionIds)
+      .select();
+
+    if (updateError) throw updateError;
+
+    // Если статус approved — начисляем баллы и звездочки для всех одобренных
+    if (data.status === 'approved') {
+      // Группируем по user_id для эффективного обновления
+      const userRewards = new Map<string, number>();
+      
+      existingSubmissions.forEach((sub: any) => {
+        const reward = sub.assignment?.reward || 0;
+        if (reward > 0) {
+          const current = userRewards.get(sub.user_id) || 0;
+          userRewards.set(sub.user_id, current + reward);
+        }
+      });
+
+      // Начисляем баллы для каждого пользователя
+      for (const [userId, totalReward] of userRewards.entries()) {
+        // Добавляем транзакции баллов
+        await supabase
+          .from('points_transactions')
+          .insert({
+            user_id: userId,
+            points: totalReward,
+            reason: `Задание выполнено (массовое одобрение)`
+          });
+
+        // Обновляем total_points в users
+        const { data: userData } = await supabase
+          .from('users')
+          .select('total_points')
+          .eq('id', userId)
+          .single();
+
+        const currentPoints = userData?.total_points || 0;
+        await supabase
+          .from('users')
+          .update({ total_points: currentPoints + totalReward })
+          .eq('id', userId);
+      }
+
+      // Обновляем звездочки для всех затронутых пользователей
+      const userIds = Array.from(userRewards.keys());
+      for (const userId of userIds) {
+        await this.recalculateUserStars(userId);
+      }
+    }
+
+    return (updatedSubmissions || []) as AssignmentSubmission[];
   }
 
   static async moderateSubmission(submissionId: string, data: ModerateSubmissionDto): Promise<AssignmentSubmission> {

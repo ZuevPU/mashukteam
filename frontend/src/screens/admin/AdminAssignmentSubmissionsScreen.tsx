@@ -245,6 +245,9 @@ export const AdminAssignmentSubmissionsScreen: React.FC<AdminAssignmentSubmissio
   const [loading, setLoading] = useState(true);
   const [moderating, setModerating] = useState<string | null>(null);
   const [comment, setComment] = useState('');
+  const [selectedSubmissions, setSelectedSubmissions] = useState<Set<string>>(new Set());
+  const [bulkComment, setBulkComment] = useState('');
+  const [bulkModerating, setBulkModerating] = useState(false);
 
   const loadSubmissions = async () => {
     if (!initData) return;
@@ -276,6 +279,46 @@ export const AdminAssignmentSubmissionsScreen: React.FC<AdminAssignmentSubmissio
     }
   };
 
+  const handleToggleSelection = (submissionId: string) => {
+    const newSelected = new Set(selectedSubmissions);
+    if (newSelected.has(submissionId)) {
+      newSelected.delete(submissionId);
+    } else {
+      newSelected.add(submissionId);
+    }
+    setSelectedSubmissions(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedSubmissions.size === pending.length) {
+      setSelectedSubmissions(new Set());
+    } else {
+      setSelectedSubmissions(new Set(pending.map(s => s.id)));
+    }
+  };
+
+  const handleBulkModerate = async (status: 'approved' | 'rejected') => {
+    if (!initData || selectedSubmissions.size === 0) return;
+    setBulkModerating(true);
+    try {
+      const result = await adminApi.bulkModerateSubmissions(
+        Array.from(selectedSubmissions),
+        status,
+        bulkComment || undefined,
+        initData
+      );
+      showAlert(`${status === 'approved' ? 'Принято' : 'Отклонено'} ${result.count} заданий`);
+      setSelectedSubmissions(new Set());
+      setBulkComment('');
+      loadSubmissions();
+    } catch (error) {
+      console.error('Error bulk moderating:', error);
+      showAlert('Ошибка массовой модерации');
+    } finally {
+      setBulkModerating(false);
+    }
+  };
+
   if (loading) return <div className="loading">Загрузка...</div>;
 
   const pending = submissions.filter(s => s.status === 'pending');
@@ -290,17 +333,117 @@ export const AdminAssignmentSubmissionsScreen: React.FC<AdminAssignmentSubmissio
 
       {pending.length > 0 && (
         <>
-          <h4 style={{marginBottom: 12}}>На проверке ({pending.length})</h4>
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12}}>
+            <h4 style={{margin: 0}}>На проверке ({pending.length})</h4>
+            <button
+              onClick={handleSelectAll}
+              style={{
+                padding: '6px 12px',
+                background: selectedSubmissions.size === pending.length ? '#dc3545' : '#28a745',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+            >
+              {selectedSubmissions.size === pending.length ? 'Снять выделение' : 'Выделить всё'}
+            </button>
+          </div>
+
+          {/* Панель массовых действий */}
+          {selectedSubmissions.size > 0 && (
+            <div style={{
+              marginBottom: 12,
+              padding: '12px',
+              background: '#e7f3ff',
+              borderRadius: '8px',
+              border: '1px solid #b3d9ff'
+            }}>
+              <div style={{marginBottom: 8, fontSize: '14px', fontWeight: '600'}}>
+                Выбрано: {selectedSubmissions.size}
+              </div>
+              <textarea
+                placeholder="Комментарий для всех отмеченных (необязательно)"
+                value={bulkComment}
+                onChange={(e) => setBulkComment(e.target.value)}
+                style={{
+                  width: '100%',
+                  minHeight: '60px',
+                  padding: '8px',
+                  borderRadius: '6px',
+                  border: '1px solid #ccc',
+                  fontSize: '13px',
+                  marginBottom: '8px',
+                  fontFamily: 'inherit'
+                }}
+              />
+              <div style={{display: 'flex', gap: '8px'}}>
+                <button
+                  onClick={() => handleBulkModerate('approved')}
+                  disabled={bulkModerating}
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    background: '#28a745',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: bulkModerating ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    opacity: bulkModerating ? 0.6 : 1
+                  }}
+                >
+                  {bulkModerating ? 'Обработка...' : `✓ Принять отмеченные (${selectedSubmissions.size})`}
+                </button>
+                <button
+                  onClick={() => handleBulkModerate('rejected')}
+                  disabled={bulkModerating}
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    background: '#dc3545',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: bulkModerating ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    opacity: bulkModerating ? 0.6 : 1
+                  }}
+                >
+                  {bulkModerating ? 'Обработка...' : `✕ Отклонить отмеченные (${selectedSubmissions.size})`}
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="admin-list" style={{marginBottom: 24}}>
             {pending.map((sub) => {
               const userName = `${(sub as any).user?.first_name || ''} ${(sub as any).user?.last_name || ''}`.trim();
+              const isSelected = selectedSubmissions.has(sub.id);
               return (
-              <div key={sub.id} className="admin-item-card block">
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8}}>
-                  <strong>{userName || 'Пользователь'}</strong>
-                  <span style={{fontSize: 12, opacity: 0.6}}>
-                    {new Date(sub.created_at).toLocaleDateString()}
-                  </span>
+              <div key={sub.id} className="admin-item-card block" style={{
+                border: isSelected ? '2px solid #3390ec' : undefined
+              }}>
+                <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 8}}>
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => handleToggleSelection(sub.id)}
+                    style={{
+                      width: '18px',
+                      height: '18px',
+                      cursor: 'pointer'
+                    }}
+                  />
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1}}>
+                    <strong>{userName || 'Пользователь'}</strong>
+                    <span style={{fontSize: 12, opacity: 0.6}}>
+                      {new Date(sub.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
                 
                 {/* Текстовый контент (если есть) */}

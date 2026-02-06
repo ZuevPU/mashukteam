@@ -81,13 +81,31 @@ export class ExportController {
   static async exportAssignments(req: Request, res: Response) {
     try {
       logger.info('Starting export assignments');
-      const excelBuffer = await ExportService.exportAssignmentsWithResults();
+      
+      // Получаем фильтры из body запроса
+      const filters: ExportFilters = {
+        dateFrom: req.body.dateFrom,
+        dateTo: req.body.dateTo,
+        direction: req.body.direction,
+        eventId: req.body.eventId,
+      };
+      
+      // Удаляем undefined значения
+      Object.keys(filters).forEach(key => {
+        if (filters[key as keyof ExportFilters] === undefined) {
+          delete filters[key as keyof ExportFilters];
+        }
+      });
+      
+      const excelBuffer = await ExportService.exportAssignmentsWithResults(
+        Object.keys(filters).length > 0 ? filters : undefined
+      );
       
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       res.setHeader('Content-Disposition', 'attachment; filename=assignments_export.xlsx');
       res.setHeader('Content-Length', excelBuffer.length);
       
-      logger.info('Export assignments completed successfully', { size: excelBuffer.length });
+      logger.info('Export assignments completed successfully', { size: excelBuffer.length, filters });
       return res.send(excelBuffer);
     } catch (error: any) {
       logger.error('Export assignments error', error instanceof Error ? error : new Error(String(error)));
@@ -269,7 +287,7 @@ export class ExportController {
           label = 'Диагностики';
           break;
         case 'assignments':
-          excelBuffer = await ExportService.exportAssignmentsWithResults();
+          excelBuffer = await ExportService.exportAssignmentsWithResults(Object.keys(filters).length > 0 ? filters : undefined);
           filename = `assignments_export_${new Date().toISOString().split('T')[0]}.xlsx`;
           label = 'Задания';
           break;

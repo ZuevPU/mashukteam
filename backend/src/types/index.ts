@@ -344,6 +344,7 @@ export interface AssignmentSubmission {
   file_url?: string; // URL загруженного файла в Supabase Storage
   status: SubmissionStatus;
   admin_comment?: string;
+  attempt_number?: number; // Номер попытки выполнения задания
   created_at: string;
   updated_at: string;
   // Joined data

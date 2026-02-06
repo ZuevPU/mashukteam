@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Assignment } from '../../types';
+import React, { useState, useRef, useEffect } from 'react';
+import { Assignment, AssignmentSubmission } from '../../types';
 import { assignmentApi } from '../../services/assignmentApi';
 import { uploadApi } from '../../services/uploadApi';
 import { useTelegram } from '../../hooks/useTelegram';
@@ -18,11 +18,34 @@ export const AssignmentSubmitScreen: React.FC<AssignmentSubmitScreenProps> = ({
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(false);
+  const [submissionHistory, setSubmissionHistory] = useState<AssignmentSubmission[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   
   // Для загрузки фото
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Загружаем историю попыток при монтировании
+  useEffect(() => {
+    const loadHistory = async () => {
+      if (!initData) return;
+      setLoadingHistory(true);
+      try {
+        const history = await assignmentApi.getSubmissionHistory(assignment.id, initData);
+        setSubmissionHistory(history);
+      } catch (error) {
+        console.error('Error loading submission history:', error);
+      } finally {
+        setLoadingHistory(false);
+      }
+    };
+    loadHistory();
+  }, [assignment.id, initData]);
+
+  const latestSubmission = submissionHistory.length > 0 
+    ? submissionHistory[0] // Первая в списке - самая последняя (отсортирована по created_at DESC)
+    : null;
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -110,6 +133,9 @@ export const AssignmentSubmitScreen: React.FC<AssignmentSubmitScreenProps> = ({
       
       await assignmentApi.submitAssignment(assignment.id, submissionContent, initData, fileUrl);
       showAlert('Ответ отправлен на проверку!');
+      // Обновляем историю после успешной отправки
+      const history = await assignmentApi.getSubmissionHistory(assignment.id, initData);
+      setSubmissionHistory(history);
       onSuccess();
     } catch (error: any) {
       console.error('Error submitting:', error);
@@ -152,6 +178,67 @@ export const AssignmentSubmitScreen: React.FC<AssignmentSubmitScreenProps> = ({
         
         {assignment.description && (
           <p className="description full">{assignment.description}</p>
+        )}
+
+        {/* Отображение истории попыток */}
+        {latestSubmission && (
+          <div style={{
+            marginBottom: '20px',
+            padding: '12px',
+            background: 'var(--tg-theme-secondary-bg-color, #f5f5f5)',
+            borderRadius: '8px',
+            border: '1px solid var(--tg-theme-hint-color, #ddd)'
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              marginBottom: '8px'
+            }}>
+              <strong style={{ fontSize: '14px' }}>
+                {submissionHistory.length > 1 
+                  ? `Последняя попытка (${submissionHistory.length} всего)` 
+                  : 'Последняя попытка'}
+              </strong>
+              <span style={{
+                fontSize: '12px',
+                padding: '4px 8px',
+                borderRadius: '4px',
+                background: latestSubmission.status === 'approved' 
+                  ? '#d4edda' 
+                  : latestSubmission.status === 'rejected' 
+                  ? '#f8d7da' 
+                  : '#fff3cd',
+                color: latestSubmission.status === 'approved'
+                  ? '#155724'
+                  : latestSubmission.status === 'rejected'
+                  ? '#721c24'
+                  : '#856404'
+              }}>
+                {latestSubmission.status === 'approved' 
+                  ? '✓ Принято' 
+                  : latestSubmission.status === 'rejected' 
+                  ? '✕ Отклонено' 
+                  : '⏳ На проверке'}
+              </span>
+            </div>
+            <p style={{ fontSize: '13px', margin: '4px 0', opacity: 0.8 }}>
+              Ответ: {latestSubmission.content?.slice(0, 100)}{latestSubmission.content && latestSubmission.content.length > 100 ? '...' : ''}
+            </p>
+            {latestSubmission.admin_comment && (
+              <p style={{ fontSize: '12px', margin: '4px 0', fontStyle: 'italic', opacity: 0.7 }}>
+                Комментарий: {latestSubmission.admin_comment}
+              </p>
+            )}
+            <p style={{ fontSize: '11px', margin: '4px 0 0 0', opacity: 0.6 }}>
+              {new Date(latestSubmission.created_at).toLocaleDateString('ru-RU', {
+                day: 'numeric',
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </p>
+          </div>
         )}
 
         <div className="input-section">

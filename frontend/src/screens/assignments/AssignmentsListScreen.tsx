@@ -43,12 +43,19 @@ export const AssignmentsListScreen: React.FC<AssignmentsListScreenProps> = ({ on
   if (loading) return <div className="loading">Загрузка...</div>;
 
   // Разделяем на выполненные, невыполненные и random_number
-  const submittedIds = new Set(submissions.map(s => s.assignment_id));
+  // Для множественных попыток: группируем по assignment_id и берем последнюю попытку
+  const latestSubmissionsByAssignment = new Map<string, AssignmentSubmission>();
+  submissions.forEach(sub => {
+    const existing = latestSubmissionsByAssignment.get(sub.assignment_id);
+    if (!existing || new Date(sub.created_at) > new Date(existing.created_at)) {
+      latestSubmissionsByAssignment.set(sub.assignment_id, sub);
+    }
+  });
   
   // Обычные задания (не random_number)
   const regularAssignments = assignments.filter(a => a.answer_format !== 'random_number');
-  const available = regularAssignments.filter(a => !submittedIds.has(a.id));
-  const completed = regularAssignments.filter(a => submittedIds.has(a.id));
+  const available = regularAssignments.filter(a => !latestSubmissionsByAssignment.has(a.id));
+  const completed = regularAssignments.filter(a => latestSubmissionsByAssignment.has(a.id));
   
   // Задания типа random_number
   const randomNumberAssignments = assignments.filter(a => a.answer_format === 'random_number');
@@ -125,19 +132,46 @@ export const AssignmentsListScreen: React.FC<AssignmentsListScreenProps> = ({ on
           <h4 className="section-title">Выполнено ({completed.length})</h4>
           <div className="assignments-list">
             {completed.map((a) => {
-              const sub = submissions.find(s => s.assignment_id === a.id);
+              const sub = latestSubmissionsByAssignment.get(a.id);
+              const attemptsCount = submissions.filter(s => s.assignment_id === a.id).length;
               return (
                 <div key={a.id} className="assignment-card completed">
                   <div className="assignment-header">
                     <span className={`status-badge ${sub?.status}`}>
                       {getStatusLabel(sub?.status || 'pending')}
                     </span>
+                    {attemptsCount > 1 && (
+                      <span style={{ fontSize: '12px', opacity: 0.7 }}>
+                        Попытка {sub?.attempt_number || attemptsCount}
+                      </span>
+                    )}
                   </div>
                   <h4>{a.title}</h4>
                   <p className="submitted-answer">Ваш ответ: {sub?.content?.slice(0, 50)}...</p>
                   {sub?.admin_comment && (
                     <p className="admin-comment">Комментарий: {sub.admin_comment}</p>
                   )}
+                  <button
+                    className="retry-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelect(a);
+                    }}
+                    style={{
+                      marginTop: '12px',
+                      width: '100%',
+                      padding: '8px',
+                      background: 'var(--tg-theme-button-color, #3390ec)',
+                      color: 'var(--tg-theme-button-text-color, #fff)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '600'
+                    }}
+                  >
+                    + Сделать еще раз
+                  </button>
                 </div>
               );
             })}

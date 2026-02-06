@@ -407,26 +407,40 @@ export class ExportService {
   /**
    * Экспорт заданий с результатами выполнения по каждому участнику
    */
-  static async exportAssignmentsWithResults(): Promise<Buffer> {
-    // Получаем все задания
-    const { data: assignments } = await supabase
+  static async exportAssignmentsWithResults(filters?: ExportFilters): Promise<Buffer> {
+    // Получаем все задания (или фильтруем по assignment_id если указан)
+    let assignmentsQuery = supabase
       .from('assignments')
       .select('*')
       .order('created_at', { ascending: false });
+
+    const { data: assignments } = await assignmentsQuery;
 
     const workbook = XLSX.utils.book_new();
 
     // Для каждого задания создаем отдельный лист
     for (const assignment of assignments || []) {
-      // Получаем все отправки для этого задания
-      const { data: submissions } = await supabase
+      // Получаем отправки для этого задания с фильтрацией по датам
+      let submissionsQuery = supabase
         .from('assignment_submissions')
         .select(`
           *,
           user:users(id, first_name, last_name, telegram_username, telegram_id)
         `)
-        .eq('assignment_id', assignment.id)
-        .order('created_at', { ascending: false });
+        .eq('assignment_id', assignment.id);
+
+      // Применяем фильтры по датам если указаны
+      if (filters?.dateFrom) {
+        submissionsQuery = submissionsQuery.gte('created_at', filters.dateFrom);
+      }
+      if (filters?.dateTo) {
+        // Добавляем время 23:59:59 к dateTo для включения всего дня
+        const dateToEnd = new Date(filters.dateTo);
+        dateToEnd.setHours(23, 59, 59, 999);
+        submissionsQuery = submissionsQuery.lte('created_at', dateToEnd.toISOString());
+      }
+
+      const { data: submissions } = await submissionsQuery.order('created_at', { ascending: false });
 
       // Формируем данные для экспорта
       const assignmentData: any[] = [];
@@ -458,7 +472,7 @@ export class ExportService {
       });
       assignmentData.push({
         'Поле': 'Дата создания',
-        'Значение': new Date(assignment.created_at).toLocaleString('ru-RU')
+        'Значение': this.formatDate(assignment.created_at)
       });
       assignmentData.push({ 'Поле': '', 'Значение': '' });
       assignmentData.push({
@@ -480,8 +494,9 @@ export class ExportService {
           'Содержание ответа': sub.content || '',
           'Статус': this.getStatusLabel(sub.status),
           'Комментарий админа': sub.admin_comment || '',
-          'Дата отправки': new Date(sub.created_at).toLocaleString('ru-RU'),
-          'Дата обновления': new Date(sub.updated_at).toLocaleString('ru-RU')
+          'Номер попытки': sub.attempt_number || '',
+          'Дата отправки': this.formatDate(sub.created_at),
+          'Дата обновления': this.formatDate(sub.updated_at)
         };
       });
 
@@ -499,6 +514,7 @@ export class ExportService {
           'Содержание ответа': '',
           'Статус': '',
           'Комментарий админа': '',
+          'Номер попытки': '',
           'Дата отправки': '',
           'Дата обновления': ''
         })),
@@ -1539,6 +1555,7 @@ export class ExportService {
         'URL файла': s.file_url || '',
         'Статус': this.getStatusLabel(s.status),
         'Комментарий админа': s.admin_comment || '',
+        'Номер попытки': s.attempt_number || '',
         'Награда': assignment?.reward || 0,
         'Дата отправки': this.formatDate(s.created_at),
         'Дата обновления': this.formatDate(s.updated_at)

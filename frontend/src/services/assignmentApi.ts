@@ -65,6 +65,17 @@ export const assignmentApi = {
   },
 
   /**
+   * Получение истории попыток выполнения задания
+   */
+  getSubmissionHistory: async (assignmentId: string, initData: string): Promise<AssignmentSubmission[]> => {
+    const response = await fetchApi<{ success: boolean; submissions: AssignmentSubmission[] }>(
+      `/assignments/${assignmentId}/submissions`,
+      { method: 'POST', body: JSON.stringify({ initData }) }
+    );
+    return response.submissions;
+  },
+
+  /**
    * Получение задания по ID
    */
   getAssignmentById: async (assignmentId: string, initData: string): Promise<Assignment | null> => {
