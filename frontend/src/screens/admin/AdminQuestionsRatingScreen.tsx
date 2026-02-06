@@ -47,9 +47,9 @@ export const AdminQuestionsRatingScreen: React.FC<AdminQuestionsRatingScreenProp
 
   const getLevelName = (level: number): string => {
     switch (level) {
-      case 1: return 'Начинающий';
-      case 2: return 'Растущий';
-      case 3: return 'Опытный';
+      case 1: return 'Начал задумываться';
+      case 2: return 'Поймал смысл';
+      case 3: return 'Опять рефлексирует';
       case 4: return 'Мастер рефлексии';
       case 5: return 'Преисполнился в рефлексии';
       default: return `Уровень ${level}`;
