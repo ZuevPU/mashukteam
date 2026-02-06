@@ -196,6 +196,7 @@ export interface AssignmentSubmission {
   file_url?: string; // URL загруженного файла
   status: 'pending' | 'approved' | 'rejected';
   admin_comment?: string;
+  attempt_number?: number; // Номер попытки выполнения задания
   created_at: string;
   updated_at: string;
 }

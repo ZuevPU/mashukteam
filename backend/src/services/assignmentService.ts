@@ -462,69 +462,6 @@ export class AssignmentService {
     return (updatedSubmissions || []) as AssignmentSubmission[];
   }
 
-  static async moderateSubmission(submissionId: string, data: ModerateSubmissionDto): Promise<AssignmentSubmission> {
-    // Сначала получаем submission с данными задания
-    const { data: existingSubmission, error: fetchError } = await supabase
-      .from('assignment_submissions')
-      .select('*, assignment:assignments(reward)')
-      .eq('id', submissionId)
-      .single();
-
-    if (fetchError) throw fetchError;
-
-    // Обновляем статус
-    const { data: submission, error } = await supabase
-      .from('assignment_submissions')
-      .update({
-        status: data.status,
-        admin_comment: data.admin_comment,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', submissionId)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    // Если статус approved — начисляем баллы и звездочки
-    if (data.status === 'approved' && existingSubmission) {
-      const reward = (existingSubmission as any).assignment?.reward || 0;
-      if (reward > 0) {
-        // Добавляем баллы пользователю
-        await supabase
-          .from('points_transactions')
-          .insert({
-            user_id: existingSubmission.user_id,
-            points: reward,
-            reason: `Задание выполнено`
-          });
-
-        // Обновляем total_points в users
-        const { data: userData } = await supabase
-          .from('users')
-          .select('total_points')
-          .eq('id', existingSubmission.user_id)
-          .single();
-
-        const currentPoints = userData?.total_points || 0;
-        await supabase
-          .from('users')
-          .update({ total_points: currentPoints + reward })
-          .eq('id', existingSubmission.user_id);
-      }
-
-      // Обновляем звездочки пользователя: получаем сумму reward из всех одобренных заданий
-      await this.recalculateUserStars(existingSubmission.user_id);
-    }
-    
-    // Если статус изменился с approved на другой — пересчитываем звездочки
-    if (existingSubmission && existingSubmission.status === 'approved' && data.status !== 'approved') {
-      await this.recalculateUserStars(existingSubmission.user_id);
-    }
-
-    return submission as AssignmentSubmission;
-  }
-
   /**
    * Пересчёт звёзд пользователя по сумме reward одобренных заданий
    */
