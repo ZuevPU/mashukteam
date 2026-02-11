@@ -1357,9 +1357,9 @@ export class ExportService {
       XLSX.utils.book_append_sheet(workbook, eventNotesSheet, 'Заметки мероприятий');
     }
 
-    // 18. Рандомайзеры (randomizers)
+    // 18. Рандомайзеры (randomizer_questions)
     const randomizers = await this.fetchAllRows<any>((from, to) =>
-      supabase.from('randomizers').select('*').order('created_at', { ascending: false }).range(from, to)
+      supabase.from('randomizer_questions').select('*').order('created_at', { ascending: false }).range(from, to)
     );
     if (randomizers.length > 0) {
       const randomizersSheet = XLSX.utils.json_to_sheet(randomizers.map((r: any) => ({
@@ -1372,24 +1372,24 @@ export class ExportService {
 
     // 19. Участники рандомайзеров (randomizer_participants)
     const randomizerParticipants = await this.fetchAllRows<any>((from, to) =>
-      supabase.from('randomizer_participants').select('*').order('created_at', { ascending: false }).range(from, to)
+      supabase.from('randomizer_participants').select('*').order('participated_at', { ascending: false }).range(from, to)
     );
     if (randomizerParticipants.length > 0) {
       const randomizerParticipantsSheet = XLSX.utils.json_to_sheet(randomizerParticipants.map((rp: any) => ({
         ...rp,
-        created_at: rp.created_at ? new Date(rp.created_at).toLocaleString('ru-RU') : ''
+        participated_at: rp.participated_at ? new Date(rp.participated_at).toLocaleString('ru-RU') : ''
       })));
       XLSX.utils.book_append_sheet(workbook, randomizerParticipantsSheet, 'Участники рандомайзеров');
     }
 
     // 20. Распределения рандомайзеров (randomizer_distributions)
     const randomizerDistributions = await this.fetchAllRows<any>((from, to) =>
-      supabase.from('randomizer_distributions').select('*').order('created_at', { ascending: false }).range(from, to)
+      supabase.from('randomizer_distributions').select('*').order('distributed_at', { ascending: false }).range(from, to)
     );
     if (randomizerDistributions.length > 0) {
       const randomizerDistributionsSheet = XLSX.utils.json_to_sheet(randomizerDistributions.map((rd: any) => ({
         ...rd,
-        created_at: rd.created_at ? new Date(rd.created_at).toLocaleString('ru-RU') : ''
+        distributed_at: rd.distributed_at ? new Date(rd.distributed_at).toLocaleString('ru-RU') : ''
       })));
       XLSX.utils.book_append_sheet(workbook, randomizerDistributionsSheet, 'Распределения рандомайзеров');
     }
@@ -1757,7 +1757,7 @@ export class ExportService {
     // ==================== ЛИСТ 11: РАНДОМАЙЗЕРЫ ====================
     const randomizers = await this.fetchAllRows<any>((from, to) =>
       supabase
-        .from('randomizers')
+        .from('randomizer_questions')
         .select(`
           *,
           assignment:assignments(title)
@@ -1772,9 +1772,9 @@ export class ExportService {
       return {
         'ID': r.id,
         'Задание': assignment?.title || '',
-        'Режим': r.mode === 'tables' ? 'По столам' : 'Простой',
-        'Мин. число': r.min_number || 1,
-        'Макс. число': r.max_number || 100,
+        'Режим': r.randomizer_mode === 'tables' ? 'По столам' : 'Простой',
+        'Мин. число': r.number_min ?? 1,
+        'Макс. число': r.number_max ?? 100,
         'Количество столов': r.tables_count || '',
         'Статус': r.status || '',
         'Распределено': this.formatDate(r.distributed_at),
@@ -1793,9 +1793,9 @@ export class ExportService {
         .select(`
           *,
           user:users(first_name, last_name, telegram_username),
-          randomizer:randomizers(assignment:assignments(title))
+          randomizer:randomizer_questions(assignment:assignments(title))
         `)
-        .order('created_at', { ascending: false })
+        .order('participated_at', { ascending: false })
         .range(from, to)
     );
 
@@ -1809,7 +1809,7 @@ export class ExportService {
         'ID': rp.id,
         'Пользователь': `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.telegram_username || rp.user_id,
         'Задание': assignmentObj?.title || '',
-        'Дата участия': this.formatDate(rp.created_at)
+        'Дата участия': this.formatDate(rp.participated_at)
       };
     });
     if (randomizerParticipantsData.length > 0) {
@@ -1824,9 +1824,9 @@ export class ExportService {
         .select(`
           *,
           user:users(first_name, last_name, telegram_username),
-          randomizer:randomizers(assignment:assignments(title))
+          randomizer:randomizer_questions(assignment:assignments(title))
         `)
-        .order('created_at', { ascending: false })
+        .order('distributed_at', { ascending: false })
         .range(from, to)
     );
 
@@ -1840,9 +1840,9 @@ export class ExportService {
         'ID': rd.id,
         'Пользователь': `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.telegram_username || rd.user_id,
         'Задание': assignmentObj?.title || '',
-        'Присвоенное число': rd.assigned_number || '',
-        'Номер стола': rd.table_number || '',
-        'Дата распределения': this.formatDate(rd.created_at)
+        'Присвоенное число': rd.random_number ?? rd.table_number ?? '',
+        'Номер стола': rd.table_number ?? '',
+        'Дата распределения': this.formatDate(rd.distributed_at)
       };
     });
     if (randomizerDistributionsData.length > 0) {
