@@ -928,7 +928,7 @@ export class ExportService {
       }),
       this.fetchAllRows<any>((from, to) =>
         supabase
-          .from('points_transactions')
+          .from('user_points')
           .select('user_id, points, reason, created_at')
           .in('user_id', userIds)
           .order('created_at', { ascending: false })
@@ -1319,7 +1319,7 @@ export class ExportService {
 
     // 15. Транзакции баллов
     const pointsTransactions = await this.fetchAllRows<any>((from, to) =>
-      supabase.from('points_transactions').select('*').order('created_at', { ascending: false }).range(from, to)
+      supabase.from('user_points').select('*').order('created_at', { ascending: false }).range(from, to)
     );
     if (pointsTransactions.length > 0) {
       const pointsTransactionsSheet = XLSX.utils.json_to_sheet(pointsTransactions.map((pt: any) => ({
@@ -1983,7 +1983,7 @@ export class ExportService {
     // ==================== ЛИСТ 19: ТРАНЗАКЦИИ БАЛЛОВ ====================
     const pointsTransactions = await this.fetchAllRows<any>((from, to) =>
       supabase
-        .from('points_transactions')
+        .from('user_points')
         .select(`
           *,
           user:users(first_name, last_name, telegram_username)
