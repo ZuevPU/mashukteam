@@ -816,14 +816,15 @@ export class ExportService {
    * Экспорт пользователей с полной информацией
    */
   static async exportUsersFull(filters?: ExportFilters): Promise<Buffer> {
+    // users.direction — строка (slug), не FK; directions загружаем отдельно
+    const { data: directionsList } = await supabase.from('directions').select('slug, name');
+    const directionNameMap = new Map<string, string>(
+      (directionsList || []).map((d: any) => [d.slug, d.name || ''])
+    );
+
     // Получаем все данные пользователей (с пагинацией)
     const users = await this.fetchAllRows<any>((from, to) => {
-      let query = supabase
-        .from('users')
-        .select(`
-          *,
-          direction:directions(name, slug)
-        `);
+      let query = supabase.from('users').select('*');
 
       if (filters?.direction) {
         query = query.eq('direction', filters.direction);
@@ -1084,6 +1085,9 @@ export class ExportService {
         `${note.event?.title || 'Программа'} (${note.event?.event_date ? new Date(note.event.event_date).toLocaleDateString('ru-RU') : 'без даты'}): ${note.note_text}`
       ).join('; ');
 
+      const directionSlug = user.direction || '';
+      const directionName = directionNameMap.get(directionSlug) || directionSlug;
+
       return {
         'ID': user.id,
         'Telegram ID': user.telegram_id || '',
@@ -1093,7 +1097,8 @@ export class ExportService {
         'Username': user.telegram_username || '',
         'Мотивация': user.motivation || '',
         'Статус': user.status === 'registered' ? 'Зарегистрирован' : 'Новый',
-        'Направление': user.direction || '',
+        'Направление (slug)': directionSlug,
+        'Направление': directionName,
         'Дата регистрации': new Date(user.created_at).toLocaleString('ru-RU'),
         'Общие баллы': user.total_points || 0,
         'Баллы рефлексии': user.reflection_points || 0,
@@ -1425,16 +1430,25 @@ export class ExportService {
   static async exportFullApplication(): Promise<Buffer> {
     const workbook = XLSX.utils.book_new();
 
+    // users.direction — строка (slug), не FK; directions загружаем отдельно
+    const { data: directionsList } = await supabase.from('directions').select('slug, name');
+    const directionNameMap = new Map<string, string>(
+      (directionsList || []).map((d: any) => [d.slug, d.name || ''])
+    );
+
     // ==================== ЛИСТ 1: ПОЛЬЗОВАТЕЛИ С ПОЛНЫМИ ДАННЫМИ ====================
     const users = await this.fetchAllRows<any>((from, to) =>
       supabase
         .from('users')
-        .select(`*, direction:directions(name, slug)`)
+        .select('*')
         .order('created_at', { ascending: false })
         .range(from, to)
     );
 
-    const usersData = users.map((u: any) => ({
+    const usersData = users.map((u: any) => {
+      const directionSlug = u.direction || '';
+      const directionName = directionNameMap.get(directionSlug) || directionSlug;
+      return {
       'ID': u.id,
       'Telegram ID': u.telegram_id || '',
       'Имя': u.first_name || '',
@@ -1444,8 +1458,8 @@ export class ExportService {
       'Телефон': u.phone || '',
       'Email': u.email || '',
       'Мотивация': u.motivation || '',
-      'Направление (slug)': u.direction || '',
-      'Направление': u.direction?.name || u.direction || '',
+      'Направление (slug)': directionSlug,
+      'Направление': directionName,
       'Статус': u.status === 'registered' ? 'Зарегистрирован' : 'Новый',
       'Администратор': u.is_admin === 1 ? 'Да' : 'Нет',
       'Общие баллы': u.total_points || 0,
@@ -1454,7 +1468,8 @@ export class ExportService {
       'Текущий уровень': u.current_level || 1,
       'Дата регистрации': this.formatDate(u.created_at),
       'Дата обновления': this.formatDate(u.updated_at)
-    }));
+    };
+    });
     if (usersData.length > 0) {
       const usersSheet = XLSX.utils.json_to_sheet(usersData);
       XLSX.utils.book_append_sheet(workbook, usersSheet, 'Пользователи');
