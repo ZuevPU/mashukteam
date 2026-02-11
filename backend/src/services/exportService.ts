@@ -1957,9 +1957,9 @@ export class ExportService {
         .from('user_points')
         .select(`
           *,
-          user:users(first_name, last_name, telegram_username)
+          user:users(first_name, last_name, telegram_username, total_points)
         `)
-        .order('total_points', { ascending: false })
+        .order('created_at', { ascending: false })
         .range(from, to)
     );
 
@@ -1969,7 +1969,9 @@ export class ExportService {
       return {
         'ID': up.id,
         'Пользователь': `${user?.first_name || ''} ${user?.last_name || ''}`.trim() || user?.telegram_username || up.user_id,
-        'Всего баллов': up.total_points || 0,
+        'Баллы (транзакция)': up.points ?? 0,
+        'Причина': up.reason || '',
+        'Всего баллов': user?.total_points ?? 0,
         'Дата создания': this.formatDate(up.created_at)
       };
     });
