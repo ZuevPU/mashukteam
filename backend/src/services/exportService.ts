@@ -11,78 +11,112 @@ try {
 }
 
 export class ExportService {
+  private static readonly EXPORT_CHUNK_SIZE = 1000;
+
+  /**
+   * Загрузка всех строк с пагинацией (обходит лимит 1000 строк Supabase)
+   */
+  private static async fetchAllRows<T = any>(
+    buildQuery: (rangeFrom: number, rangeTo: number) => any
+  ): Promise<T[]> {
+    const all: T[] = [];
+    let offset = 0;
+    let hasMore = true;
+    while (hasMore) {
+      const { data, error } = await buildQuery(offset, offset + this.EXPORT_CHUNK_SIZE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      all.push(...data);
+      hasMore = data.length === this.EXPORT_CHUNK_SIZE;
+      offset += this.EXPORT_CHUNK_SIZE;
+    }
+    return all;
+  }
+
   /**
    * Экспорт всех ответов в Excel файл
    */
   static async exportAnswersToExcel(): Promise<Buffer> {
     try {
-      // 1. Получаем ответы на мероприятия
-      const { data: eventAnswers, error: eventAnswersError } = await supabase
-        .from('answers')
-        .select(`
-          id,
-          user_id,
-          event_id,
-          question_id,
-          answer_data,
-          created_at,
-          user:users(id, first_name, last_name, telegram_username),
-          question:questions(text, type),
-          event:events(title, type, group_name)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (eventAnswersError) {
-        logger.error('Error fetching event answers', eventAnswersError instanceof Error ? eventAnswersError : new Error(String(eventAnswersError)));
-        throw new Error(`Ошибка получения ответов на мероприятия: ${eventAnswersError.message}`);
+      // 1. Получаем ответы на мероприятия (все строки, с пагинацией)
+      let eventAnswers: any[];
+      try {
+        eventAnswers = await this.fetchAllRows<any>((from, to) =>
+          supabase
+            .from('answers')
+            .select(`
+              id,
+              user_id,
+              event_id,
+              question_id,
+              answer_data,
+              created_at,
+              user:users(id, first_name, last_name, telegram_username),
+              question:questions(text, type),
+              event:events(title, type, group_name)
+            `)
+            .order('created_at', { ascending: false })
+            .range(from, to)
+        );
+      } catch (e: any) {
+        logger.error('Error fetching event answers', e instanceof Error ? e : new Error(String(e)));
+        throw new Error(`Ошибка получения ответов на мероприятия: ${e?.message || e}`);
       }
 
-      // 2. Получаем ответы на персональные вопросы
-      const { data: targetedAnswers, error: targetedAnswersError } = await supabase
-        .from('targeted_answers')
-        .select(`
-          id,
-          user_id,
-          question_id,
-          answer_data,
-          created_at,
-          user:users(id, first_name, last_name, telegram_username),
-          question:targeted_questions(text, type)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (targetedAnswersError) {
-        logger.error('Error fetching targeted answers', targetedAnswersError instanceof Error ? targetedAnswersError : new Error(String(targetedAnswersError)));
-        throw new Error(`Ошибка получения ответов на персональные вопросы: ${targetedAnswersError.message}`);
+      // 2. Получаем ответы на персональные вопросы (все строки, с пагинацией)
+      let targetedAnswers: any[];
+      try {
+        targetedAnswers = await this.fetchAllRows<any>((from, to) =>
+          supabase
+            .from('targeted_answers')
+            .select(`
+              id,
+              user_id,
+              question_id,
+              answer_data,
+              created_at,
+              user:users(id, first_name, last_name, telegram_username),
+              question:targeted_questions(text, type)
+            `)
+            .order('created_at', { ascending: false })
+            .range(from, to)
+        );
+      } catch (e: any) {
+        logger.error('Error fetching targeted answers', e instanceof Error ? e : new Error(String(e)));
+        throw new Error(`Ошибка получения ответов на персональные вопросы: ${e?.message || e}`);
       }
 
-      // 3. Получаем выполненные задания
-      const { data: submissions, error: submissionsError } = await supabase
-        .from('assignment_submissions')
-        .select(`
-          id,
-          user_id,
-          assignment_id,
-          content,
-          status,
-          admin_comment,
-          created_at,
-          updated_at,
-          user:users(id, first_name, last_name, telegram_username),
-          assignment:assignments(title, reward)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (submissionsError) {
-        logger.error('Error fetching submissions', submissionsError instanceof Error ? submissionsError : new Error(String(submissionsError)));
-        throw new Error(`Ошибка получения выполненных заданий: ${submissionsError.message}`);
+      // 3. Получаем выполненные задания (все строки, с пагинацией)
+      let submissions: any[];
+      try {
+        submissions = await this.fetchAllRows<any>((from, to) =>
+          supabase
+            .from('assignment_submissions')
+            .select(`
+              id,
+              user_id,
+              assignment_id,
+              content,
+              status,
+              admin_comment,
+              created_at,
+              updated_at,
+              user:users(id, first_name, last_name, telegram_username),
+              assignment:assignments(title, reward)
+            `)
+            .order('created_at', { ascending: false })
+            .range(from, to)
+        );
+      } catch (e: any) {
+        logger.error('Error fetching submissions', e instanceof Error ? e : new Error(String(e)));
+        throw new Error(`Ошибка получения выполненных заданий: ${e?.message || e}`);
       }
 
       // Подготовка данных для Excel
       const workbook = XLSX.utils.book_new();
 
       // Лист 1: Ответы на мероприятия
-      const eventAnswersData = (eventAnswers || []).map((answer: any) => ({
+      const eventAnswersData = eventAnswers.map((answer: any) => ({
         'ID ответа': answer.id,
         'ID пользователя': answer.user_id,
         'Имя': answer.user?.first_name || '',
@@ -101,7 +135,7 @@ export class ExportService {
     XLSX.utils.book_append_sheet(workbook, eventAnswersSheet, 'Программа обучения');
 
     // Лист 2: Ответы на персональные вопросы
-    const targetedAnswersData = (targetedAnswers || []).map((answer: any) => ({
+    const targetedAnswersData = targetedAnswers.map((answer: any) => ({
       'ID ответа': answer.id,
       'ID пользователя': answer.user_id,
       'Имя': answer.user?.first_name || '',
@@ -117,7 +151,7 @@ export class ExportService {
     XLSX.utils.book_append_sheet(workbook, targetedAnswersSheet, 'Персональные вопросы');
 
       // Лист 3: Выполненные задания
-      const submissionsData = (submissions || []).map((sub: any) => ({
+      const submissionsData = submissions.map((sub: any) => ({
         'ID ответа': sub.id,
         'ID пользователя': sub.user_id,
         'Имя': sub.user?.first_name || '',
@@ -235,16 +269,19 @@ export class ExportService {
    * Экспорт мероприятий в Excel файл
    */
   static async exportEvents(): Promise<Buffer> {
-    // Получаем все мероприятия
-    const { data: events } = await supabase
-      .from('events')
-      .select('*')
-      .order('group_order', { ascending: true })
-      .order('event_order', { ascending: true })
-      .order('created_at', { ascending: false });
+    // Получаем все мероприятия (с пагинацией)
+    const events = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('events')
+        .select('*')
+        .order('group_order', { ascending: true })
+        .order('event_order', { ascending: true })
+        .order('created_at', { ascending: false })
+        .range(from, to)
+    );
 
     // Получаем детальную информацию о количестве вопросов и участников
-    const eventsData = await Promise.all((events || []).map(async (event: any) => {
+    const eventsData = await Promise.all(events.map(async (event: any) => {
       // Подсчет вопросов
       const { count: questionsCount } = await supabase
         .from('questions')
@@ -303,39 +340,48 @@ export class ExportService {
    * Экспорт диагностик с результатами по каждому участнику
    */
   static async exportDiagnosticsWithResults(): Promise<Buffer> {
-    // Получаем все диагностики
-    const { data: diagnostics } = await supabase
-      .from('events')
-      .select('*')
-      .eq('type', 'diagnostic')
-      .order('group_order', { ascending: true })
-      .order('event_order', { ascending: true });
+    // Получаем все диагностики (с пагинацией)
+    const diagnostics = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('events')
+        .select('*')
+        .eq('type', 'diagnostic')
+        .order('group_order', { ascending: true })
+        .order('event_order', { ascending: true })
+        .range(from, to)
+    );
 
     const workbook = XLSX.utils.book_new();
 
     // Для каждой диагностики создаем отдельный лист
-    for (const diagnostic of diagnostics || []) {
-      // Получаем вопросы диагностики
-      const { data: questions } = await supabase
-        .from('questions')
-        .select('*')
-        .eq('event_id', diagnostic.id)
-        .order('order_index', { ascending: true });
+    for (const diagnostic of diagnostics) {
+      // Получаем вопросы диагностики (с пагинацией)
+      const questions = await this.fetchAllRows<any>((from, to) =>
+        supabase
+          .from('questions')
+          .select('*')
+          .eq('event_id', diagnostic.id)
+          .order('order_index', { ascending: true })
+          .range(from, to)
+      );
 
-      // Получаем всех участников, которые ответили на диагностику
-      const { data: answers } = await supabase
-        .from('answers')
-        .select(`
-          *,
-          user:users(id, first_name, last_name, telegram_username),
-          question:questions(text, type, options)
-        `)
-        .eq('event_id', diagnostic.id)
-        .order('created_at', { ascending: false });
+      // Получаем всех участников, которые ответили на диагностику (с пагинацией)
+      const answers = await this.fetchAllRows<any>((from, to) =>
+        supabase
+          .from('answers')
+          .select(`
+            *,
+            user:users(id, first_name, last_name, telegram_username),
+            question:questions(text, type, options)
+          `)
+          .eq('event_id', diagnostic.id)
+          .order('created_at', { ascending: false })
+          .range(from, to)
+      );
 
       // Группируем ответы по пользователям
       const userAnswersMap = new Map<string, any[]>();
-      (answers || []).forEach((answer: any) => {
+      answers.forEach((answer: any) => {
         const userId = answer.user_id;
         if (!userAnswersMap.has(userId)) {
           userAnswersMap.set(userId, []);
@@ -381,7 +427,7 @@ export class ExportService {
         diagnosticData.push({ 'Поле': '', 'Значение': '' });
 
         // Добавляем ответы на вопросы
-        (questions || []).forEach((question: any) => {
+        questions.forEach((question: any) => {
           const answer = userAnswers.find((a: any) => a.question_id === question.id);
           diagnosticData.push({
             'Поле': `Вопрос: ${question.text}`,
@@ -408,39 +454,40 @@ export class ExportService {
    * Экспорт заданий с результатами выполнения по каждому участнику
    */
   static async exportAssignmentsWithResults(filters?: ExportFilters): Promise<Buffer> {
-    // Получаем все задания (или фильтруем по assignment_id если указан)
-    let assignmentsQuery = supabase
-      .from('assignments')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    const { data: assignments } = await assignmentsQuery;
+    // Получаем все задания (с пагинацией)
+    const assignments = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('assignments')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, to)
+    );
 
     const workbook = XLSX.utils.book_new();
 
     // Для каждого задания создаем отдельный лист
-    for (const assignment of assignments || []) {
-      // Получаем отправки для этого задания с фильтрацией по датам
-      let submissionsQuery = supabase
-        .from('assignment_submissions')
-        .select(`
-          *,
-          user:users(id, first_name, last_name, telegram_username, telegram_id)
-        `)
-        .eq('assignment_id', assignment.id);
+    for (const assignment of assignments) {
+      // Получаем отправки для этого задания с фильтрацией по датам (с пагинацией)
+      const submissions = await this.fetchAllRows<any>((from, to) => {
+        let query = supabase
+          .from('assignment_submissions')
+          .select(`
+            *,
+            user:users(id, first_name, last_name, telegram_username, telegram_id)
+          `)
+          .eq('assignment_id', assignment.id);
 
-      // Применяем фильтры по датам если указаны
-      if (filters?.dateFrom) {
-        submissionsQuery = submissionsQuery.gte('created_at', filters.dateFrom);
-      }
-      if (filters?.dateTo) {
-        // Добавляем время 23:59:59 к dateTo для включения всего дня
-        const dateToEnd = new Date(filters.dateTo);
-        dateToEnd.setHours(23, 59, 59, 999);
-        submissionsQuery = submissionsQuery.lte('created_at', dateToEnd.toISOString());
-      }
+        if (filters?.dateFrom) {
+          query = query.gte('created_at', filters.dateFrom);
+        }
+        if (filters?.dateTo) {
+          const dateToEnd = new Date(filters.dateTo);
+          dateToEnd.setHours(23, 59, 59, 999);
+          query = query.lte('created_at', dateToEnd.toISOString());
+        }
 
-      const { data: submissions } = await submissionsQuery.order('created_at', { ascending: false });
+        return query.order('created_at', { ascending: false }).range(from, to);
+      });
 
       // Формируем данные для экспорта
       const assignmentData: any[] = [];
@@ -482,7 +529,7 @@ export class ExportService {
       assignmentData.push({ 'Поле': '', 'Значение': '' });
 
       // Данные по каждому участнику
-      const resultsData = (submissions || []).map((sub: any) => {
+      const resultsData = submissions.map((sub: any) => {
         const user = sub.user;
         return {
           'ID отправки': sub.id,
@@ -552,27 +599,33 @@ export class ExportService {
   static async exportQuestionsWithAnswers(): Promise<Buffer> {
     const workbook = XLSX.utils.book_new();
 
-    // 1. Вопросы к мероприятиям
-    const { data: eventQuestions } = await supabase
-      .from('questions')
-      .select(`
-        *,
-        event:events(title, type, group_name)
-      `)
-      .order('created_at', { ascending: false });
-
-    const eventQuestionsData = await Promise.all((eventQuestions || []).map(async (question: any) => {
-      // Получаем все ответы на этот вопрос
-      const { data: answers } = await supabase
-        .from('answers')
+    // 1. Вопросы к мероприятиям (все строки, с пагинацией)
+    const eventQuestions = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('questions')
         .select(`
           *,
-          user:users(id, first_name, last_name, telegram_username)
+          event:events(title, type, group_name)
         `)
-        .eq('question_id', question.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to)
+    );
 
-      const answersText = (answers || []).map((a: any) => {
+    const eventQuestionsData = await Promise.all(eventQuestions.map(async (question: any) => {
+      // Получаем все ответы на этот вопрос (с пагинацией на случай > 1000 ответов)
+      const answers = await this.fetchAllRows<any>((from, to) =>
+        supabase
+          .from('answers')
+          .select(`
+            *,
+            user:users(id, first_name, last_name, telegram_username)
+          `)
+          .eq('question_id', question.id)
+          .order('created_at', { ascending: false })
+          .range(from, to)
+      );
+
+      const answersText = answers.map((a: any) => {
         const userName = `${a.user?.first_name || ''} ${a.user?.last_name || ''}`.trim() || a.user?.telegram_username || a.user_id;
         return `${userName}: ${this.formatAnswerData(a.answer_data)}`;
       }).join('; ');
@@ -587,7 +640,7 @@ export class ExportService {
         'Мероприятие': question.event?.title || '',
         'Тип мероприятия': question.event?.type === 'diagnostic' ? 'Диагностика' : 'Мероприятие',
         'Группа': question.event?.group_name || '',
-        'Количество ответов': answers?.length || 0,
+        'Количество ответов': answers.length,
         'Ответы участников': answersText,
         'Дата создания': new Date(question.created_at).toLocaleString('ru-RU')
       };
@@ -596,24 +649,30 @@ export class ExportService {
     const eventQuestionsSheet = XLSX.utils.json_to_sheet(eventQuestionsData);
     XLSX.utils.book_append_sheet(workbook, eventQuestionsSheet, 'Вопросы программ');
 
-    // 2. Персональные вопросы
-    const { data: targetedQuestions } = await supabase
-      .from('targeted_questions')
-      .select('*')
-      .order('created_at', { ascending: false });
+    // 2. Персональные вопросы (все строки, с пагинацией)
+    const targetedQuestions = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('targeted_questions')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, to)
+    );
 
-    const targetedQuestionsData = await Promise.all((targetedQuestions || []).map(async (question: any) => {
-      // Получаем все ответы на этот вопрос
-      const { data: answers } = await supabase
-        .from('targeted_answers')
-        .select(`
-          *,
-          user:users(id, first_name, last_name, telegram_username)
-        `)
-        .eq('question_id', question.id)
-        .order('created_at', { ascending: false });
+    const targetedQuestionsData = await Promise.all(targetedQuestions.map(async (question: any) => {
+      // Получаем все ответы на этот вопрос (с пагинацией на случай > 1000 ответов)
+      const answers = await this.fetchAllRows<any>((from, to) =>
+        supabase
+          .from('targeted_answers')
+          .select(`
+            *,
+            user:users(id, first_name, last_name, telegram_username)
+          `)
+          .eq('question_id', question.id)
+          .order('created_at', { ascending: false })
+          .range(from, to)
+      );
 
-      const answersText = (answers || []).map((a: any) => {
+      const answersText = answers.map((a: any) => {
         const userName = `${a.user?.first_name || ''} ${a.user?.last_name || ''}`.trim() || a.user?.telegram_username || a.user_id;
         return `${userName}: ${this.formatAnswerData(a.answer_data)}`;
       }).join('; ');
@@ -628,7 +687,7 @@ export class ExportService {
         'Целевая аудитория': this.getTargetAudienceLabel(question.target_audience),
         'Целевые значения': Array.isArray(question.target_values) ? question.target_values.join(', ') : '',
         'Статус': question.status === 'published' ? 'Опубликовано' : question.status === 'draft' ? 'Черновик' : 'Архив',
-        'Количество ответов': answers?.length || 0,
+        'Количество ответов': answers.length,
         'Ответы участников': answersText,
         'Дата создания': new Date(question.created_at).toLocaleString('ru-RU')
       };
@@ -757,28 +816,29 @@ export class ExportService {
    * Экспорт пользователей с полной информацией
    */
   static async exportUsersFull(filters?: ExportFilters): Promise<Buffer> {
-    // Строим запрос с фильтрами
-    let usersQuery = supabase
-      .from('users')
-      .select(`
-        *,
-        direction:directions(name, slug)
-      `);
+    // Получаем все данные пользователей (с пагинацией)
+    const users = await this.fetchAllRows<any>((from, to) => {
+      let query = supabase
+        .from('users')
+        .select(`
+          *,
+          direction:directions(name, slug)
+        `);
 
-    // Применяем фильтры
-    if (filters?.direction) {
-      usersQuery = usersQuery.eq('direction', filters.direction);
-    }
-    if (filters?.dateFrom) {
-      usersQuery = usersQuery.gte('created_at', filters.dateFrom);
-    }
-    if (filters?.dateTo) {
-      usersQuery = usersQuery.lte('created_at', filters.dateTo);
-    }
+      if (filters?.direction) {
+        query = query.eq('direction', filters.direction);
+      }
+      if (filters?.dateFrom) {
+        query = query.gte('created_at', filters.dateFrom);
+      }
+      if (filters?.dateTo) {
+        query = query.lte('created_at', filters.dateTo);
+      }
 
-    const { data: users } = await usersQuery.order('created_at', { ascending: false });
+      return query.order('created_at', { ascending: false }).range(from, to);
+    });
 
-    if (!users || users.length === 0) {
+    if (users.length === 0) {
       const workbook = XLSX.utils.book_new();
       const sheet = XLSX.utils.json_to_sheet([]);
       XLSX.utils.book_append_sheet(workbook, sheet, 'Пользователи');
@@ -787,8 +847,7 @@ export class ExportService {
 
     const userIds = users.map(u => u.id);
 
-    // Оптимизация: получаем все данные одним батчем для всех пользователей
-    // Применяем фильтры к запросам
+    // Получаем все связанные данные с пагинацией
     const [
       allAchievements,
       allUserLevels,
@@ -799,19 +858,24 @@ export class ExportService {
       allReflectionHistory,
       allEventNotes
     ] = await Promise.all([
-      // Достижения всех пользователей
-      supabase
-        .from('user_achievements')
-        .select('user_id, achievement:achievements(name)')
-        .in('user_id', userIds),
-      // Уровни всех пользователей
-      supabase
-        .from('user_levels')
-        .select('user_id, level, experience_points')
-        .in('user_id', userIds),
-      // Ответы на мероприятия/диагностики с детальной информацией
-      (() => {
-        let answersQuery = supabase
+      this.fetchAllRows<any>((from, to) =>
+        supabase
+          .from('user_achievements')
+          .select('user_id, achievement:achievements(name)')
+          .in('user_id', userIds)
+          .order('user_id')
+          .range(from, to)
+      ),
+      this.fetchAllRows<any>((from, to) =>
+        supabase
+          .from('user_levels')
+          .select('user_id, level, experience_points')
+          .in('user_id', userIds)
+          .order('user_id')
+          .range(from, to)
+      ),
+      this.fetchAllRows<any>((from, to) => {
+        let query = supabase
           .from('answers')
           .select(`
             user_id,
@@ -823,23 +887,13 @@ export class ExportService {
             event:events(title, type, group_name)
           `)
           .in('user_id', userIds);
-        
-        // Применяем фильтры к ответам
-        if (filters?.dateFrom) {
-          answersQuery = answersQuery.gte('created_at', filters.dateFrom);
-        }
-        if (filters?.dateTo) {
-          answersQuery = answersQuery.lte('created_at', filters.dateTo);
-        }
-        if (filters?.eventId) {
-          answersQuery = answersQuery.eq('event_id', filters.eventId);
-        }
-        
-        return answersQuery.order('created_at', { ascending: false });
-      })(),
-      // Выполненные задания с детальной информацией
-      (() => {
-        let submissionsQuery = supabase
+        if (filters?.dateFrom) query = query.gte('created_at', filters.dateFrom);
+        if (filters?.dateTo) query = query.lte('created_at', filters.dateTo);
+        if (filters?.eventId) query = query.eq('event_id', filters.eventId);
+        return query.order('created_at', { ascending: false }).range(from, to);
+      }),
+      this.fetchAllRows<any>((from, to) => {
+        let query = supabase
           .from('assignment_submissions')
           .select(`
             user_id,
@@ -852,20 +906,12 @@ export class ExportService {
             assignment:assignments(title, answer_format, reward)
           `)
           .in('user_id', userIds);
-        
-        // Применяем фильтры к заданиям
-        if (filters?.dateFrom) {
-          submissionsQuery = submissionsQuery.gte('created_at', filters.dateFrom);
-        }
-        if (filters?.dateTo) {
-          submissionsQuery = submissionsQuery.lte('created_at', filters.dateTo);
-        }
-        
-        return submissionsQuery.order('created_at', { ascending: false });
-      })(),
-      // Ответы на персональные вопросы с детальной информацией
-      (() => {
-        let targetedAnswersQuery = supabase
+        if (filters?.dateFrom) query = query.gte('created_at', filters.dateFrom);
+        if (filters?.dateTo) query = query.lte('created_at', filters.dateTo);
+        return query.order('created_at', { ascending: false }).range(from, to);
+      }),
+      this.fetchAllRows<any>((from, to) => {
+        let query = supabase
           .from('targeted_answers')
           .select(`
             user_id,
@@ -875,40 +921,39 @@ export class ExportService {
             question:targeted_questions(text, type)
           `)
           .in('user_id', userIds);
-        
-        // Применяем фильтры к персональным вопросам
-        if (filters?.dateFrom) {
-          targetedAnswersQuery = targetedAnswersQuery.gte('created_at', filters.dateFrom);
-        }
-        if (filters?.dateTo) {
-          targetedAnswersQuery = targetedAnswersQuery.lte('created_at', filters.dateTo);
-        }
-        
-        return targetedAnswersQuery.order('created_at', { ascending: false });
-      })(),
-      // Транзакции баллов (для последних 5)
-      supabase
-        .from('points_transactions')
-        .select('user_id, points, reason, created_at')
-        .in('user_id', userIds)
-        .order('created_at', { ascending: false }),
-      // История рефлексии (для последних 10)
-      supabase
-        .from('reflection_actions')
-        .select('user_id, action_type, points_awarded, created_at')
-        .in('user_id', userIds)
-        .order('created_at', { ascending: false }),
-      // Заметки пользователей по мероприятиям
-      supabase
-        .from('event_notes')
-        .select('user_id, event_id, note_text, created_at, updated_at, event:events!inner(id, title, event_date)')
-        .in('user_id', userIds)
-        .order('updated_at', { ascending: false })
+        if (filters?.dateFrom) query = query.gte('created_at', filters.dateFrom);
+        if (filters?.dateTo) query = query.lte('created_at', filters.dateTo);
+        return query.order('created_at', { ascending: false }).range(from, to);
+      }),
+      this.fetchAllRows<any>((from, to) =>
+        supabase
+          .from('points_transactions')
+          .select('user_id, points, reason, created_at')
+          .in('user_id', userIds)
+          .order('created_at', { ascending: false })
+          .range(from, to)
+      ),
+      this.fetchAllRows<any>((from, to) =>
+        supabase
+          .from('reflection_actions')
+          .select('user_id, action_type, points_awarded, created_at')
+          .in('user_id', userIds)
+          .order('created_at', { ascending: false })
+          .range(from, to)
+      ),
+      this.fetchAllRows<any>((from, to) =>
+        supabase
+          .from('event_notes')
+          .select('user_id, event_id, note_text, created_at, updated_at, event:events!inner(id, title, event_date)')
+          .in('user_id', userIds)
+          .order('updated_at', { ascending: false })
+          .range(from, to)
+      )
     ]);
 
     // Группируем данные по user_id для быстрого доступа
     const achievementsMap = new Map<string, string[]>();
-    (allAchievements.data || []).forEach((a: any) => {
+    allAchievements.forEach((a: any) => {
       const userId = a.user_id;
       if (!achievementsMap.has(userId)) {
         achievementsMap.set(userId, []);
@@ -919,14 +964,14 @@ export class ExportService {
     });
 
     const levelsMap = new Map<string, { level: number; experience_points: number }>();
-    (allUserLevels.data || []).forEach((ul: any) => {
+    allUserLevels.forEach((ul: any) => {
       levelsMap.set(ul.user_id, { level: ul.level, experience_points: ul.experience_points });
     });
 
     // Группируем детальные ответы на мероприятия/диагностики по пользователям
     const eventAnswersMap = new Map<string, any[]>();
     const answersCountMap = new Map<string, number>();
-    (allEventAnswers.data || []).forEach((a: any) => {
+    allEventAnswers.forEach((a: any) => {
       const userId = a.user_id;
       if (!eventAnswersMap.has(userId)) {
         eventAnswersMap.set(userId, []);
@@ -938,7 +983,7 @@ export class ExportService {
     // Группируем детальные ответы на задания по пользователям
     const submissionsDetailsMap = new Map<string, any[]>();
     const submissionsStatsMap = new Map<string, { approved: number; pending: number; rejected: number; total: number }>();
-    (allSubmissions.data || []).forEach((s: any) => {
+    allSubmissions.forEach((s: any) => {
       const userId = s.user_id;
       if (!submissionsDetailsMap.has(userId)) {
         submissionsDetailsMap.set(userId, []);
@@ -955,7 +1000,7 @@ export class ExportService {
     // Группируем детальные ответы на персональные вопросы по пользователям
     const targetedAnswersDetailsMap = new Map<string, any[]>();
     const targetedAnswersCountMap = new Map<string, number>();
-    (allTargetedAnswers.data || []).forEach((a: any) => {
+    allTargetedAnswers.forEach((a: any) => {
       const userId = a.user_id;
       if (!targetedAnswersDetailsMap.has(userId)) {
         targetedAnswersDetailsMap.set(userId, []);
@@ -966,7 +1011,7 @@ export class ExportService {
 
     // Группируем транзакции и рефлексию по пользователям (берем только последние)
     const pointsMap = new Map<string, any[]>();
-    (allPointsTransactions.data || []).forEach((p: any) => {
+    allPointsTransactions.forEach((p: any) => {
       const userId = p.user_id;
       if (!pointsMap.has(userId)) {
         pointsMap.set(userId, []);
@@ -978,7 +1023,7 @@ export class ExportService {
     });
 
     const reflectionMap = new Map<string, any[]>();
-    (allReflectionHistory.data || []).forEach((r: any) => {
+    allReflectionHistory.forEach((r: any) => {
       const userId = r.user_id;
       if (!reflectionMap.has(userId)) {
         reflectionMap.set(userId, []);
@@ -991,7 +1036,7 @@ export class ExportService {
 
     // Создаем карту заметок по пользователям
     const eventNotesMap = new Map<string, any[]>();
-    ((allEventNotes as any).data || []).forEach((note: any) => {
+    allEventNotes.forEach((note: any) => {
       const userId = note.user_id;
       if (!eventNotesMap.has(userId)) {
         eventNotesMap.set(userId, []);
@@ -1089,8 +1134,10 @@ export class ExportService {
     const workbook = XLSX.utils.book_new();
 
     // 1. Пользователи
-    const { data: users } = await supabase.from('users').select('*').order('created_at', { ascending: false });
-    if (users && users.length > 0) {
+    const users = await this.fetchAllRows<any>((from, to) =>
+      supabase.from('users').select('*').order('created_at', { ascending: false }).range(from, to)
+    );
+    if (users.length > 0) {
       const usersSheet = XLSX.utils.json_to_sheet(users.map((u: any) => ({
         ...u,
         created_at: u.created_at ? new Date(u.created_at).toLocaleString('ru-RU') : '',
@@ -1100,8 +1147,10 @@ export class ExportService {
     }
 
     // 2. Программы обучения
-    const { data: events } = await supabase.from('events').select('*').order('created_at', { ascending: false });
-    if (events && events.length > 0) {
+    const events = await this.fetchAllRows<any>((from, to) =>
+      supabase.from('events').select('*').order('created_at', { ascending: false }).range(from, to)
+    );
+    if (events.length > 0) {
       const eventsSheet = XLSX.utils.json_to_sheet(events.map((e: any) => ({
         ...e,
         created_at: e.created_at ? new Date(e.created_at).toLocaleString('ru-RU') : '',
@@ -1112,8 +1161,10 @@ export class ExportService {
     }
 
     // 3. Вопросы к программам
-    const { data: questions } = await supabase.from('questions').select('*').order('created_at', { ascending: false });
-    if (questions && questions.length > 0) {
+    const questions = await this.fetchAllRows<any>((from, to) =>
+      supabase.from('questions').select('*').order('created_at', { ascending: false }).range(from, to)
+    );
+    if (questions.length > 0) {
       const questionsSheet = XLSX.utils.json_to_sheet(questions.map((q: any) => ({
         ...q,
         created_at: q.created_at ? new Date(q.created_at).toLocaleString('ru-RU') : '',
@@ -1123,8 +1174,10 @@ export class ExportService {
     }
 
     // 4. Ответы на вопросы
-    const { data: answers } = await supabase.from('answers').select('*').order('created_at', { ascending: false });
-    if (answers && answers.length > 0) {
+    const answers = await this.fetchAllRows<any>((from, to) =>
+      supabase.from('answers').select('*').order('created_at', { ascending: false }).range(from, to)
+    );
+    if (answers.length > 0) {
       const answersSheet = XLSX.utils.json_to_sheet(answers.map((a: any) => ({
         ...a,
         created_at: a.created_at ? new Date(a.created_at).toLocaleString('ru-RU') : '',
@@ -1134,8 +1187,10 @@ export class ExportService {
     }
 
     // 5. Персональные вопросы
-    const { data: targetedQuestions } = await supabase.from('targeted_questions').select('*').order('created_at', { ascending: false });
-    if (targetedQuestions && targetedQuestions.length > 0) {
+    const targetedQuestions = await this.fetchAllRows<any>((from, to) =>
+      supabase.from('targeted_questions').select('*').order('created_at', { ascending: false }).range(from, to)
+    );
+    if (targetedQuestions.length > 0) {
       const targetedQuestionsSheet = XLSX.utils.json_to_sheet(targetedQuestions.map((q: any) => ({
         ...q,
         created_at: q.created_at ? new Date(q.created_at).toLocaleString('ru-RU') : '',
@@ -1146,8 +1201,10 @@ export class ExportService {
     }
 
     // 6. Ответы на персональные вопросы
-    const { data: targetedAnswers } = await supabase.from('targeted_answers').select('*').order('created_at', { ascending: false });
-    if (targetedAnswers && targetedAnswers.length > 0) {
+    const targetedAnswers = await this.fetchAllRows<any>((from, to) =>
+      supabase.from('targeted_answers').select('*').order('created_at', { ascending: false }).range(from, to)
+    );
+    if (targetedAnswers.length > 0) {
       const targetedAnswersSheet = XLSX.utils.json_to_sheet(targetedAnswers.map((a: any) => ({
         ...a,
         created_at: a.created_at ? new Date(a.created_at).toLocaleString('ru-RU') : '',
@@ -1157,8 +1214,10 @@ export class ExportService {
     }
 
     // 7. Задания
-    const { data: assignments } = await supabase.from('assignments').select('*').order('created_at', { ascending: false });
-    if (assignments && assignments.length > 0) {
+    const assignments = await this.fetchAllRows<any>((from, to) =>
+      supabase.from('assignments').select('*').order('created_at', { ascending: false }).range(from, to)
+    );
+    if (assignments.length > 0) {
       const assignmentsSheet = XLSX.utils.json_to_sheet(assignments.map((a: any) => ({
         ...a,
         created_at: a.created_at ? new Date(a.created_at).toLocaleString('ru-RU') : '',
@@ -1168,8 +1227,10 @@ export class ExportService {
     }
 
     // 8. Выполненные задания
-    const { data: submissions } = await supabase.from('assignment_submissions').select('*').order('created_at', { ascending: false });
-    if (submissions && submissions.length > 0) {
+    const submissions = await this.fetchAllRows<any>((from, to) =>
+      supabase.from('assignment_submissions').select('*').order('created_at', { ascending: false }).range(from, to)
+    );
+    if (submissions.length > 0) {
       const submissionsSheet = XLSX.utils.json_to_sheet(submissions.map((s: any) => ({
         ...s,
         created_at: s.created_at ? new Date(s.created_at).toLocaleString('ru-RU') : '',
@@ -1179,8 +1240,10 @@ export class ExportService {
     }
 
     // 9. Баллы пользователей
-    const { data: userPoints } = await supabase.from('user_points').select('*').order('created_at', { ascending: false });
-    if (userPoints && userPoints.length > 0) {
+    const userPoints = await this.fetchAllRows<any>((from, to) =>
+      supabase.from('user_points').select('*').order('created_at', { ascending: false }).range(from, to)
+    );
+    if (userPoints.length > 0) {
       const userPointsSheet = XLSX.utils.json_to_sheet(userPoints.map((p: any) => ({
         ...p,
         created_at: p.created_at ? new Date(p.created_at).toLocaleString('ru-RU') : ''
@@ -1189,8 +1252,10 @@ export class ExportService {
     }
 
     // 10. Достижения
-    const { data: achievements } = await supabase.from('achievements').select('*').order('created_at', { ascending: false });
-    if (achievements && achievements.length > 0) {
+    const achievements = await this.fetchAllRows<any>((from, to) =>
+      supabase.from('achievements').select('*').order('created_at', { ascending: false }).range(from, to)
+    );
+    if (achievements.length > 0) {
       const achievementsSheet = XLSX.utils.json_to_sheet(achievements.map((a: any) => ({
         ...a,
         created_at: a.created_at ? new Date(a.created_at).toLocaleString('ru-RU') : ''
@@ -1199,8 +1264,10 @@ export class ExportService {
     }
 
     // 11. Достижения пользователей
-    const { data: userAchievements } = await supabase.from('user_achievements').select('*').order('unlocked_at', { ascending: false });
-    if (userAchievements && userAchievements.length > 0) {
+    const userAchievements = await this.fetchAllRows<any>((from, to) =>
+      supabase.from('user_achievements').select('*').order('unlocked_at', { ascending: false }).range(from, to)
+    );
+    if (userAchievements.length > 0) {
       const userAchievementsSheet = XLSX.utils.json_to_sheet(userAchievements.map((ua: any) => ({
         ...ua,
         unlocked_at: ua.unlocked_at ? new Date(ua.unlocked_at).toLocaleString('ru-RU') : ''
@@ -1209,8 +1276,10 @@ export class ExportService {
     }
 
     // 12. Уровни пользователей
-    const { data: userLevels } = await supabase.from('user_levels').select('*').order('updated_at', { ascending: false });
-    if (userLevels && userLevels.length > 0) {
+    const userLevels = await this.fetchAllRows<any>((from, to) =>
+      supabase.from('user_levels').select('*').order('updated_at', { ascending: false }).range(from, to)
+    );
+    if (userLevels.length > 0) {
       const userLevelsSheet = XLSX.utils.json_to_sheet(userLevels.map((ul: any) => ({
         ...ul,
         updated_at: ul.updated_at ? new Date(ul.updated_at).toLocaleString('ru-RU') : ''
@@ -1219,8 +1288,10 @@ export class ExportService {
     }
 
     // 13. Действия рефлексии
-    const { data: reflectionActions } = await supabase.from('reflection_actions').select('*').order('created_at', { ascending: false });
-    if (reflectionActions && reflectionActions.length > 0) {
+    const reflectionActions = await this.fetchAllRows<any>((from, to) =>
+      supabase.from('reflection_actions').select('*').order('created_at', { ascending: false }).range(from, to)
+    );
+    if (reflectionActions.length > 0) {
       const reflectionActionsSheet = XLSX.utils.json_to_sheet(reflectionActions.map((ra: any) => ({
         ...ra,
         created_at: ra.created_at ? new Date(ra.created_at).toLocaleString('ru-RU') : ''
@@ -1229,8 +1300,10 @@ export class ExportService {
     }
 
     // 14. Направления
-    const { data: directions } = await supabase.from('directions').select('*').order('created_at', { ascending: false });
-    if (directions && directions.length > 0) {
+    const directions = await this.fetchAllRows<any>((from, to) =>
+      supabase.from('directions').select('*').order('created_at', { ascending: false }).range(from, to)
+    );
+    if (directions.length > 0) {
       const directionsSheet = XLSX.utils.json_to_sheet(directions.map((d: any) => ({
         ...d,
         created_at: d.created_at ? new Date(d.created_at).toLocaleString('ru-RU') : '',
@@ -1240,8 +1313,10 @@ export class ExportService {
     }
 
     // 15. Транзакции баллов
-    const { data: pointsTransactions } = await supabase.from('points_transactions').select('*').order('created_at', { ascending: false });
-    if (pointsTransactions && pointsTransactions.length > 0) {
+    const pointsTransactions = await this.fetchAllRows<any>((from, to) =>
+      supabase.from('points_transactions').select('*').order('created_at', { ascending: false }).range(from, to)
+    );
+    if (pointsTransactions.length > 0) {
       const pointsTransactionsSheet = XLSX.utils.json_to_sheet(pointsTransactions.map((pt: any) => ({
         ...pt,
         created_at: pt.created_at ? new Date(pt.created_at).toLocaleString('ru-RU') : ''
@@ -1250,8 +1325,10 @@ export class ExportService {
     }
 
     // 16. Рассылки (broadcasts)
-    const { data: broadcasts } = await supabase.from('broadcasts').select('*').order('created_at', { ascending: false });
-    if (broadcasts && broadcasts.length > 0) {
+    const broadcasts = await this.fetchAllRows<any>((from, to) =>
+      supabase.from('broadcasts').select('*').order('created_at', { ascending: false }).range(from, to)
+    );
+    if (broadcasts.length > 0) {
       const broadcastsSheet = XLSX.utils.json_to_sheet(broadcasts.map((b: any) => ({
         ...b,
         created_at: b.created_at ? new Date(b.created_at).toLocaleString('ru-RU') : '',
@@ -1263,8 +1340,10 @@ export class ExportService {
     }
 
     // 17. Заметки по мероприятиям (event_notes)
-    const { data: eventNotes } = await supabase.from('event_notes').select('*').order('created_at', { ascending: false });
-    if (eventNotes && eventNotes.length > 0) {
+    const eventNotes = await this.fetchAllRows<any>((from, to) =>
+      supabase.from('event_notes').select('*').order('created_at', { ascending: false }).range(from, to)
+    );
+    if (eventNotes.length > 0) {
       const eventNotesSheet = XLSX.utils.json_to_sheet(eventNotes.map((n: any) => ({
         ...n,
         created_at: n.created_at ? new Date(n.created_at).toLocaleString('ru-RU') : '',
@@ -1274,8 +1353,10 @@ export class ExportService {
     }
 
     // 18. Рандомайзеры (randomizers)
-    const { data: randomizers } = await supabase.from('randomizers').select('*').order('created_at', { ascending: false });
-    if (randomizers && randomizers.length > 0) {
+    const randomizers = await this.fetchAllRows<any>((from, to) =>
+      supabase.from('randomizers').select('*').order('created_at', { ascending: false }).range(from, to)
+    );
+    if (randomizers.length > 0) {
       const randomizersSheet = XLSX.utils.json_to_sheet(randomizers.map((r: any) => ({
         ...r,
         created_at: r.created_at ? new Date(r.created_at).toLocaleString('ru-RU') : '',
@@ -1285,8 +1366,10 @@ export class ExportService {
     }
 
     // 19. Участники рандомайзеров (randomizer_participants)
-    const { data: randomizerParticipants } = await supabase.from('randomizer_participants').select('*').order('created_at', { ascending: false });
-    if (randomizerParticipants && randomizerParticipants.length > 0) {
+    const randomizerParticipants = await this.fetchAllRows<any>((from, to) =>
+      supabase.from('randomizer_participants').select('*').order('created_at', { ascending: false }).range(from, to)
+    );
+    if (randomizerParticipants.length > 0) {
       const randomizerParticipantsSheet = XLSX.utils.json_to_sheet(randomizerParticipants.map((rp: any) => ({
         ...rp,
         created_at: rp.created_at ? new Date(rp.created_at).toLocaleString('ru-RU') : ''
@@ -1295,8 +1378,10 @@ export class ExportService {
     }
 
     // 20. Распределения рандомайзеров (randomizer_distributions)
-    const { data: randomizerDistributions } = await supabase.from('randomizer_distributions').select('*').order('created_at', { ascending: false });
-    if (randomizerDistributions && randomizerDistributions.length > 0) {
+    const randomizerDistributions = await this.fetchAllRows<any>((from, to) =>
+      supabase.from('randomizer_distributions').select('*').order('created_at', { ascending: false }).range(from, to)
+    );
+    if (randomizerDistributions.length > 0) {
       const randomizerDistributionsSheet = XLSX.utils.json_to_sheet(randomizerDistributions.map((rd: any) => ({
         ...rd,
         created_at: rd.created_at ? new Date(rd.created_at).toLocaleString('ru-RU') : ''
@@ -1305,8 +1390,10 @@ export class ExportService {
     }
 
     // 21. Уведомления (notifications)
-    const { data: notifications } = await supabase.from('notifications').select('*').order('created_at', { ascending: false });
-    if (notifications && notifications.length > 0) {
+    const notifications = await this.fetchAllRows<any>((from, to) =>
+      supabase.from('notifications').select('*').order('created_at', { ascending: false }).range(from, to)
+    );
+    if (notifications.length > 0) {
       const notificationsSheet = XLSX.utils.json_to_sheet(notifications.map((n: any) => ({
         ...n,
         created_at: n.created_at ? new Date(n.created_at).toLocaleString('ru-RU') : '',
@@ -1316,8 +1403,10 @@ export class ExportService {
     }
 
     // 22. Настройки пользователей (user_preferences)
-    const { data: userPreferences } = await supabase.from('user_preferences').select('*').order('updated_at', { ascending: false });
-    if (userPreferences && userPreferences.length > 0) {
+    const userPreferences = await this.fetchAllRows<any>((from, to) =>
+      supabase.from('user_preferences').select('*').order('updated_at', { ascending: false }).range(from, to)
+    );
+    if (userPreferences.length > 0) {
       const userPreferencesSheet = XLSX.utils.json_to_sheet(userPreferences.map((up: any) => ({
         ...up,
         updated_at: up.updated_at ? new Date(up.updated_at).toLocaleString('ru-RU') : ''
@@ -1337,12 +1426,15 @@ export class ExportService {
     const workbook = XLSX.utils.book_new();
 
     // ==================== ЛИСТ 1: ПОЛЬЗОВАТЕЛИ С ПОЛНЫМИ ДАННЫМИ ====================
-    const { data: users } = await supabase
-      .from('users')
-      .select(`*, direction:directions(name, slug)`)
-      .order('created_at', { ascending: false });
+    const users = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('users')
+        .select(`*, direction:directions(name, slug)`)
+        .order('created_at', { ascending: false })
+        .range(from, to)
+    );
 
-    const usersData = (users || []).map((u: any) => ({
+    const usersData = users.map((u: any) => ({
       'ID': u.id,
       'Telegram ID': u.telegram_id || '',
       'Имя': u.first_name || '',
@@ -1369,13 +1461,16 @@ export class ExportService {
     }
 
     // ==================== ЛИСТ 2: ПРОГРАММЫ ОБУЧЕНИЯ ====================
-    const { data: events } = await supabase
-      .from('events')
-      .select('*')
-      .order('group_order', { ascending: true })
-      .order('event_order', { ascending: true });
+    const events = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('events')
+        .select('*')
+        .order('group_order', { ascending: true })
+        .order('event_order', { ascending: true })
+        .range(from, to)
+    );
 
-    const eventsData = (events || []).map((e: any) => ({
+    const eventsData = events.map((e: any) => ({
       'ID': e.id,
       'Название': e.title || '',
       'Описание': e.description || '',
@@ -1399,13 +1494,16 @@ export class ExportService {
     }
 
     // ==================== ЛИСТ 3: ВОПРОСЫ К ПРОГРАММАМ ====================
-    const { data: questions } = await supabase
-      .from('questions')
-      .select(`*, event:events(title, type)`)
-      .order('event_id')
-      .order('order_index', { ascending: true });
+    const questions = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('questions')
+        .select(`*, event:events(title, type)`)
+        .order('event_id')
+        .order('order_index', { ascending: true })
+        .range(from, to)
+    );
 
-    const questionsData = (questions || []).map((q: any) => ({
+    const questionsData = questions.map((q: any) => ({
       'ID': q.id,
       'Программа': q.event?.title || '',
       'Тип программы': q.event?.type === 'diagnostic' ? 'Диагностика' : 'Мероприятие',
@@ -1422,17 +1520,20 @@ export class ExportService {
     }
 
     // ==================== ЛИСТ 4: ОТВЕТЫ НА ПРОГРАММЫ/ДИАГНОСТИКИ ====================
-    const { data: answers } = await supabase
-      .from('answers')
-      .select(`
-        *,
-        user:users(first_name, last_name, telegram_username),
-        event:events(title, type, group_name),
-        question:questions(text, type)
-      `)
-      .order('created_at', { ascending: false });
+    const answers = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('answers')
+        .select(`
+          *,
+          user:users(first_name, last_name, telegram_username),
+          event:events(title, type, group_name),
+          question:questions(text, type)
+        `)
+        .order('created_at', { ascending: false })
+        .range(from, to)
+    );
 
-    const answersData = (answers || []).map((a: any) => {
+    const answersData = answers.map((a: any) => {
       const user = Array.isArray(a.user) ? a.user[0] : a.user;
       const event = Array.isArray(a.event) ? a.event[0] : a.event;
       const question = Array.isArray(a.question) ? a.question[0] : a.question;
@@ -1455,12 +1556,15 @@ export class ExportService {
     }
 
     // ==================== ЛИСТ 5: ПЕРСОНАЛЬНЫЕ ВОПРОСЫ ====================
-    const { data: targetedQuestions } = await supabase
-      .from('targeted_questions')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const targetedQuestions = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('targeted_questions')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, to)
+    );
 
-    const targetedQuestionsData = (targetedQuestions || []).map((q: any) => ({
+    const targetedQuestionsData = targetedQuestions.map((q: any) => ({
       'ID': q.id,
       'Текст вопроса': q.text || '',
       'Тип вопроса': q.type || '',
@@ -1481,16 +1585,19 @@ export class ExportService {
     }
 
     // ==================== ЛИСТ 6: ОТВЕТЫ НА ПЕРСОНАЛЬНЫЕ ВОПРОСЫ ====================
-    const { data: targetedAnswers } = await supabase
-      .from('targeted_answers')
-      .select(`
-        *,
-        user:users(first_name, last_name, telegram_username),
-        question:targeted_questions(text, type, group_name)
-      `)
-      .order('created_at', { ascending: false });
+    const targetedAnswers = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('targeted_answers')
+        .select(`
+          *,
+          user:users(first_name, last_name, telegram_username),
+          question:targeted_questions(text, type, group_name)
+        `)
+        .order('created_at', { ascending: false })
+        .range(from, to)
+    );
 
-    const targetedAnswersData = (targetedAnswers || []).map((a: any) => {
+    const targetedAnswersData = targetedAnswers.map((a: any) => {
       const user = Array.isArray(a.user) ? a.user[0] : a.user;
       const question = Array.isArray(a.question) ? a.question[0] : a.question;
       
@@ -1510,12 +1617,15 @@ export class ExportService {
     }
 
     // ==================== ЛИСТ 7: ЗАДАНИЯ ====================
-    const { data: assignments } = await supabase
-      .from('assignments')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const assignments = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('assignments')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, to)
+    );
 
-    const assignmentsData = (assignments || []).map((a: any) => ({
+    const assignmentsData = assignments.map((a: any) => ({
       'ID': a.id,
       'Название': a.title || '',
       'Описание': a.description || '',
@@ -1533,16 +1643,19 @@ export class ExportService {
     }
 
     // ==================== ЛИСТ 8: ВЫПОЛНЕННЫЕ ЗАДАНИЯ ====================
-    const { data: submissions } = await supabase
-      .from('assignment_submissions')
-      .select(`
-        *,
-        user:users(first_name, last_name, telegram_username),
-        assignment:assignments(title, answer_format, reward)
-      `)
-      .order('created_at', { ascending: false });
+    const submissions = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('assignment_submissions')
+        .select(`
+          *,
+          user:users(first_name, last_name, telegram_username),
+          assignment:assignments(title, answer_format, reward)
+        `)
+        .order('created_at', { ascending: false })
+        .range(from, to)
+    );
 
-    const submissionsData = (submissions || []).map((s: any) => {
+    const submissionsData = submissions.map((s: any) => {
       const user = Array.isArray(s.user) ? s.user[0] : s.user;
       const assignment = Array.isArray(s.assignment) ? s.assignment[0] : s.assignment;
       
@@ -1567,12 +1680,15 @@ export class ExportService {
     }
 
     // ==================== ЛИСТ 9: РАССЫЛКИ ====================
-    const { data: broadcasts } = await supabase
-      .from('broadcasts')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const broadcasts = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('broadcasts')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, to)
+    );
 
-    const broadcastsData = (broadcasts || []).map((b: any) => ({
+    const broadcastsData = broadcasts.map((b: any) => ({
       'ID': b.id,
       'Заголовок': b.title || '',
       'Текст': b.content || '',
@@ -1593,16 +1709,19 @@ export class ExportService {
     }
 
     // ==================== ЛИСТ 10: ЗАМЕТКИ ПО МЕРОПРИЯТИЯМ ====================
-    const { data: eventNotes } = await supabase
-      .from('event_notes')
-      .select(`
-        *,
-        user:users(first_name, last_name, telegram_username),
-        event:events(title)
-      `)
-      .order('updated_at', { ascending: false });
+    const eventNotes = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('event_notes')
+        .select(`
+          *,
+          user:users(first_name, last_name, telegram_username),
+          event:events(title)
+        `)
+        .order('updated_at', { ascending: false })
+        .range(from, to)
+    );
 
-    const eventNotesData = (eventNotes || []).map((n: any) => {
+    const eventNotesData = eventNotes.map((n: any) => {
       const user = Array.isArray(n.user) ? n.user[0] : n.user;
       const event = Array.isArray(n.event) ? n.event[0] : n.event;
       
@@ -1621,15 +1740,18 @@ export class ExportService {
     }
 
     // ==================== ЛИСТ 11: РАНДОМАЙЗЕРЫ ====================
-    const { data: randomizers } = await supabase
-      .from('randomizers')
-      .select(`
-        *,
-        assignment:assignments(title)
-      `)
-      .order('created_at', { ascending: false });
+    const randomizers = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('randomizers')
+        .select(`
+          *,
+          assignment:assignments(title)
+        `)
+        .order('created_at', { ascending: false })
+        .range(from, to)
+    );
 
-    const randomizersData = (randomizers || []).map((r: any) => {
+    const randomizersData = randomizers.map((r: any) => {
       const assignment = Array.isArray(r.assignment) ? r.assignment[0] : r.assignment;
       
       return {
@@ -1650,16 +1772,19 @@ export class ExportService {
     }
 
     // ==================== ЛИСТ 12: УЧАСТНИКИ РАНДОМАЙЗЕРОВ ====================
-    const { data: randomizerParticipants } = await supabase
-      .from('randomizer_participants')
-      .select(`
-        *,
-        user:users(first_name, last_name, telegram_username),
-        randomizer:randomizers(assignment:assignments(title))
-      `)
-      .order('created_at', { ascending: false });
+    const randomizerParticipants = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('randomizer_participants')
+        .select(`
+          *,
+          user:users(first_name, last_name, telegram_username),
+          randomizer:randomizers(assignment:assignments(title))
+        `)
+        .order('created_at', { ascending: false })
+        .range(from, to)
+    );
 
-    const randomizerParticipantsData = (randomizerParticipants || []).map((rp: any) => {
+    const randomizerParticipantsData = randomizerParticipants.map((rp: any) => {
       const user = Array.isArray(rp.user) ? rp.user[0] : rp.user;
       const randomizer = Array.isArray(rp.randomizer) ? rp.randomizer[0] : rp.randomizer;
       const assignment = randomizer?.assignment;
@@ -1678,16 +1803,19 @@ export class ExportService {
     }
 
     // ==================== ЛИСТ 13: РАСПРЕДЕЛЕНИЯ РАНДОМАЙЗЕРОВ ====================
-    const { data: randomizerDistributions } = await supabase
-      .from('randomizer_distributions')
-      .select(`
-        *,
-        user:users(first_name, last_name, telegram_username),
-        randomizer:randomizers(assignment:assignments(title))
-      `)
-      .order('created_at', { ascending: false });
+    const randomizerDistributions = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('randomizer_distributions')
+        .select(`
+          *,
+          user:users(first_name, last_name, telegram_username),
+          randomizer:randomizers(assignment:assignments(title))
+        `)
+        .order('created_at', { ascending: false })
+        .range(from, to)
+    );
 
-    const randomizerDistributionsData = (randomizerDistributions || []).map((rd: any) => {
+    const randomizerDistributionsData = randomizerDistributions.map((rd: any) => {
       const user = Array.isArray(rd.user) ? rd.user[0] : rd.user;
       const randomizer = Array.isArray(rd.randomizer) ? rd.randomizer[0] : rd.randomizer;
       const assignment = randomizer?.assignment;
@@ -1708,12 +1836,15 @@ export class ExportService {
     }
 
     // ==================== ЛИСТ 14: НАПРАВЛЕНИЯ ====================
-    const { data: directions } = await supabase
-      .from('directions')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const directions = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('directions')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, to)
+    );
 
-    const directionsData = (directions || []).map((d: any) => ({
+    const directionsData = directions.map((d: any) => ({
       'ID': d.id,
       'Название': d.name || '',
       'Slug': d.slug || '',
@@ -1727,12 +1858,15 @@ export class ExportService {
     }
 
     // ==================== ЛИСТ 15: ДОСТИЖЕНИЯ ====================
-    const { data: achievements } = await supabase
-      .from('achievements')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const achievements = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('achievements')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, to)
+    );
 
-    const achievementsData = (achievements || []).map((a: any) => ({
+    const achievementsData = achievements.map((a: any) => ({
       'ID': a.id,
       'Название': a.name || '',
       'Описание': a.description || '',
@@ -1746,16 +1880,19 @@ export class ExportService {
     }
 
     // ==================== ЛИСТ 16: ДОСТИЖЕНИЯ ПОЛЬЗОВАТЕЛЕЙ ====================
-    const { data: userAchievements } = await supabase
-      .from('user_achievements')
-      .select(`
-        *,
-        user:users(first_name, last_name, telegram_username),
-        achievement:achievements(name)
-      `)
-      .order('unlocked_at', { ascending: false });
+    const userAchievements = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('user_achievements')
+        .select(`
+          *,
+          user:users(first_name, last_name, telegram_username),
+          achievement:achievements(name)
+        `)
+        .order('unlocked_at', { ascending: false })
+        .range(from, to)
+    );
 
-    const userAchievementsData = (userAchievements || []).map((ua: any) => {
+    const userAchievementsData = userAchievements.map((ua: any) => {
       const user = Array.isArray(ua.user) ? ua.user[0] : ua.user;
       const achievement = Array.isArray(ua.achievement) ? ua.achievement[0] : ua.achievement;
       
@@ -1772,15 +1909,18 @@ export class ExportService {
     }
 
     // ==================== ЛИСТ 17: УРОВНИ ПОЛЬЗОВАТЕЛЕЙ ====================
-    const { data: userLevels } = await supabase
-      .from('user_levels')
-      .select(`
-        *,
-        user:users(first_name, last_name, telegram_username)
-      `)
-      .order('level', { ascending: false });
+    const userLevels = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('user_levels')
+        .select(`
+          *,
+          user:users(first_name, last_name, telegram_username)
+        `)
+        .order('level', { ascending: false })
+        .range(from, to)
+    );
 
-    const userLevelsData = (userLevels || []).map((ul: any) => {
+    const userLevelsData = userLevels.map((ul: any) => {
       const user = Array.isArray(ul.user) ? ul.user[0] : ul.user;
       
       return {
@@ -1797,15 +1937,18 @@ export class ExportService {
     }
 
     // ==================== ЛИСТ 18: БАЛЛЫ ПОЛЬЗОВАТЕЛЕЙ ====================
-    const { data: userPoints } = await supabase
-      .from('user_points')
-      .select(`
-        *,
-        user:users(first_name, last_name, telegram_username)
-      `)
-      .order('total_points', { ascending: false });
+    const userPoints = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('user_points')
+        .select(`
+          *,
+          user:users(first_name, last_name, telegram_username)
+        `)
+        .order('total_points', { ascending: false })
+        .range(from, to)
+    );
 
-    const userPointsData = (userPoints || []).map((up: any) => {
+    const userPointsData = userPoints.map((up: any) => {
       const user = Array.isArray(up.user) ? up.user[0] : up.user;
       
       return {
@@ -1821,15 +1964,18 @@ export class ExportService {
     }
 
     // ==================== ЛИСТ 19: ТРАНЗАКЦИИ БАЛЛОВ ====================
-    const { data: pointsTransactions } = await supabase
-      .from('points_transactions')
-      .select(`
-        *,
-        user:users(first_name, last_name, telegram_username)
-      `)
-      .order('created_at', { ascending: false });
+    const pointsTransactions = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('points_transactions')
+        .select(`
+          *,
+          user:users(first_name, last_name, telegram_username)
+        `)
+        .order('created_at', { ascending: false })
+        .range(from, to)
+    );
 
-    const pointsTransactionsData = (pointsTransactions || []).map((pt: any) => {
+    const pointsTransactionsData = pointsTransactions.map((pt: any) => {
       const user = Array.isArray(pt.user) ? pt.user[0] : pt.user;
       
       return {
@@ -1846,15 +1992,18 @@ export class ExportService {
     }
 
     // ==================== ЛИСТ 20: ДЕЙСТВИЯ РЕФЛЕКСИИ ====================
-    const { data: reflectionActions } = await supabase
-      .from('reflection_actions')
-      .select(`
-        *,
-        user:users(first_name, last_name, telegram_username)
-      `)
-      .order('created_at', { ascending: false });
+    const reflectionActions = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('reflection_actions')
+        .select(`
+          *,
+          user:users(first_name, last_name, telegram_username)
+        `)
+        .order('created_at', { ascending: false })
+        .range(from, to)
+    );
 
-    const reflectionActionsData = (reflectionActions || []).map((ra: any) => {
+    const reflectionActionsData = reflectionActions.map((ra: any) => {
       const user = Array.isArray(ra.user) ? ra.user[0] : ra.user;
       
       return {
@@ -1871,15 +2020,18 @@ export class ExportService {
     }
 
     // ==================== ЛИСТ 21: УВЕДОМЛЕНИЯ ====================
-    const { data: notifications } = await supabase
-      .from('notifications')
-      .select(`
-        *,
-        user:users(first_name, last_name, telegram_username)
-      `)
-      .order('created_at', { ascending: false });
+    const notifications = await this.fetchAllRows<any>((from, to) =>
+      supabase
+        .from('notifications')
+        .select(`
+          *,
+          user:users(first_name, last_name, telegram_username)
+        `)
+        .order('created_at', { ascending: false })
+        .range(from, to)
+    );
 
-    const notificationsData = (notifications || []).map((n: any) => {
+    const notificationsData = notifications.map((n: any) => {
       const user = Array.isArray(n.user) ? n.user[0] : n.user;
       
       return {
